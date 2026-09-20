@@ -71,6 +71,27 @@ Vì sao bản HyperFrames phải là bản cụ thể: một lịch chạy lúc 
 đêm. Nâng bản là việc **có chủ đích** — `video-studio doctor --check-updates` chỉ báo, không tự
 nâng.
 
+### 3.1 Đầu ra KHÔNG giống nhau giữa các hệ điều hành — và phép chứng minh tương đương chỉ đúng trên Windows
+
+Engine này **không** hứa cùng một spec cho ra cùng một byte trên mọi máy. Hai giới hạn phải
+nói ra, vì cả hai đều dễ bị hiểu thành thứ mạnh hơn sự thật:
+
+**a) Tương đương với đường cũ đã chứng minh, nhưng chỉ trên Windows.** Khác biệt thật duy nhất
+giữa bản dựng cũ và bản dựng bằng engine này là stack chữ: `Inter` nay đứng TRƯỚC `'Segoe UI'`
+(`_env.py`, `DEFAULT_FONT_STACK`). Trên máy Windows có sẵn cả hai font, hai stack cho ra hình
+**trùng từng điểm ảnh** (mp4 long + short trùng `md5` thô qua 3 lượt, 3 khung trích mỗi file
+`PSNR = inf`). Nhưng **trên macOS `Segoe UI` không tồn tại** — đổi thứ tự stack chính là cách
+chữa, và hệ quả kèm theo là **đầu ra trên Mac sẽ không byte-identical với Windows**. Phép
+chứng minh tương đương là *Windows-only*; **đừng đọc nó là bảo chứng đa-OS**. Cần so sánh
+chéo hệ điều hành thì phải đặt `VIDEO_FONT` cho cả hai máy về cùng một font CÓ THẬT ở cả hai,
+rồi đo lại.
+
+**b) Tương đương chứng minh với brand MẶC ĐỊNH, không phải brand mà pipeline thật sẽ truyền.**
+Phép đo dùng brand mặc định của template cũ. Nhưng engine này làm `brand` **bắt buộc, không có
+mặc định** (§5) — nên runner thật buộc phải truyền `brand.json`, và **đầu ra sẽ khác** bản đã
+đo nếu nội dung brand khác. Bên nào chuyển pipeline sang engine này phải **so lại mốc với
+`brand.json` THẬT sẽ dùng**; không được coi phép đo cũ là đã phủ.
+
 ## 4. Spec dữ liệu (`schema_version: 1`)
 
 `video-studio render --project <tên> --input <spec.json> --out <thư mục>` đọc một file JSON.

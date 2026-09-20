@@ -24,7 +24,12 @@ BLOCKED_FILES = ("studio.local.json",)
 MEDIA_EXT = {".mp4", ".mov", ".webm", ".mkv", ".mp3", ".wav", ".m4a", ".aac", ".flac", ".ogg",
              ".png", ".jpg", ".jpeg", ".webp", ".gif", ".woff", ".woff2", ".ttf", ".otf",
              ".pt", ".onnx", ".safetensors"}
-MEDIA_ALLOW = ("templates/_seed/assets/",)
+#: Ngoại lệ media — CỐ Ý rỗng. Mở cả một THƯ MỤC cho file media đi ngược chính giáo lý ghi
+#: trong `.gitignore` của repo ("không bao giờ mở cả thư mục"): hôm nay
+#: `templates/_seed/assets/` chỉ có `README.md`, nhưng một ngoại lệ theo thư mục thì ai đặt
+#: file gì vào đó sau này cũng lọt, và không ai đọc lại dòng này để biết. Cần cho qua một file
+#: cụ thể thì thêm ĐÚNG ĐƯỜNG DẪN CỦA NÓ vào đây, không thêm thư mục chứa nó.
+MEDIA_ALLOW = ()
 
 TOKEN_PATTERNS = [
     re.compile(r"\bgh[pousr]_[A-Za-z0-9]{30,}"),

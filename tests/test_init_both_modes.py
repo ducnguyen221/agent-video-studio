@@ -183,11 +183,21 @@ def test_separate_mode_does_not_install_a_hook(repo, tmp_path):
     (".env.example", False),
     ("docs/a.mp4", True),
     ("skills/x/font.woff2", True),
-    ("templates/_seed/assets/swiss-grid.svg", False),
+    ("templates/_seed/assets/swiss-grid.svg", False),   # .svg là văn bản, không phải media
+    # Ngoại lệ media từng mở CẢ THƯ MỤC `templates/_seed/assets/`: hôm nay nó chỉ có README,
+    # nhưng một ngoại lệ theo thư mục thì ai đặt gì vào đó sau này cũng lọt.
+    ("templates/_seed/assets/logo.png", True),
+    ("templates/_seed/assets/nhac.mp3", True),
     ("video_studio/render.py", False),
 ])
 def test_hook_blocks_what_must_never_be_committed(path, blocked):
     assert bool(precommit.blocked_path(path)) is blocked
+
+
+def test_no_media_exception_opens_a_whole_folder():
+    """Giáo lý của `.gitignore` repo này: không bao giờ mở cả thư mục cho file nhị phân."""
+    assert all(not a.endswith("/") for a in precommit.MEDIA_ALLOW), \
+        f"ngoại lệ theo THƯ MỤC: {[a for a in precommit.MEDIA_ALLOW if a.endswith('/')]}"
 
 
 def test_hook_spots_a_token_in_an_added_line():

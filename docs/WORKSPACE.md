@@ -88,6 +88,24 @@ Trạm nằm TRONG repo, nên trước khi có byte dữ liệu nào ở đó ph
 
 Gỡ một trong hai lớp đó là tự tháo rào cho dữ liệu của chính mình.
 
+## Trạm KHÔNG BAO GIỜ được có remote
+
+Đặt trạm dưới `git` để có lịch sử cục bộ là việc hợp lý và `video-studio` không cản (mã của
+repo này chưa bao giờ chạy `git init` ở trạm — đó là thao tác tay của người dùng). Nhưng nếu
+trạm đã là một repo git thì **nó phải mãi mãi không có remote**.
+
+Lý do: trạm là nơi chứa **công việc thật** — project của khách hàng, bản dựng chưa duyệt, nhật
+ký di trú, tài sản media. Gắn remote một lần là toàn bộ LỊCH SỬ đi theo, kể cả những thứ đã
+xoá khỏi bản làm việc từ lâu. Đây không phải rủi ro giả định: không có gì trong máy chặn
+`git remote add`, và không có cổng nào báo sau khi ai đó đã đẩy.
+
+```
+git -C <trạm> remote -v        # phải RỖNG, mọi lúc
+```
+
+Cần chia sẻ nội dung trạm thì dùng `video-studio export` / `backup` — chúng đóng gói **bản làm
+việc hiện tại**, không mang lịch sử theo.
+
 ## Lệnh liên quan
 
 ```
