@@ -26,6 +26,7 @@ import json
 import os
 import re
 
+from . import _paths
 from .contract import ContractError
 
 SCHEMA_VERSION = 1
@@ -183,9 +184,11 @@ def _validate_outputs(outputs, origin):
         elif v is True:
             out[k] = True
         elif isinstance(v, str) and v.strip():
-            if os.path.isabs(v) or "/" in v or "\\" in v:
-                raise ContractError(f"{origin}: outputs.{k} là TÊN FILE, không phải đường dẫn "
-                                    "(thư mục đích do --out quyết định)")
+            # Luật dùng chung với `templates/news` và `edit --name` — và quan trọng hơn: luật
+            # KHÔNG phụ thuộc hệ điều hành. `C:ten.mp4` (ổ đĩa, không dấu ngăn) lọt cả ba
+            # phép kiểm hiển nhiên ở đây, rồi `join` vứt luôn `--out`.
+            _paths.plain_name(v.strip(), f"{origin}: outputs.{k}",
+                              "(thư mục đích do --out quyết định)")
             out[k] = v.strip()
         else:
             raise ContractError(f"{origin}: outputs.{k} phải là true/false hoặc tên file")

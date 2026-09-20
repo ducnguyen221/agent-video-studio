@@ -38,6 +38,44 @@ def _clean_contract_env(monkeypatch, tmp_path):
     yield
 
 
+def _fake_module(name, **attrs):
+    import types
+    m = types.ModuleType(name)
+    for k, v in attrs.items():
+        setattr(m, k, v)
+    return m
+
+
+@pytest.fixture
+def news(monkeypatch):
+    """Import `templates.news.news_video` với numpy / soundfile / voice_studio giả.
+
+    Dùng chung cho mọi test chạm template bản tin (`test_news_template.py`,
+    `test_out_path_gate.py`): template kéo theo numpy + soundfile + repo giọng, mà CI cài lõi
+    thì không có thứ nào — cái đang kiểm là LUẬT của template, không phải chất lượng âm thanh.
+    """
+    vs = _fake_module("voice_studio")
+    vs.__path__ = []
+    mods = {
+        "numpy": _fake_module("numpy", float32="f4", zeros=lambda *a, **k: [],
+                              concatenate=lambda *a, **k: [], asarray=lambda a, **k: a),
+        "soundfile": _fake_module("soundfile", write=lambda *a, **k: None),
+        "voice_studio": vs,
+        "voice_studio.engine": _fake_module("voice_studio.engine"),
+        "voice_studio.profiles": _fake_module("voice_studio.profiles"),
+        "voice_studio.av": _fake_module("voice_studio.av"),
+    }
+    vs.engine, vs.profiles, vs.av = (mods["voice_studio.engine"], mods["voice_studio.profiles"],
+                                     mods["voice_studio.av"])
+    for name, mod in mods.items():
+        monkeypatch.setitem(sys.modules, name, mod)
+    for name in list(sys.modules):
+        if name.startswith("video_studio.templates"):
+            monkeypatch.delitem(sys.modules, name, raising=False)
+    import importlib
+    return importlib.import_module("video_studio.templates.news.news_video")
+
+
 def fake_voice_studio(monkeypatch, narrate=None, mix_bgm=None, version="9.9.9"):
     """Cài một `voice_studio` GIẢ vào sys.modules. -> module gốc (có `.calls`).
 

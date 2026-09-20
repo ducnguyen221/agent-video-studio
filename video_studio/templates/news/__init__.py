@@ -16,7 +16,12 @@ với bản gốc:
 """
 import os
 
+from ... import _paths
 from ...contract import ContractError
+
+#: Lời khuyên riêng của họ template bản tin, nối vào cuối lỗi của `_paths`.
+_HINT = ("Dùng dạng ISO \"2026-01-02\" cho \"date\" (dạng đọc cho người để ở "
+         "\"display_date\"), và tên file trần cho \"outputs\".")
 
 __all__ = ["render_daily", "render_weekly", "render_topstory", "render_repo_today",
            "video_obj_of", "out_name"]
@@ -54,14 +59,17 @@ def _plain_name(value, field):
     `<out>/18/09/` rồi đặt file ở đó. `--out` khi ấy không còn nghĩa "file nằm ở đây", và
     bên gọi (runner, pipeline) đi tìm ở đúng chỗ mình khai thì không thấy gì. Ngày dạng
     `dd/mm/yyyy` của sidecar cũ rơi đúng vào bẫy này — nên chặn ngay tại chỗ đặt tên.
+
+    Luật nằm ở `_paths.plain_name` (dùng chung với `spec.outputs` và `edit --name`) vì nó
+    **phải giống hệt nhau trên mọi hệ điều hành**; ở đây chỉ thêm lời khuyên riêng của
+    template bản tin.
     """
-    s = str(value)
-    if os.sep in s or (os.altsep and os.altsep in s) or "/" in s or os.path.isabs(s):
-        raise ContractError(
-            f"\"{field}\" = {s!r} có dấu ngăn thư mục nên sẽ ghi file RA NGOÀI --out. "
-            "Dùng dạng ISO \"2026-01-02\" cho \"date\" (dạng đọc cho người để ở "
-            "\"display_date\"), và tên file trần cho \"outputs\".")
-    return s
+    return _paths.plain_name(value, field, _HINT)
+
+
+def _out_path(out_dir, value, field):
+    """Ghép tên đã kiểm vào `--out`, chốt hậu bằng `realpath`."""
+    return _paths.join_out(out_dir, value, field, _HINT)
 
 
 def out_name(spec, kind, default):
@@ -108,12 +116,12 @@ def _render_recap(spec, out_dir, wording):
     _name, prompt, model = _voice(spec)
     out = []
     if _wants(spec, "long"):
-        p = os.path.join(out_dir, out_name(spec, "long", f"{date}.mp4"))
+        p = _out_path(out_dir, out_name(spec, "long", f"{date}.mp4"), "outputs.long")
         news_video.make_weekly(vo, p, date, week=week, range_=display, model=model,
                                prompt=prompt, brand=brand)
         out.append(_result("long", p))
     if _wants(spec, "short"):
-        p = os.path.join(out_dir, out_name(spec, "short", f"{date}-short.mp4"))
+        p = _out_path(out_dir, out_name(spec, "short", f"{date}-short.mp4"), "outputs.short")
         news_video.make_weekly_short(vo, p, date, week=week, range_=display, model=model,
                                      prompt=prompt, brand=brand)
         out.append(_result("short", p))
@@ -156,11 +164,11 @@ def render_topstory(spec, out_dir):
     json_dir = os.path.dirname(os.path.abspath(spec.get("_spec_path") or out_dir))
     out = []
     if _wants(spec, "long"):
-        p = os.path.join(out_dir, out_name(spec, "long", f"{date}-top.mp4"))
+        p = _out_path(out_dir, out_name(spec, "long", f"{date}-top.mp4"), "outputs.long")
         ts.make_long(story, p, model, prompt, json_dir)
         out.append(_result("long", p))
     if _wants(spec, "short"):
-        p = os.path.join(out_dir, out_name(spec, "short", f"{date}-top-short.mp4"))
+        p = _out_path(out_dir, out_name(spec, "short", f"{date}-top-short.mp4"), "outputs.short")
         ts.make_short(story, p, model, prompt, json_dir)
         out.append(_result("short", p))
     return out
@@ -178,7 +186,7 @@ def render_repo_today(spec, out_dir):
     epi = spec.get("epi") or spec.get("display_date") or ""
     stem = _plain_name(spec.get("date") or "deep-dive", "date")
     default = out_name(spec, "long", f"{stem}.mp4")
-    p = os.path.join(out_dir, default)
+    p = _out_path(out_dir, default, "outputs.long")
     news_v2.render_deepdive(scenes, p, epi=epi, voice_profile=name,
                             brand=spec.get("brand"))
     return [_result("long", p)]

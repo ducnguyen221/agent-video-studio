@@ -5,45 +5,11 @@ Template cần `numpy`, `soundfile` và repo giọng — CI cài lõi thì khôn
 bảng phát âm, project lấy từ trạm), không phải chất lượng âm thanh.
 """
 import os
-import sys
-import types
 
 import pytest
 
 from video_studio import contract, projects
 from video_studio.contract import ContractError, StationMissing
-
-
-def _fake(name, **attrs):
-    m = types.ModuleType(name)
-    for k, v in attrs.items():
-        setattr(m, k, v)
-    return m
-
-
-@pytest.fixture
-def news(monkeypatch):
-    """Import `templates.news.news_video` với numpy / soundfile / voice_studio giả."""
-    vs = _fake("voice_studio")
-    vs.__path__ = []
-    mods = {
-        "numpy": _fake("numpy", float32="f4", zeros=lambda *a, **k: [],
-                       concatenate=lambda *a, **k: [], asarray=lambda a, **k: a),
-        "soundfile": _fake("soundfile", write=lambda *a, **k: None),
-        "voice_studio": vs,
-        "voice_studio.engine": _fake("voice_studio.engine"),
-        "voice_studio.profiles": _fake("voice_studio.profiles"),
-        "voice_studio.av": _fake("voice_studio.av"),
-    }
-    vs.engine, vs.profiles, vs.av = (mods["voice_studio.engine"], mods["voice_studio.profiles"],
-                                     mods["voice_studio.av"])
-    for name, mod in mods.items():
-        monkeypatch.setitem(sys.modules, name, mod)
-    for name in list(sys.modules):
-        if name.startswith("video_studio.templates"):
-            monkeypatch.delitem(sys.modules, name, raising=False)
-    import importlib
-    return importlib.import_module("video_studio.templates.news.news_video")
 
 
 MIN = {"a": "Tin", "b": "Ngày", "site": "vi-du.example"}

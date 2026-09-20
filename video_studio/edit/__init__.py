@@ -26,7 +26,7 @@ import os
 import shutil
 import subprocess
 
-from .. import _env, contract
+from .. import _env, _paths, contract
 from ..contract import ContractError, EngineError, StationMissing, log
 
 BACKENDS = ("auto", "distill", "vendored")
@@ -257,7 +257,10 @@ def do_edit(args):
         raise ContractError("bước 'render' cần --edl <edl.json> (hoặc một edl.json trong nơi "
                             "làm việc)")
     if want in ("all", "render") and edl_path:
-        out_file = os.path.join(out_dir, args.name or DEFAULT_OUT_NAME)
+        # `--name` đến từ dòng lệnh người gõ / runner sinh: cùng luật với
+        # `outputs.<kind>` của spec, cùng chốt hậu `realpath`. Thiếu cổng này thì
+        # `--out ./deliver --name ../../evil.mp4` ghi thẳng ra ngoài `--out`.
+        out_file = _paths.join_out(out_dir, args.name or DEFAULT_OUT_NAME, "--name")
         res["render"] = step_render(args, work, choose_backend("render", args.backend),
                                     edl_path, out_file)
         res["edl"] = edl_path
