@@ -60,6 +60,25 @@ def _expand(p):
     return os.path.abspath(os.path.expanduser(p))
 
 
+def rel_path(path, start):
+    """Đường của `path` so với `start`, dạng POSIX. Không có đường tương đối ⇒ đường TUYỆT ĐỐI.
+
+    Package và trạm là hai cây ĐỘC LẬP (xem đầu file), nên "không cùng gốc" là chuyện bình
+    thường, không phải lỗi. Trên Windows hai cây có thể nằm trên hai Ổ ĐĨA khác nhau, và khi
+    đó `os.path.relpath` **ném `ValueError`** chứ không trả gì — không tồn tại chuỗi `..` nào
+    đi từ `D:\\` sang `C:\\`. Máy phát triển để mọi thứ trên một ổ nên không bao giờ chạm
+    nhánh này; runner CI của GitHub (checkout `D:\\a\\…`, `TEMP` ở `C:\\`) thì chạm mỗi lần.
+
+    Đường tuyệt đối là câu trả lời ĐÚNG cho câu hỏi "nguồn nằm ở đâu", chỉ kém gọn hơn; ném
+    lỗi thì mất luôn câu trả lời. Ai đọc giá trị này phải coi nó có thể tuyệt đối.
+    """
+    try:
+        rel = os.path.relpath(path, start)
+    except ValueError:
+        rel = os.path.abspath(path)
+    return rel.replace(os.sep, "/")
+
+
 def read_json(path):
     """-> (dict, lỗi|None). File không có ⇒ ({}, None); JSON hỏng ⇒ ({}, thông báo)."""
     if not path or not os.path.isfile(path):

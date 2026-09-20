@@ -180,6 +180,39 @@ def test_migrate_moves_projects_and_leaves_others_byte_identical(tmp_path, monke
                                             ".claude/skills/legacy-skill"]
 
 
+def test_migrate_works_when_skills_and_repo_are_on_different_drives(tmp_path, monkeypatch, capsys):
+    """`skills/` của repo và gốc repo KHÁC ổ đĩa ⇒ vẫn chạy, `skills-lock.json` ghi đường tuyệt đối.
+
+    Runner Windows của GitHub checkout ở `D:\\a\\…` còn `TEMP` ở `C:\\`, nên `_skills_root()`
+    (thư mục tạm của test) và `_env.package_repo()` (bản checkout) nằm trên hai ổ khác nhau —
+    một tình huống HỢP LỆ mà máy để mọi thứ trên ổ `C:` không bao giờ dựng được. Ở đây nó được
+    dựng lại đúng cơ chế của runner: chính `os.path.relpath` ném `ValueError`, và CHỈ khi
+    `start` là gốc repo giả — mọi phép tính đường trong cùng một cây vẫn chạy thật, nên phép
+    thử không bao giờ xanh nhờ một hàm giả dễ dãi, và nó chạy y hệt trên macOS.
+    """
+    other = os.path.join("D:" + os.sep if os.name == "nt" else os.sep, "a", "agent-video-studio")
+    real_relpath = os.path.relpath
+
+    def cross_drive(path, start=os.curdir):
+        if os.path.normpath(str(start)) == os.path.normpath(other):
+            raise ValueError(f"path is on mount {str(path)[:2]!r}, start on mount 'D:'")
+        return real_relpath(path, start)
+
+    monkeypatch.setattr(os.path, "relpath", cross_drive)
+    monkeypatch.setattr(_env, "package_repo", lambda: other)
+
+    st = make_legacy_station(tmp_path)
+    src = make_repo_assets(tmp_path, monkeypatch)
+    rc, out, err = run(["init", "--station", str(st), "--migrate", "--json"], capsys)
+    assert rc == 0, err
+    lock = json.loads((st / "skills-lock.json").read_text(encoding="utf-8"))
+    assert set(lock["skills"]) == {"video-routing", "hf-core"}
+    want = str(src / "skills" / "video-routing").replace(os.sep, "/")
+    assert lock["skills"]["video-routing"]["path"] == want
+    for info in lock["skills"].values():
+        assert not info["path"].startswith(".."), "khác ổ đĩa thì không có đường tương đối nào đúng"
+
+
 # ── dọn skill đời cũ ở trạm ─────────────────────────────────────────────────────────────
 
 def test_plain_init_reports_legacy_skills_but_never_removes_them(tmp_path, monkeypatch, capsys):

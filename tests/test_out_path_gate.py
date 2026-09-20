@@ -17,6 +17,7 @@ import importlib
 import ntpath
 import os
 import posixpath
+import subprocess
 
 import pytest
 
@@ -164,3 +165,30 @@ def test_every_accepted_name_stays_inside_out_dir(tmp_path):
     for bad in MUST_REJECT:
         with pytest.raises(ContractError):
             _paths.join_out(out_dir, bad, "outputs.long")
+
+
+def test_a_symlink_named_like_a_plain_file_cannot_smuggle_the_output_out(tmp_path):
+    """Chốt hậu `realpath` phải bắt cả thứ phép kiểm mặt chữ KHÔNG thấy: một liên kết mềm.
+
+    `evil.mp4` là một TÊN TRẦN hợp lệ — không dấu ngăn, không ổ đĩa — nên `plain_name` cho
+    qua, đúng như thiết kế. Nếu trong `--out` đã có sẵn một liên kết mềm mang đúng tên đó thì
+    ghi vào nó là ghi ra ngoài `--out`, và chỉ lớp `realpath` mới nhìn thấy.
+    """
+    from video_studio import _paths
+    out_dir = tmp_path / "deliver"
+    out_dir.mkdir()
+    outside = tmp_path / "ngoai.mp4"
+    outside.write_text("x", encoding="utf-8")
+    link = out_dir / "evil.mp4"
+    try:
+        os.symlink(str(outside), str(link))
+    except (OSError, NotImplementedError) as e:
+        # Windows: liên kết mềm cần Developer Mode/admin, nhưng ĐIỂM NỐI (junction) thì
+        # KHÔNG — và `realpath` gỡ cả hai như nhau, nên cổng vẫn được đo thật chứ không skip.
+        outside.unlink()
+        outside.mkdir()
+        if os.name != "nt" or subprocess.run(["cmd", "/c", "mklink", "/J", str(link),
+                                              str(outside)], capture_output=True).returncode:
+            pytest.skip(f"máy này không tạo được liên kết mềm lẫn điểm nối: {e}")
+    with pytest.raises(ContractError):
+        _paths.join_out(str(out_dir), "evil.mp4", "outputs.long")

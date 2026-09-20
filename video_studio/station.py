@@ -383,7 +383,9 @@ def build_plan(st, mode, migrate, version):
 
     # 6. skills-lock.json
     lock = {"version": 1, "source": LOCK_SOURCE, "video_studio": __version__,
-            "skills": {n: {"path": os.path.relpath(p, _env.package_repo()).replace(os.sep, "/"),
+            # `p` (skills/ đi cùng mã) và gốc repo có thể nằm trên hai Ổ ĐĨA khác nhau — đây
+            # là phép tính đường DUY NHẤT đi giữa hai cây, nên là chỗ duy nhất cần `rel_path`.
+            "skills": {n: {"path": _env.rel_path(p, _env.package_repo()),
                            "sha256": _tree_hash(p)} for n, p in sorted(skills.items())}}
     cur_lock, lock_err = _env.read_json(_p(st, LOCK_FILE))
     if not os.path.isfile(_p(st, LOCK_FILE)):

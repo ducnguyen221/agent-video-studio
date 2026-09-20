@@ -100,6 +100,36 @@ def test_projects_dir_env_station_default(tmp_path, monkeypatch):
     assert _env.projects_dir() == str(tmp_path / "wd")
 
 
+# ── đường tương đối giữa hai cây có thể KHÔNG cùng gốc ──────────────────────────────────
+
+def test_rel_path_gives_posix_relative_when_both_under_one_root(tmp_path):
+    src = tmp_path / "repo" / "skills" / "video-routing"
+    assert _env.rel_path(str(src), str(tmp_path / "repo")) == "skills/video-routing"
+
+
+def test_rel_path_falls_back_to_absolute_when_no_relative_route_exists(tmp_path, monkeypatch):
+    """Hai đường KHÁC GỐC là hợp lệ, không phải lỗi — trả đường tuyệt đối, đừng ném.
+
+    Trên Windows `os.path.relpath` ném `ValueError` khi hai đường nằm trên hai ổ đĩa khác
+    nhau. Máy phát triển để mọi thứ trên một ổ nên không bao giờ thấy nhánh đó; ở đây nó
+    được dựng lại đúng như runner CI (checkout `D:\\a\\…`, thư mục tạm `C:\\…`) bằng cách
+    cho chính `os.path.relpath` ném — nên phép thử chạy y hệt trên macOS.
+    """
+    def boom(path, start=os.curdir):
+        raise ValueError(f"path is on mount {path!r}, start on mount {start!r}")
+
+    monkeypatch.setattr(os.path, "relpath", boom)
+    got = _env.rel_path(str(tmp_path / "a" / "b"), str(tmp_path / "khác-gốc"))
+    assert got == str(tmp_path / "a" / "b").replace(os.sep, "/")
+    assert not got.startswith(".."), "không có đường tương đối thì phải là đường TUYỆT ĐỐI"
+
+
+@pytest.mark.skipif(os.name != "nt", reason="ổ đĩa riêng biệt là khái niệm của Windows")
+def test_rel_path_survives_two_windows_drives():
+    """Không cần máy có ổ `D:` thật: `ntpath.relpath` so mặt chữ nên vẫn ném đúng chỗ đó."""
+    assert _env.rel_path(r"C:\Temp\skills\hf-core", r"D:\a\repo") == "C:/Temp/skills/hf-core"
+
+
 # ── HyperFrames ─────────────────────────────────────────────────────────────────────────
 
 def test_hyperframes_default_version():
