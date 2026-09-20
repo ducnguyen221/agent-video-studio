@@ -351,11 +351,18 @@ def update_check(version, offline):
     detail = f"ghim {version} · mới nhất {latest}"
     if age is not None:
         detail += f" · bản ghim {age} ngày tuổi"
-    why = (f"lệch {behind}" if behind not in (None, "patch")
-           else f"bản ghim đã quá {PIN_MAX_AGE_DAYS} ngày")
-    return _check("hyperframes-update", ok, detail, level="warn",
-                  hint=f"{why}; có bản {latest} — nâng là việc CÓ CHỦ ĐÍCH: render hồi quy rồi mới "
-                       "đổi HYPERFRAMES_VERSION / station.json (doctor không tự nâng)"), upd
+    if behind is None:
+        # Bản ghim CHÍNH LÀ bản mới nhất — chỉ có thể tới đây vì quá hạn xem lại. Câu
+        # "có bản {latest} — nâng…" lúc này khuyên nâng lên ĐÚNG BẢN ĐANG CHẠY: lời khuyên
+        # vô nghĩa làm người đọc mất lòng tin vào cả cổng. Điều đáng nói là hạn, không phải bản.
+        hint = (f"bản ghim {version} đang LÀ bản mới nhất, nhưng đã {age} ngày không ai xem "
+                "lại — rà changelog upstream rồi quyết định giữ hay đổi (doctor không tự nâng)")
+    else:
+        why = (f"lệch {behind}" if behind != "patch"
+               else f"bản ghim đã quá {PIN_MAX_AGE_DAYS} ngày")
+        hint = (f"{why}; có bản {latest} — nâng là việc CÓ CHỦ ĐÍCH: render hồi quy rồi mới "
+                "đổi HYPERFRAMES_VERSION / station.json (doctor không tự nâng)")
+    return _check("hyperframes-update", ok, detail, level="warn", hint=hint), upd
 
 
 # ── ráp lại ────────────────────────────────────────────────────────────────────────────

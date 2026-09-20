@@ -35,3 +35,21 @@ jobs:
         # Cây làm việc là một bản checkout git thật, nên các cổng `git check-ignore`
         # (bị skip khi chạy trên cây chưa git init) chạy thật ở đây.
         run: python -m pytest -q
+
+  upstream:
+    # Job RIÊNG vì nó là job DUY NHẤT cần mạng: nó tải `skills-manifest.json` của upstream
+    # tại đúng tag đã ghim rồi so 21 hash đã chép vào `upstream.json`. Không có job này thì
+    # cổng hash là tự quy chiếu — hai file do cùng một người viết so với nhau, bịa cả hai chỗ
+    # vẫn xanh. Để riêng để một lần upstream sập mạng không kéo đỏ cả ma trận hai OS.
+    name: hash skill khớp upstream
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install --upgrade pip && python -m pip install -e ".[test]"
+      - name: So hash với manifest upstream
+        env:
+          VIDEO_STUDIO_CHECK_UPSTREAM: '1'
+        run: python -m pytest -q tests/test_upstream_skills.py

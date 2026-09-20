@@ -50,6 +50,20 @@ def test_ci_does_not_install_a_heavy_engine(wf):
         assert heavy not in text, f"CI không được cài/gọi {heavy}"
 
 
+def test_ci_has_a_job_that_checks_the_hashes_against_real_upstream(wf):
+    """Cổng hash trong repo là tự quy chiếu — chỗ CHỨNG MINH nó nằm ở job có mạng này.
+
+    Xoá job đi là cổng hash quay lại thành tautology mà không gì báo, nên chính job ấy phải
+    được canh: có mặt, bật đúng công tắc, và chạy đúng bộ test.
+    """
+    job = wf["jobs"].get("upstream")
+    assert job, "thiếu job so hash skill với manifest upstream"
+    steps = job["steps"]
+    assert any(s.get("env", {}).get("VIDEO_STUDIO_CHECK_UPSTREAM") == "1" for s in steps), \
+        "job không bật VIDEO_STUDIO_CHECK_UPSTREAM ⇒ test online bị skip, job xanh vô nghĩa"
+    assert any("test_upstream_skills.py" in s.get("run", "") for s in steps)
+
+
 def test_ci_checks_out_the_repo(wf):
     """Cổng `git check-ignore` chỉ chạy trên một cây git thật — không checkout thì chúng skip câm."""
     uses = [s.get("uses", "") for s in wf["jobs"]["test"]["steps"]]

@@ -12,7 +12,7 @@ from pathlib import Path
 import pytest
 
 from video_studio import API_VERSION, __version__
-from test_no_identity_leak import repo_files
+from test_no_identity_leak import TEXT_EXT, repo_files
 
 ROOT = Path(__file__).resolve().parent.parent
 GITIGNORE = ROOT / ".gitignore"
@@ -63,10 +63,13 @@ def test_no_media_or_model_binaries_in_tree():
 
 # ── kỷ luật gọi tiến trình con và ghim bản ──────────────────────────────────────────────
 
+#: Sáu đuôi đầu tiên ĐỂ LỌT `.yml` và `.html` — tức `.github/workflows/tests.yml` và
+#: `templates/news/news_v2_components.html` không bao giờ bị quét: thêm `hyperframes@latest`
+#: vào chính file workflow mà cổng vẫn xanh. Dùng chung `TEXT_EXT` của cổng rò danh tính
+#: (đã rộng sẵn và có tự-kiểm) thay vì nuôi hai danh sách đuôi lệch nhau.
 def _code_files():
     return [(rel, p) for rel, p in repo_files()
-            if p.suffix in (".py", ".ps1", ".sh", ".md", ".json", ".toml")
-            and not rel.startswith("tests/")]
+            if p.suffix.lower() in TEXT_EXT and not rel.startswith("tests/")]
 
 
 @pytest.mark.parametrize("pattern,why", [
@@ -78,6 +81,17 @@ def test_forbidden_pattern_absent(pattern, why):
     hits = [rel for rel, p in _code_files()
             if re.search(pattern, p.read_text(encoding="utf-8", errors="replace"))]
     assert hits == [], f"{why}: {hits}"
+
+
+@pytest.mark.parametrize("must", [".github/workflows/tests.yml",
+                                  "video_studio/templates/news/news_v2_components.html"])
+def test_the_forbidden_pattern_scan_really_reaches_these_files(must):
+    """Chống xanh giả: hai file mà bộ đuôi cũ bỏ sót phải NẰM TRONG phạm vi quét.
+
+    Cổng cấm `@latest` chỉ có nghĩa nếu nó nhìn thấy nơi bản engine thật sự được gọi — và
+    nơi đó là workflow CI với template HTML, đúng hai đuôi mà danh sách cũ không có.
+    """
+    assert must in [rel for rel, _p in _code_files()]
 
 
 # Chuỗi lệnh = ký tự đầu của tham số 1 là dấu nháy (kể cả f"…"/r'…'). Biến hay list thì không.

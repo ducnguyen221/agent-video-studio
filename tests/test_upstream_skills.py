@@ -10,6 +10,7 @@ Ba thứ được canh ở đây, vì cả ba đều hỏng **im lặng**:
    chưa kiểm được — không một file nào trong số đó được vào repo này.
 """
 import json
+import os
 import re
 from pathlib import Path
 
@@ -56,6 +57,46 @@ def test_every_skill_records_its_source_version_and_hash(name):
     assert "Apache-2.0" in body, f"{name}: thiếu giấy phép nguồn"
     # Nghĩa vụ §4(b): nói rõ đây là bản đã sửa, không phải bản sao.
     assert "đã dịch" in body and "biên tập lại" in body, f"{name}: thiếu ghi chú 'đã sửa'"
+
+
+# ── hash có THẬT không? ─────────────────────────────────────────────────────────────────
+#
+# Phép kiểm ngay trên đây là TỰ QUY CHIẾU: nó chỉ đòi hash trong `upstream.json` cũng xuất
+# hiện trong `SKILL.md` — mà hai file ấy do CÙNG MỘT NGƯỜI viết trong cùng một lượt. Bịa cả
+# hai chỗ một con số thì cổng vẫn xanh: nó không bao giờ đỏ được vì lý do "hash sai".
+#
+# Nên phải có một phép so với NGUỒN THẬT. Nó cần mạng, mà bộ test còn lại cố ý chạy được
+# trên máy trần, nên nó nằm sau công tắc `VIDEO_STUDIO_CHECK_UPSTREAM=1` (một job CI riêng
+# bật nó). Đã bật thì lỗi mạng là ĐỎ, không phải skip — một cổng không thể đỏ thì lại đúng
+# là cái bệnh đang chữa.
+
+CHECK_UPSTREAM = os.environ.get("VIDEO_STUDIO_CHECK_UPSTREAM") == "1"
+
+
+def _fetch_manifest(url):
+    import urllib.request
+    with urllib.request.urlopen(url, timeout=30) as r:      # noqa: S310 — https cố định trong sổ
+        return json.loads(r.read().decode("utf-8"))
+
+
+@pytest.mark.skipif(not CHECK_UPSTREAM,
+                    reason="cần mạng — bật bằng VIDEO_STUDIO_CHECK_UPSTREAM=1")
+def test_every_hash_matches_the_real_upstream_manifest():
+    """21 hash + 21 số file phải khớp `skills-manifest.json` của upstream tại đúng `ref`."""
+    src = _sok()
+    url = src["manifest_url"]
+    assert url.startswith("https://raw.githubusercontent.com/"), url
+    assert f"/{src['ref']}/" in url, "manifest_url phải trỏ đúng ref đã ghim, không phải nhánh"
+    remote = _fetch_manifest(url)["skills"]
+    lech = {name: {"repo": (rec["upstream_hash"], rec["upstream_files"]),
+                   "upstream": (remote.get(name, {}).get("hash"),
+                                remote.get(name, {}).get("files"))}
+            for name, rec in src["skills"].items()
+            if (remote.get(name, {}).get("hash"), remote.get(name, {}).get("files"))
+            != (rec["upstream_hash"], rec["upstream_files"])}
+    assert lech == {}, f"hash/số file ghi trong sổ KHÔNG khớp upstream: {lech}"
+    assert src["upstream_total"] == len(remote), \
+        f"upstream @ {src['ref']} có {len(remote)} skill, sổ ghi {src['upstream_total']}"
 
 
 def test_no_binary_or_reference_tree_was_copied():

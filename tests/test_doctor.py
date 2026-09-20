@@ -227,6 +227,26 @@ def test_check_updates_warns_when_the_pin_is_older_than_the_age_threshold(machin
     assert f"quá {doctor.PIN_MAX_AGE_DAYS} ngày" in _check(res, "hyperframes-update")["hint"]
 
 
+def test_a_stale_pin_that_is_already_the_latest_is_not_told_to_upgrade_to_itself(
+        machine, good_station, capsys):
+    """Bản ghim == bản mới nhất + quá hạn xem lại: cảnh báo về HẠN, không phải về bản mới.
+
+    Câu cũ ghi "có bản {latest} — nâng…" với `latest == pinned`, tức khuyên nâng lên chính
+    bản đang chạy. Không ca test nào phủ nhánh `behind is None` + stale nên nó sống sót.
+    """
+    machine.npm_latest = "0.7.94"                    # đúng bản đang ghim
+    machine.npm_time = _days_ago(doctor.PIN_MAX_AGE_DAYS + 5)
+    rc, out, _ = run(["--check-updates", "--json"], capsys)
+    res = last_json(out)
+    assert rc == 0
+    assert res["updates"]["behind"] is None and res["updates"]["latest"] == "0.7.94"
+    assert "hyperframes-update" in res["warnings"]
+    hint = _check(res, "hyperframes-update")["hint"]
+    assert "đang LÀ bản mới nhất" in hint
+    assert "nâng là việc CÓ CHỦ ĐÍCH" not in hint    # không khuyên nâng lên chính nó
+    assert f"{doctor.PIN_MAX_AGE_DAYS + 5} ngày" in hint
+
+
 def test_check_updates_stays_quiet_right_at_the_age_threshold(machine, good_station, capsys):
     """Đúng ngưỡng vẫn im — cổng là 'quá 30 ngày', không phải 'tròn 30 ngày'."""
     machine.npm_latest = "0.7.99"
