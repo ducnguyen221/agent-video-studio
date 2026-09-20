@@ -40,8 +40,8 @@ git clone https://github.com/ducnguyen221/agent-video-studio
 cd agent-video-studio
 python -m venv .venv && . .venv/bin/activate     # Windows: .venv\Scripts\activate
 pip install -e ".[test]"
-video-studio doctor
-video-studio init            # asks embedded vs separate; --station DIR = separate
+video-studio init            # asks embedded vs separate when it cannot tell; --station DIR = separate
+video-studio doctor          # after init: before there is a station, doctor exits 3 by design
 ```
 
 HyperFrames is not a Python dependency: it runs through `npx hyperframes@$HYPERFRAMES_VERSION`,

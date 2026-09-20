@@ -37,8 +37,8 @@ git clone https://github.com/ducnguyen221/agent-video-studio
 cd agent-video-studio
 python -m venv .venv && . .venv/bin/activate     # Windows: .venv\Scripts\activate
 pip install -e ".[test]"
-video-studio doctor
-video-studio init            # hỏi embedded hay separate; --station DIR = separate
+video-studio init            # hỏi embedded hay separate khi không tự nhận ra; --station DIR = separate
+video-studio doctor          # sau init: chưa có trạm thì doctor mã 3, đúng thiết kế
 ```
 
 HyperFrames không phải phụ thuộc Python: nó chạy qua `npx hyperframes@$HYPERFRAMES_VERSION`,
