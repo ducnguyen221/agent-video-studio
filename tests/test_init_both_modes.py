@@ -12,6 +12,7 @@ import io
 import json
 import os
 import zipfile
+from pathlib import Path
 
 import pytest
 
@@ -25,6 +26,7 @@ def repo(tmp_path, monkeypatch):
     r = tmp_path / "repo"
     (r / "video_studio").mkdir(parents=True)
     (r / "pyproject.toml").write_text("[project]\nname='x'\n", encoding="utf-8")
+    (r / ".env.example").write_text("# khuon\nVIDEO_FONT=\nNODE_DIR=\n", encoding="utf-8")
     monkeypatch.setenv("VIDEO_STUDIO_REPO", str(r))
     return r
 
@@ -82,12 +84,32 @@ def test_asking_for_embedded_on_a_machine_with_an_outside_station_is_refused(
     assert "hai nguồn sự thật" in str(e.value)
 
 
-def test_no_one_to_answer_prints_the_table_and_exits_code_2(repo, capsys, monkeypatch):
-    monkeypatch.setattr(station, "_stdin_is_tty", lambda: False)
-    assert station.init_main([]) == 2
+@pytest.mark.parametrize("argv,tty", [([], False), (["--non-interactive"], True)])
+def test_no_one_to_answer_prints_the_table_and_exits_code_2(argv, tty, repo, capsys, monkeypatch):
+    """Khai `--non-interactive` KHÔNG có nghĩa "đoán hộ tôi": thiếu --yes/--mode/--station thì
+    vẫn là mã 2, in bảng cho agent trình cho người dùng."""
+    monkeypatch.setattr(station, "_stdin_is_tty", lambda: tty)
+    assert station.init_main(argv) == 2
     err = capsys.readouterr().err
     assert "embedded" in err and "separate" in err and "KHUYẾN NGHỊ" in err
+    assert "--mode" in err                      # agent phải biết chạy lại thế nào
     assert not (repo / "workspace").exists(), "chưa ai chọn mà đã tạo workspace/"
+
+
+def test_non_interactive_with_a_choice_goes_through(repo, monkeypatch):
+    monkeypatch.setattr(station, "_stdin_is_tty", lambda: False)
+    assert station.init_main(["--non-interactive", "--yes"]) == 0
+    assert (repo / "workspace" / "station.json").is_file()
+
+
+def test_the_choice_table_says_where_the_secrets_live(repo):
+    """Cùng bốn mục với hai trạm kia (Là gì · Lợi · Hại · Chọn khi) và cùng nói ra chỗ đặt
+    bí mật — người dùng gặp cả ba bộ cài, và ba câu chữ khác nhau là ba lần phải học lại."""
+    t = station.CHOICE_TABLE
+    for muc in ("Là gì", "Lợi", "Hại", "Chọn khi"):
+        assert t.count(muc) >= 2, muc
+    assert ".env" in t and station.SECRET_STORE in t
+    assert "bấm Enter" in t and "migrate --to separate" in t
 
 
 def test_previous_choice_is_remembered(repo):
@@ -153,6 +175,114 @@ def test_dry_run_writes_nothing(repo, tmp_path):
 
 
 # ── hai lớp rào của chế độ embedded ────────────────────────────────────────────────────
+
+# ── embedded: `.env` phải có thật, và phải có người đọc nó ───────────────────────────────
+#
+# Trước đó `.env` được `.gitignore` chặn, hook chặn, `doctor` kiểm — nhưng KHÔNG AI TẠO RA NÓ
+# và KHÔNG AI ĐỌC NÓ. Một hàng rào quanh một file không tồn tại là hàng rào quanh chỗ trống.
+
+def test_embedded_lays_down_dotenv_from_the_example(repo):
+    res = station.do_init(mode="embedded")
+    assert res["env"] == "created" and (repo / ".env").is_file()
+    assert "VIDEO_FONT=" in (repo / ".env").read_text(encoding="utf-8")
+    local = json.loads((repo / "studio.local.json").read_text(encoding="utf-8"))
+    assert local["secrets"] == ".env"
+
+
+def test_rerun_never_overwrites_a_filled_dotenv(repo):
+    station.do_init(mode="embedded")
+    (repo / ".env").write_text("VIDEO_FONT=Georgia\n", encoding="utf-8")
+    assert station.do_init(mode="embedded")["env"] == "kept"
+    assert (repo / ".env").read_text(encoding="utf-8") == "VIDEO_FONT=Georgia\n"
+
+
+def test_rerun_repairs_the_repo_side_even_when_the_station_is_already_right(repo):
+    """Trạm đã đúng chuẩn ⇒ kế hoạch rỗng, nhưng `studio.local.json` và `.env` vẫn phải được
+    dựng lại. "Chạy lại bộ cài" là đường sửa duy nhất người dùng biết."""
+    station.do_init(mode="embedded")
+    (repo / ".env").unlink()
+    (repo / "studio.local.json").unlink()
+    res = station.do_init(mode="embedded")
+    assert res["plan"] == [] and res["env"] == "created"
+    assert (repo / ".env").is_file()
+    assert json.loads((repo / "studio.local.json").read_text(encoding="utf-8"))["mode"] == "embedded"
+
+
+def test_embedded_reads_config_from_dotenv(repo, monkeypatch):
+    station.do_init(mode="embedded")
+    (repo / ".env").write_text(
+        "# ghi chu\nexport VIDEO_FONT = \"Georgia\"\nrac khong co dau bang\n", encoding="utf-8")
+    monkeypatch.delenv("VIDEO_FONT", raising=False)
+    assert _env.env("VIDEO_FONT") == "Georgia"
+    assert _env.font_stack().startswith("'Georgia'")
+
+
+def test_a_real_environment_variable_beats_the_dotenv(repo, monkeypatch):
+    station.do_init(mode="embedded")
+    (repo / ".env").write_text("VIDEO_FONT=Georgia\n", encoding="utf-8")
+    monkeypatch.setenv("VIDEO_FONT", "Courier")
+    assert _env.env("VIDEO_FONT") == "Courier"
+
+
+def test_separate_mode_never_loads_a_dotenv_sitting_in_the_repo(repo, tmp_path, monkeypatch):
+    """Ở `separate`, repo có thể là bản public của chính người dùng: tự nạp một file lạ nằm
+    trong đó là mở cửa cho nó."""
+    station.do_init(station=str(tmp_path / "ngoai"))
+    (repo / ".env").write_text("VIDEO_FONT=Georgia\n", encoding="utf-8")
+    monkeypatch.delenv("VIDEO_FONT", raising=False)
+    assert _env.env_file() is None and _env.env("VIDEO_FONT") is None
+
+
+@pytest.mark.parametrize("var", ["VIDEO_STUDIO_REPO", "VIDEO_STATION", "VIDEO_ROOT"])
+def test_a_dotenv_can_never_move_the_repo_or_the_station(var, repo):
+    """Ba biến này quay ngược lại chính cái đã quyết định có đọc `.env` hay không: `.env` chỉ
+    được nạp khi mode = embedded, tức trạm đã chốt ở <repo>/workspace/. Để một dòng trong đó
+    trỏ trạm đi nơi khác là tự tạo ra "hai nguồn sự thật"."""
+    station.do_init(mode="embedded")
+    (repo / ".env").write_text(f"{var}=/khong/ton/tai\n", encoding="utf-8")
+    assert _env.read_env_file()[var] == "/khong/ton/tai"     # đọc được nếu ai hỏi thẳng file
+    assert _env.env(var) != "/khong/ton/tai"                 # nhưng env() không lấy từ đó
+    assert _env.repo_root() == str(repo)
+    assert _env.resolve_station() == (str(repo / "workspace"), "studio.local.json")
+
+
+def test_the_voice_station_pointer_does_come_from_the_dotenv(repo, tmp_path, monkeypatch):
+    """Trạm GIỌNG là trạm của repo KHÁC — đọc từ `.env` là đúng, và đó chính là cách người
+    dùng `embedded` nối hai năng lực lại mà không phải đặt biến môi trường nào."""
+    station.do_init(mode="embedded")
+    vs = tmp_path / "tram-giong"
+    (vs / "omnivoice").mkdir(parents=True)
+    (repo / ".env").write_text(f"VOICE_STATION={vs.as_posix()}\n", encoding="utf-8")
+    monkeypatch.delenv("VOICE_STATION", raising=False)
+    assert _env.voice_station() == str(vs)
+
+
+def test_migrate_takes_the_dotenv_with_it(repo, tmp_path):
+    """Bỏ `.env` lại trong repo là kiểu hỏng tệ nhất: file vẫn nằm đó, đọc được bằng mắt,
+    nhưng `_env.env()` thôi không nạp nó nữa vì chế độ đã là `separate`."""
+    station.do_init(mode="embedded")
+    (repo / ".env").write_text("VIDEO_FONT=Georgia\n", encoding="utf-8")
+    res = station.migrate_to_separate(str(tmp_path / "ngoai"))
+    assert not (repo / ".env").exists()
+    moved = Path(res["env_moved_to"])
+    assert moved.is_file() and moved.read_text(encoding="utf-8") == "VIDEO_FONT=Georgia\n"
+    assert moved.parent.name == station.SECRET_DIR_NAME
+    local = json.loads((repo / "studio.local.json").read_text(encoding="utf-8"))
+    assert local["secrets"] == station.SECRET_STORE
+
+
+def test_migrate_refuses_before_moving_anything_when_the_secret_store_already_has_one(
+        repo, tmp_path):
+    station.do_init(mode="embedded")
+    (repo / ".env").write_text("VIDEO_FONT=Georgia\n", encoding="utf-8")
+    sec = Path(os.path.expanduser("~")) / ".secret" / station.SECRET_DIR_NAME
+    sec.mkdir(parents=True)
+    (sec / ".env").write_text("VIDEO_FONT=cu\n", encoding="utf-8")
+    with pytest.raises(ContractError, match="gộp tay"):
+        station.migrate_to_separate(str(tmp_path / "ngoai"))
+    assert (repo / "workspace").is_dir() and (repo / ".env").is_file()
+    assert (sec / ".env").read_text(encoding="utf-8") == "VIDEO_FONT=cu\n"
+
 
 def test_embedded_installs_the_pre_commit_hook(repo):
     (repo / ".git" / "hooks").mkdir(parents=True)

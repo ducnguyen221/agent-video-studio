@@ -10,6 +10,13 @@ Python cài được với một lệnh duy nhất, `video-studio`.
 > họ template bản tin, lồng tiếng, xem trước, chỉnh footage, và `export` / `import` để mang dữ
 > liệu trạm sang máy khác. Mọi lệnh trong bảng dưới đều đã có mã thật.
 
+**Đây là một năng lực thêm, không phải một mảnh của bộ nào phải cài đủ.** Repo này đứng một
+mình: cài khi bạn cần dựng video, và chỉ khi đó. Một quy trình sản xuất nội dung (ví dụ
+`agent-marketing-studio`) *gọi được* nó qua hợp đồng mã thoát + dòng JSON cuối stdout nếu nó có
+mặt — nhưng quy trình đó chạy bình thường khi bạn chưa cài, và nói rõ là đang thiếu năng lực
+video thay vì nổ giữa chừng. Trạm **giọng** (`agent-voice-studio`) cũng vậy: thiếu nó thì render
+câm vẫn chạy, chỉ là không lồng tiếng được. Không có thứ tự cài bắt buộc, không có "bộ ba".
+
 ## Bản này có gì
 
 | Lệnh | Làm gì |
@@ -37,9 +44,16 @@ git clone https://github.com/ducnguyen221/agent-video-studio
 cd agent-video-studio
 python -m venv .venv && . .venv/bin/activate     # Windows: .venv\Scripts\activate
 pip install -e ".[test]"
-video-studio init            # hỏi embedded hay separate khi không tự nhận ra; --station DIR = separate
+video-studio init            # trình bảng hai lựa chọn rồi chờ bạn chọn; --station DIR = separate
 video-studio doctor          # sau init: chưa có trạm thì doctor mã 3, đúng thiết kế
 ```
+
+`init` **trình bảng rồi mới làm**, chứ không hỏi trống: `embedded` (trạm ở `<repo>/workspace/`,
+biến cấu hình ở `<repo>/.env`) là **khuyến nghị** — bấm Enter là xong, không phải đặt biến môi
+trường nào, và `init` chép sẵn `.env.example` thành `.env` cho bạn điền. Chọn `separate` khi bạn
+dùng nhiều máy, rành kỹ thuật, hoặc repo này là bản public của chính bạn. Không có ai trả lời
+(CI, lịch chạy) thì `init` in bảng đó ra rồi **thoát mã 2 mà chưa ghi byte nào** — agent cài phải
+đưa bảng cho người dùng xem, không tự chọn im lặng.
 
 HyperFrames không phải phụ thuộc Python: nó chạy qua `npx hyperframes@$HYPERFRAMES_VERSION`,
 luôn là một bản cụ thể (không bao giờ `latest`).

@@ -11,6 +11,14 @@ with one CLI, `video-studio`.
 > `export` / `import` for moving station data between machines. Every command in the table
 > below is backed by real code.
 
+**This is an added capability, not one piece of a suite you must install whole.** The
+repository stands alone: install it when you need to build video, and only then. A content
+pipeline (for example `agent-marketing-studio`) *can* call it through the shared contract —
+exit code plus a final JSON line on stdout — when it is present, but that pipeline runs fine
+without it and says plainly that the video capability is missing rather than failing mid-run.
+The **voice** station (`agent-voice-studio`) is the same: without it, silent renders still
+work, you just cannot add narration. There is no required install order and no bundle.
+
 ## What is in this build
 
 | Command | Does |
@@ -40,9 +48,18 @@ git clone https://github.com/ducnguyen221/agent-video-studio
 cd agent-video-studio
 python -m venv .venv && . .venv/bin/activate     # Windows: .venv\Scripts\activate
 pip install -e ".[test]"
-video-studio init            # asks embedded vs separate when it cannot tell; --station DIR = separate
+video-studio init            # presents the two-option table and waits; --station DIR = separate
 video-studio doctor          # after init: before there is a station, doctor exits 3 by design
 ```
+
+`init` **presents a table before doing anything**, rather than asking an open question.
+`embedded` — station at `<repo>/workspace/`, configuration in `<repo>/.env` — is the
+**recommendation**: press Enter and you are done, with no environment variables to set, and
+`init` copies `.env.example` to `.env` for you to fill in. Choose `separate` when you work
+across machines, are comfortable with the technical side, or this repository is your own public
+fork. With nobody to answer (CI, a scheduled task) `init` prints that table and **exits with
+code 2 without writing a byte** — an installing agent must show it to the user instead of
+choosing silently.
 
 HyperFrames is not a Python dependency: it runs through `npx hyperframes@$HYPERFRAMES_VERSION`,
 always an exact version (never `latest`).

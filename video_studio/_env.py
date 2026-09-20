@@ -28,6 +28,12 @@ Hai chế độ cài (F17) dùng chung MỘT thứ tự phân giải trạm — 
 
 `<repo>` là bản clone đã `pip install -e` (có `pyproject.toml` cạnh package); đặt
 `VIDEO_STUDIO_REPO` để trỏ tường minh. Cài dạng wheel thì không có repo ⇒ bỏ hai tầng giữa.
+
+Biến cấu hình đi theo thứ tự riêng: biến môi trường thật → `<repo>/.env` (**chỉ** khi
+`studio.local.json: mode = embedded`) → chưa đặt. Chế độ `separate` KHÔNG bao giờ tự nạp
+`.env`: ở đó repo có thể là bản public của chính người dùng, và tự nạp một file nằm trong
+repo là mở cửa cho nó. `.env` giữ ĐƯỜNG DẪN và cấu hình máy, không bao giờ giữ token —
+khuôn tên biến ở `<repo>/.env.example`.
 """
 import json
 import os
@@ -40,6 +46,20 @@ from .contract import ContractError
 LOCAL_CONFIG = "studio.local.json"
 WORKSPACE = "workspace"
 STATION_FILE = "station.json"
+ENV_FILE = ".env"
+ENV_EXAMPLE = ".env.example"
+# Hợp đồng F17 — tên chế độ dùng chung với `agent-marketing-studio`, `agent-voice-studio`.
+MODES = ("embedded", "separate")
+
+# Ba tên KHÔNG BAO GIỜ được đọc từ `<repo>/.env`, vì cả ba đều quay ngược lại chính cái đã
+# quyết định có đọc `.env` hay không:
+#   VIDEO_STUDIO_REPO — nói repo nằm đâu, mà `.env` nằm TRONG repo. Đọc là đệ quy vô hạn.
+#   VIDEO_STATION, VIDEO_ROOT — nói TRẠM NÀY nằm đâu. `.env` chỉ được nạp khi chế độ là
+#     `embedded`, tức là trạm đã được chốt ở `<repo>/workspace/`; để một dòng trong file đó
+#     trỏ trạm đi nơi khác là tự tạo ra đúng cái "hai nguồn sự thật" mà cả bộ cài này sinh
+#     ra để chặn. Trỏ trạm đi chỗ khác là việc của biến môi trường thật, hoặc của `migrate`.
+# Trạm GIỌNG (VOICE_STATION, OMNIVOICE_DIR) thì đọc được: nó là trạm của repo KHÁC.
+_NEVER_FROM_DOTENV = frozenset({"VIDEO_STUDIO_REPO", "VIDEO_STATION", "VIDEO_ROOT"})
 
 # Bản đã qua render hồi quy (PVi-T13, 20/09/2026): cùng index.html, cùng thời lượng, khung
 # trùng tới từng điểm ảnh ở 3/6 mốc đo và PSNR 48–59 dB ở phần còn lại, dung lượng lệch
@@ -51,9 +71,17 @@ DEFAULT_FONT_STACK = "Inter, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif"
 
 
 def env(name):
-    """Đọc biến `name` (bỏ khoảng trắng; rỗng coi như chưa đặt)."""
+    """Đọc biến `name`: `os.environ` → `<repo>/.env` (CHỈ chế độ embedded) → None.
+
+    Bỏ khoảng trắng; rỗng coi như chưa đặt. Biến môi trường thật LUÔN thắng `.env`: máy đã
+    đặt biến (máy chạy lịch) không được để một file lạc vào repo cướp cấu hình.
+    """
     val = (os.environ.get(name) or "").strip()
-    return val or None
+    if val:
+        return val
+    if name in _NEVER_FROM_DOTENV:
+        return None
+    return (read_env_file().get(name) or "").strip() or None
 
 
 def _expand(p):
@@ -117,6 +145,56 @@ def local_config(repo=None):
     """Nội dung `<repo>/studio.local.json` (lựa chọn chế độ cài), {} nếu không có."""
     repo = repo or repo_root()
     return read_json(os.path.join(repo, LOCAL_CONFIG))[0] if repo else {}
+
+
+def mode(repo=None):
+    """Chế độ cài đã chọn: `embedded` · `separate` · None (chưa chạy `video-studio init`)."""
+    m = (local_config(repo).get("mode") or "").strip()
+    return m if m in MODES else None
+
+
+# ── biến cấu hình: os.environ → <repo>/.env (CHỈ chế độ embedded) ───────────────────────
+
+def env_file(repo=None):
+    """`<repo>/.env` khi và CHỈ KHI chế độ là `embedded` và file có thật; không thì None."""
+    repo = repo or repo_root()
+    if not repo or mode(repo) != "embedded":
+        return None
+    f = os.path.join(repo, ENV_FILE)
+    return f if os.path.isfile(f) else None
+
+
+def read_env_file(repo=None):
+    """Đọc `<repo>/.env` thành dict. Định dạng tối giản, CỐ Ý không hỗ trợ gì thêm:
+    `TEN=giá trị` mỗi dòng, bỏ qua dòng trống và dòng `#`, bỏ `export ` đầu dòng, gỡ một
+    lớp nháy bao ngoài. Không nội suy `$BIEN`, không nối dòng — mỗi tính năng thêm là một
+    cách nữa để một file text trở thành mã chạy được.
+
+    Đọc lại MỖI LẦN gọi (không cache): người dùng sửa `.env` rồi chạy lệnh ngay là chuyện
+    thường, và một cache ở đây nghĩa là họ sửa xong mà không có gì đổi.
+    """
+    f = env_file(repo)
+    if not f:
+        return {}
+    out = {}
+    try:
+        with open(f, "r", encoding="utf-8", errors="replace") as fh:
+            text = fh.read()
+    except OSError:
+        return {}
+    for line in text.splitlines():
+        s = line.strip()
+        if not s or s.startswith("#") or "=" not in s:
+            continue
+        if s.startswith("export "):
+            s = s[len("export "):]
+        name, _, value = s.partition("=")
+        name, value = name.strip(), value.strip()
+        if len(value) >= 2 and value[0] == value[-1] and value[0] in "\"'":
+            value = value[1:-1]
+        if name:
+            out[name] = value
+    return out
 
 
 def default_station():

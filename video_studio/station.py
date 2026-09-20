@@ -43,7 +43,12 @@ import zipfile
 from . import API_VERSION, __version__, _env, contract
 from .contract import ContractError, StationMissing
 
-MODES = ("embedded", "separate")
+MODES = _env.MODES                        # hợp đồng F17 — một nguồn sự thật ở _env
+SECRET_DIR_NAME = "video-studio"          # ~/.secret/<tên> khi chạy chế độ separate
+# Giá trị này ĐI VÀO studio.local.json, nên nó phải là ASCII và là một đường dẫn thật: một
+# chuỗi mô tả có dấu đọc bằng công cụ khác encoding sẽ hiện ra rác, và không ai dán nó vào
+# đâu được. Cùng khuôn với `agent-marketing-studio` và `agent-voice-studio`.
+SECRET_STORE = f"~/.secret/{SECRET_DIR_NAME}"
 LEGACY_PROJECTS = ("news", "topstory")
 SKILL_TOOLS = (".claude/skills", ".agents/skills")
 LOCK_FILE = "skills-lock.json"
@@ -60,21 +65,24 @@ ALLOWED_TOP = {"projects", "scratch", "cache", "demo", ".claude", ".agents", LOC
 PIN_RE = re.compile(r"(hyperframes@)([0-9A-Za-z.\-^~]+)")
 
 CHOICE_TABLE = """\
-Chọn cách đặt TRẠM VIDEO (nơi chứa project đang dựng, seed, skill cho agent, nháp, cache):
+Chọn chỗ đặt TRẠM VIDEO (nơi chứa project đang dựng, seed, skill cho agent, nháp, cache):
 
-  [1] embedded — gọn trong repo   ← KHUYẾN NGHỊ (Enter)
-      Là gì : trạm nằm ở <repo>/workspace/ (git bỏ qua).
-      Lợi   : mở một folder là thấy hết; không phải đặt biến môi trường.
-      Hại   : xoá folder repo là mất luôn project — đừng xoá repo để cài lại.
-      Chọn khi: một máy, muốn dùng ngay, không rành kỹ thuật.
+  [1] embedded — gọn trong repo   ← KHUYẾN NGHỊ (bấm Enter)
+      Là gì : trạm nằm ở <repo>/workspace/, biến cấu hình ở <repo>/.env (git bỏ qua cả hai).
+      Lợi   : mở một folder là thấy hết; không phải đặt biến môi trường; backup một phát.
+      Hại   : xoá folder repo là mất luôn project — đừng xoá repo để cài lại, dùng
+              `video-studio update`; và nhớ `video-studio backup`.
+      Chọn khi: một máy, muốn dùng được ngay, không rành kỹ thuật.
 
   [2] separate — trạm ngoài repo (mặc định ~/.video)
-      Là gì : trạm ở thư mục riêng.
-      Lợi   : repo luôn sạch (an toàn khi repo là public của bạn); nhiều repo/nhiều máy
-              dùng chung một trạm; cập nhật repo không đụng dữ liệu.
-      Hại   : thêm một chỗ phải nhớ; nên đặt VIDEO_STATION cho mọi công cụ khác thấy.
+      Là gì : trạm ở thư mục riêng; bí mật ở kho secret của máy ({kho}).
+      Lợi   : repo luôn sạch (an toàn khi repo là bản public của chính bạn); nhiều máy /
+              nhiều repo dùng chung một trạm; cập nhật repo không đụng dữ liệu.
+      Hại   : thêm một chỗ phải nhớ; nên đặt VIDEO_STATION cho lịch chạy thấy trạm.
       Chọn khi: rành kỹ thuật, nhiều máy, hoặc repo public của chính bạn.
-"""
+
+Sau này đổi ý được: `video-studio migrate --to separate`.
+""".format(kho=SECRET_STORE)
 
 
 # ── tiện ích ───────────────────────────────────────────────────────────────────────────
@@ -161,8 +169,13 @@ def _ask_console(prompt):
     return input()
 
 
-def choose_mode(station=None, mode=None, yes=False, ask=None):
-    """-> (chế độ, gốc trạm, lý do). Ném ContractError khi cần người chọn mà không hỏi được."""
+def choose_mode(station=None, mode=None, yes=False, ask=None, non_interactive=False):
+    """-> (chế độ, gốc trạm, lý do). Ném ContractError khi cần người chọn mà không hỏi được.
+
+    `non_interactive` = người gọi TỰ KHAI "không có ai ngồi đây". Nó KHÔNG có nghĩa là "cứ
+    đoán hộ tôi": thiếu `--yes`/`--mode`/`--station` thì vẫn là mã 2. Đoán ở đây là dựng
+    trạm sai chỗ, và người dùng chỉ phát hiện ra sau khi đã dựng vài project.
+    """
     repo = _env.repo_root()
     if station:
         return "separate", _env._expand(station), "--station"
@@ -184,7 +197,7 @@ def choose_mode(station=None, mode=None, yes=False, ask=None):
             mode, why = "embedded", "--yes (nhận khuyến nghị)"
         else:
             if ask is None:
-                if not _stdin_is_tty():
+                if non_interactive or not _stdin_is_tty():
                     contract.log(CHOICE_TABLE)
                     raise ContractError(
                         "cần người dùng chọn chế độ cài. Agent: trình bảng trên cho người dùng, "
@@ -651,6 +664,29 @@ def _hook_text():
             f"exec \"{py}\" -m video_studio.precommit\n")
 
 
+def copy_env(repo):
+    """`embedded`: dọn sẵn `<repo>/.env` từ `.env.example`. -> 'created' | 'kept' | 'no-example'.
+
+    Không có bước này thì "clone là chạy" chỉ đúng một nửa: `.env` được `_env.env()` đọc,
+    được `.gitignore` chặn, được hook chặn lần nữa, được `doctor` kiểm — nhưng không ai tạo
+    ra nó, nên người dùng phải tự biết là phải chép. Không bao giờ đè file đã điền: chạy lại
+    bộ cài không được ăn mất cấu hình của người ta.
+    """
+    src = os.path.join(repo, _env.ENV_EXAMPLE)
+    dst = os.path.join(repo, _env.ENV_FILE)
+    if os.path.exists(dst):
+        return "kept"
+    if not os.path.isfile(src):
+        return "no-example"
+    shutil.copyfile(src, dst)
+    if os.name != "nt":
+        try:
+            os.chmod(dst, 0o600)
+        except OSError as e:               # hệ tệp không hỗ trợ (exFAT, chia sẻ mạng)
+            contract.log(f"[init] không đặt được quyền 600 cho .env ({e}) — kiểm tay.")
+    return "created"
+
+
 def install_hook(repo):
     """Cài hook pre-commit cho chế độ embedded. -> 'installed' | 'kept' | 'no-git'.
 
@@ -672,8 +708,10 @@ def install_hook(repo):
     return "installed"
 
 
-def do_init(station=None, mode=None, yes=False, migrate=False, dry_run=False, ask=None):
-    mode, st, why = choose_mode(station=station, mode=mode, yes=yes, ask=ask)
+def do_init(station=None, mode=None, yes=False, migrate=False, dry_run=False, ask=None,
+            non_interactive=False):
+    mode, st, why = choose_mode(station=station, mode=mode, yes=yes, ask=ask,
+                                non_interactive=non_interactive)
     if migrate and mode != "separate":
         raise ContractError("--migrate chỉ dùng để nhận một trạm ngoài đã có (separate): "
                             "truyền --station DIR")
@@ -685,18 +723,29 @@ def do_init(station=None, mode=None, yes=False, migrate=False, dry_run=False, as
                     ({"files": len(p["files"])} if "files" in p else {}) for p in pl["plan"]],
            "notes": pl["notes"], "kept": pl["kept"], "legacy_skills": pl["legacy_skills"],
            "pruned_skills": pl["pruned_skills"], "untouched": pl["untouched"]}
-    if dry_run or not pl["plan"]:
+    if dry_run:
         return res
-    run = _execute(st, pl["plan"])
-    res["run_id"] = run.id
+    # Phần TRẠM có thể rỗng (chạy lại trên một trạm đã đúng chuẩn), nhưng phần REPO thì
+    # không được bỏ qua vì thế: `studio.local.json`, `.env` và hook là những thứ người dùng
+    # xoá nhầm hoặc chưa bao giờ có, và "chạy lại bộ cài" phải là đường sửa cho chúng.
+    if pl["plan"]:
+        run = _execute(st, pl["plan"])
+        res["run_id"] = run.id
     repo = _env.repo_root()
     if repo and os.path.isdir(repo):
         local_path = os.path.join(repo, _env.LOCAL_CONFIG)
         local = _env.read_json(local_path)[0]
-        local.update({"mode": mode, "station_path": _env.WORKSPACE if mode == "embedded" else st})
+        local.update({
+            "mode": mode,
+            "station_path": _env.WORKSPACE if mode == "embedded" else st,
+            "secrets": _env.ENV_FILE if mode == "embedded" else SECRET_STORE,
+        })
         with open(local_path, "w", encoding="utf-8", newline="\n") as f:
             f.write(_json_text(local))
         if mode == "embedded":
+            # Sau khi studio.local.json đã khai `mode: embedded` — trước đó `_env.env_file()`
+            # còn trả None và một `.env` vừa chép ra sẽ không được ai đọc.
+            res["env"] = copy_env(repo)
             res["hook"] = install_hook(repo)
     return res
 
@@ -776,10 +825,16 @@ def _print_init(res):
                 + ", ".join(res["legacy_skills"]))
     for n in res["notes"]:
         log(f"  ! {n}")
+    if res.get("env") == "created":
+        log("  + .env (từ .env.example)")
     if not res["dry_run"] and res["plan"]:
         log(f"[init] xong — hoàn tác: video-studio init --station \"{res['station']}\" --undo")
+    if not res["dry_run"]:
         if res["mode"] == "separate":
-            log(f"Nên đặt biến cho mọi công cụ khác thấy trạm: VIDEO_STATION={res['station']}")
+            log(f"\nNên đặt biến cho lịch chạy thấy trạm: VIDEO_STATION={res['station']}")
+            log(f"Bí mật để ở kho secret của máy ({SECRET_STORE}); biến chỉ giữ ĐƯỜNG DẪN.")
+        else:
+            log("\nĐiền biến của bạn vào <repo>/.env (chỉ đường dẫn + cấu hình, KHÔNG token).")
 
 
 # ── backup / migrate / update ──────────────────────────────────────────────────────────
@@ -930,6 +985,18 @@ def import_pack(in_path, station=None, overwrite=False, dry_run=False):
     return res
 
 
+def _move_file(src, dst):
+    """Dời MỘT file. Cùng ổ: `os.rename`. Khác ổ: chép → đối chiếu sha256 → mới xoá nguồn."""
+    try:
+        os.rename(src, dst)
+    except OSError:
+        shutil.copy2(src, dst)
+        if _sha256(src) != _sha256(dst):
+            os.remove(dst)
+            raise ContractError(f"chép {src} → {dst} không khớp; giữ nguyên nguồn")
+        os.remove(src)
+
+
 def migrate_to_separate(target=None):
     """Chuyển trạm `embedded` (<repo>/workspace/) ra ngoài repo.
 
@@ -947,13 +1014,24 @@ def migrate_to_separate(target=None):
     target = _env._expand(target) if target else _env.default_station()
     if os.path.exists(target) and os.listdir(target):
         raise ContractError(f"thư mục đích không rỗng: {target} — chọn chỗ khác (--station)")
+    # `.env` phải đi theo, và phải được kiểm TRƯỚC khi dời byte nào. Bỏ nó lại trong repo là
+    # kiểu hỏng tệ nhất: file vẫn nằm đó, vẫn đọc được bằng mắt, nhưng `_env.env()` thôi
+    # không nạp nó nữa (chế độ đã là `separate`) — cấu hình ngừng có tác dụng trong im lặng.
+    env_file = os.path.join(repo, _env.ENV_FILE)
+    sec = os.path.join(os.path.expanduser("~"), ".secret", SECRET_DIR_NAME)
+    moved_env = os.path.join(sec, _env.ENV_FILE) if os.path.isfile(env_file) else None
+    if moved_env and os.path.exists(moved_env):
+        raise ContractError(f"{moved_env} đã có — gộp tay rồi xoá {env_file}, sau đó chạy lại")
     if os.path.isdir(target):
         os.rmdir(target)
     os.makedirs(os.path.dirname(target) or ".", exist_ok=True)
     _move_tree(ws, target)
+    if moved_env:
+        os.makedirs(sec, exist_ok=True)
+        _move_file(env_file, moved_env)
     local_path = os.path.join(repo, _env.LOCAL_CONFIG)
     local = _env.read_json(local_path)[0]
-    local.update({"mode": "separate", "station_path": target})
+    local.update({"mode": "separate", "station_path": target, "secrets": SECRET_STORE})
     with open(local_path, "w", encoding="utf-8", newline="\n") as f:
         f.write(_json_text(local))
     sj = os.path.join(target, _env.STATION_FILE)
@@ -962,7 +1040,7 @@ def migrate_to_separate(target=None):
         info["mode"] = "separate"
         with open(sj, "w", encoding="utf-8", newline="\n") as f:
             f.write(_json_text(info))
-    return {"mode": "separate", "station": target}
+    return {"mode": "separate", "station": target, "env_moved_to": moved_env}
 
 
 def update():
@@ -1090,6 +1168,9 @@ def init_main(argv=None):
     ap.add_argument("--station", help="trạm ngoài repo (chọn separate, không hỏi)")
     ap.add_argument("--mode", choices=MODES, help="chọn chế độ không cần hỏi")
     ap.add_argument("--yes", action="store_true", help="nhận khuyến nghị (embedded) không hỏi")
+    ap.add_argument("--non-interactive", action="store_true",
+                    help="không có ai trả lời: KHÔNG hỏi và KHÔNG đoán — thiếu "
+                         "--yes/--mode/--station thì dừng với mã 2")
     ap.add_argument("--migrate", action="store_true",
                     help="di trú bố cục cũ: news/, topstory/ → projects/, ghim HyperFrames, "
                          "chép filler, thay skill cũ khác repo và GỠ skill đời cũ không có trong "
@@ -1112,7 +1193,7 @@ def init_main(argv=None):
                 contract.log(f"  = giữ: {k}")
             return res
         res = do_init(station=a.station, mode=a.mode, yes=a.yes, migrate=a.migrate,
-                      dry_run=a.dry_run)
+                      dry_run=a.dry_run, non_interactive=a.non_interactive)
         _print_init(res)
         return res
     return contract.run(fn, args, args.json)

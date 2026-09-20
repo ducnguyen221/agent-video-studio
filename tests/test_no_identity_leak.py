@@ -23,8 +23,11 @@ SKIP_DIRS = {".git", ".venv", "venv", "__pycache__", ".pytest_cache", "build", "
 # Trạm chế độ `embedded` là dữ liệu người dùng — bỏ qua. Nhưng CHỈ ở gốc repo: bỏ theo tên ở mọi
 # cấp thì `templates/workspace/` (cây mẫu, là nội dung repo) lọt khỏi cổng mà không ai thấy.
 SKIP_TOP = {"workspace"}
+# `.example` có trong danh sách vì `.env.example` là đúng loại file hay rò nhất: người ta
+# điền thử đường dẫn máy mình vào rồi quên gỡ.
 TEXT_EXT = {".py", ".md", ".json", ".toml", ".yml", ".yaml", ".txt", ".cfg", ".ini", ".sh",
-            ".ps1", ".html", ".css", ".js", ".svg", ".gitignore", ".gitattributes", ""}
+            ".ps1", ".html", ".css", ".js", ".svg", ".example", ".gitignore",
+            ".gitattributes", ""}
 
 
 def s(*codes):

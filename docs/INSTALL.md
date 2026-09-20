@@ -68,17 +68,36 @@ trước (`pip install -e <clone agent-voice-studio>`), rồi extras chỉ còn 
 ## 3. Dựng trạm
 
 ```
-video-studio init                      # hỏi bạn chọn embedded hay separate
-video-studio init --yes                # nhận khuyến nghị (embedded), không hỏi
-video-studio init --mode separate      # chọn thẳng chế độ, không hỏi
-video-studio init --station ~/.video   # hoặc chỉ thẳng một trạm (= separate, không hỏi)
+video-studio init                            # trình bảng hai lựa chọn rồi chờ bạn chọn
+video-studio init --yes                      # nhận khuyến nghị (embedded), không hỏi
+video-studio init --mode separate            # chọn thẳng chế độ, không hỏi
+video-studio init --station ~/.video         # hoặc chỉ thẳng một trạm (= separate, không hỏi)
+video-studio init --non-interactive --yes    # CI / lịch chạy: không hỏi và không đoán
 ```
+
+**`embedded` là mặc định và là khuyến nghị**: trạm ở `<repo>/workspace/`, biến cấu hình ở
+`<repo>/.env`, bấm Enter là xong, không phải đặt biến môi trường nào. Chọn `separate` khi bạn
+dùng nhiều máy, rành kỹ thuật, hoặc repo này là bản public của chính bạn. Agent cài nên **phân
+tích rồi khuyến nghị**, không hỏi trống.
 
 `init` **chỉ hỏi khi không tự nhận ra được**. Máy đã có trạm (biến `VIDEO_STATION`/`VIDEO_ROOT`,
 hoặc `~/.video` mang dấu trạm) thì bản trần tự chọn `separate` và nói rõ lý do; xin `embedded`
 trong tình huống đó là **lỗi mã 2** ("hai nguồn sự thật") chứ không phải một cảnh báo — muốn
-dựng trạm trong repo thì gỡ biến/trạm cũ trước. Không có terminal (CI, scheduled task) thì
-truyền `--mode` hoặc `--station` tường minh thay vì để lệnh chờ câu trả lời.
+dựng trạm trong repo thì gỡ biến/trạm cũ trước.
+
+Không có ai trả lời (CI, scheduled task) mà chưa chọn ⇒ `init` in bảng lựa chọn rồi thoát
+**mã 2, chưa ghi byte nào**. Cờ `--non-interactive` tự khai "không có ai ngồi đây"; nó **không**
+có nghĩa "đoán hộ tôi", nên thiếu `--yes`/`--mode`/`--station` thì vẫn là mã 2.
+
+### `.env` ở chế độ embedded
+
+`init` chép `.env.example` (khuôn tên biến, không có giá trị) thành `<repo>/.env`, quyền 600
+trên POSIX; chạy lại **không đè** file bạn đã điền. Thứ tự đọc một biến: **biến môi trường thật
+→ `<repo>/.env` (chỉ khi `mode = embedded`) → chưa đặt**.
+
+Ba biến trỏ trạm này (`VIDEO_STATION`, `VIDEO_ROOT`, `VIDEO_STUDIO_REPO`) và mấy biến mã đọc
+thẳng từ `os.environ` **không** đọc được từ `.env` — chúng được đánh dấu `[MÔI TRƯỜNG THẬT]`
+ngay trong khuôn, kèm lý do. `VOICE_STATION` thì đọc được: nó trỏ sang trạm của repo khác.
 
 Máy **đã có trạm cũ** (thư mục `news/`, `topstory/` nằm ngay ở gốc trạm):
 

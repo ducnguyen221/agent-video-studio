@@ -11,7 +11,7 @@ from pathlib import Path
 
 import pytest
 
-from video_studio import API_VERSION, __version__
+from video_studio import API_VERSION, __version__, _env
 from test_no_identity_leak import TEXT_EXT, repo_files
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -195,4 +195,56 @@ def test_install_doc_names_every_init_flag():
 def test_the_flag_reader_really_reads_the_parser():
     """Tự-kiểm: bộ đọc trên phải thấy đúng các cờ đang có, không phải một danh sách chết."""
     flags = _init_flags()
-    assert {"--station", "--mode", "--yes", "--migrate", "--undo", "--dry-run"} <= set(flags)
+    assert {"--station", "--mode", "--yes", "--non-interactive", "--migrate", "--undo",
+            "--dry-run"} <= set(flags)
+
+
+# ── .env.example: khuôn biến của chế độ embedded ───────────────────────────────────────
+#
+# `embedded` hứa "clone là chạy": cây mẫu sẵn trong repo, và `<repo>/.env` được `init` dọn
+# sẵn từ file này. Một biến mà MÃ đọc nhưng khuôn không khai là một biến không ai biết mình
+# phải điền — và người dùng chỉ phát hiện ra lúc lệnh nổ giữa chừng.
+
+ENV_EXAMPLE = ROOT / ".env.example"
+# Tên biến mà mã thật sự đọc qua `_env.env("…")`. Bắt theo chuỗi literal có chủ đích: đọc qua
+# một biến trung gian là biến mất khỏi cổng này, nên đừng làm thế.
+ENV_READ_RE = re.compile(r'\benv\(\s*"([A-Z][A-Z0-9_]*)"')
+
+
+def _example_names():
+    out = set()
+    for ln in ENV_EXAMPLE.read_text(encoding="utf-8").splitlines():
+        s = ln.strip()
+        if s and not s.startswith("#") and "=" in s:
+            out.add(s.split("=", 1)[0].strip())
+    return out
+
+
+def _names_code_reads():
+    out = set()
+    for p in (ROOT / "video_studio").rglob("*.py"):
+        out |= set(ENV_READ_RE.findall(p.read_text(encoding="utf-8")))
+    return out
+
+
+def test_env_example_exists_and_holds_no_values():
+    assert ENV_EXAMPLE.is_file(), "chế độ embedded cần .env.example để `init` chép thành .env"
+    for ln in ENV_EXAMPLE.read_text(encoding="utf-8").splitlines():
+        s = ln.strip()
+        if s and not s.startswith("#"):
+            assert s.endswith("="), f"khuôn không được mang giá trị: {s!r}"
+
+
+def test_env_example_declares_every_variable_the_code_reads():
+    thieu = _names_code_reads() - _example_names()
+    assert not thieu, f".env.example thiếu biến mã đang đọc: {sorted(thieu)}"
+
+
+def test_env_example_marks_what_a_dotenv_can_never_reach():
+    """Biến chỉ `os.environ` tới được (mã đọc thẳng, hoặc tên trỏ chính trạm này) phải được
+    đánh dấu rõ. Không có luật này thì người dùng điền xong vẫn không có gì đổi — kiểu hỏng
+    khó chịu nhất vì nó im lặng."""
+    text = ENV_EXAMPLE.read_text(encoding="utf-8")
+    assert "[MÔI TRƯỜNG THẬT]" in text
+    for name in _env._NEVER_FROM_DOTENV:
+        assert name in _example_names(), f"{name} phải có trong khuôn, kèm lý do không đọc được"
