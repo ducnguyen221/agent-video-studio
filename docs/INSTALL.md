@@ -18,6 +18,10 @@ thì `video-studio doctor` phải xanh.
 | **Python ≥ 3.10** | chính package này | `winget install Python.Python.3.12` | `brew install python@3.12` |
 | **Font Inter** | stack chữ mặc định của template | tải từ rsms.me/inter → Install | `brew install --cask font-inter` |
 
+`doctor` nhận font Inter ở **font hệ thống hoặc kho font của HyperFrames**
+(`~/.cache/hyperframes/fonts/`) — máy đã render bằng HyperFrames một lần thì thường có sẵn,
+không phải cài lại.
+
 Không nằm trên PATH thì đặt `NODE_DIR` / `FFMPEG_DIR` trỏ thư mục chứa chúng; font khác thì đặt
 `VIDEO_FONT`.
 
@@ -65,8 +69,16 @@ trước (`pip install -e <clone agent-voice-studio>`), rồi extras chỉ còn 
 
 ```
 video-studio init                      # hỏi bạn chọn embedded hay separate
+video-studio init --yes                # nhận khuyến nghị (embedded), không hỏi
+video-studio init --mode separate      # chọn thẳng chế độ, không hỏi
 video-studio init --station ~/.video   # hoặc chỉ thẳng một trạm (= separate, không hỏi)
 ```
+
+`init` **chỉ hỏi khi không tự nhận ra được**. Máy đã có trạm (biến `VIDEO_STATION`/`VIDEO_ROOT`,
+hoặc `~/.video` mang dấu trạm) thì bản trần tự chọn `separate` và nói rõ lý do; xin `embedded`
+trong tình huống đó là **lỗi mã 2** ("hai nguồn sự thật") chứ không phải một cảnh báo — muốn
+dựng trạm trong repo thì gỡ biến/trạm cũ trước. Không có terminal (CI, scheduled task) thì
+truyền `--mode` hoặc `--station` tường minh thay vì để lệnh chờ câu trả lời.
 
 Máy **đã có trạm cũ** (thư mục `news/`, `topstory/` nằm ngay ở gốc trạm):
 

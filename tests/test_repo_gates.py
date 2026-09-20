@@ -156,3 +156,29 @@ def test_skill_frontmatter_is_english_body_is_vietnamese():
 
 def test_station_contract_version_is_semver():
     assert re.fullmatch(r"\d+\.\d+\.\d+", API_VERSION)
+
+
+def _init_flags():
+    """Cờ dài của `video-studio init`, đọc thẳng từ mã dựng parser."""
+    src = (ROOT / "video_studio" / "station.py").read_text(encoding="utf-8")
+    body = src.split("def init_main(")[1].split("\n    args, code = contract.parse")[0]
+    return sorted(set(re.findall(r'ap\.add_argument\("(--[a-z-]+)"', body)))
+
+
+def test_install_doc_names_every_init_flag():
+    """Cài sạch theo `docs/INSTALL.md` phải đủ để dùng `init` — cờ không có trong tài liệu là
+    cờ người cài không biết mà dùng, và `--mode`/`--yes` chính là hai cờ cứu phiên không có
+    terminal (CI, scheduled task) khỏi treo ở câu hỏi chế độ."""
+    doc = (ROOT / "docs" / "INSTALL.md").read_text(encoding="utf-8")
+    # Chỉ tính những dòng THẬT SỰ nói về lệnh init: `--yes` của `npx --yes` cũng là chuỗi
+    # `--yes` trong file, và một cổng đếm chuỗi thô sẽ xanh trong khi tài liệu đã thiếu cờ.
+    shown = "\n".join(ln for ln in doc.splitlines() if "video-studio init" in ln)
+    # `--json` là cờ ra-máy-đọc, nói ở docs/CONTRACT.md chứ không phải tài liệu cài.
+    missing = [f for f in _init_flags() if f != "--json" and f not in shown]
+    assert not missing, f"docs/INSTALL.md chưa nói tới cờ init: {missing}"
+
+
+def test_the_flag_reader_really_reads_the_parser():
+    """Tự-kiểm: bộ đọc trên phải thấy đúng các cờ đang có, không phải một danh sách chết."""
+    flags = _init_flags()
+    assert {"--station", "--mode", "--yes", "--migrate", "--undo", "--dry-run"} <= set(flags)

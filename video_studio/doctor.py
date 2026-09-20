@@ -3,7 +3,7 @@
     video-studio doctor                    # bảng người đọc (stderr) + tóm tắt
     video-studio doctor --json             # một dòng JSON cuối stdout cho bên gọi
     video-studio doctor --hf 0.8.51        # kiểm với một bản HyperFrames khác bản đang ghim
-    video-studio doctor --check-updates    # hỏi npm bản mới nhất — CHỈ BÁO, không nâng gì
+    video-studio doctor --check-updates    # hỏi npm bản mới nhất + tuổi bản ghim — CHỈ BÁO
     video-studio doctor --offline          # không gọi npx/npm (không mạng, không tải)
 
 Kiểm: python · node ≥ 22 · npx · `npx hyperframes@<bản> doctor` · Chromium của HyperFrames
@@ -15,7 +15,9 @@ Mã thoát: 0 dùng được (có thể kèm cảnh báo) · 2 bản HyperFrames
 buộc (node, npx, ffmpeg, trạm) — kèm hướng dẫn cài phần còn thiếu.
 """
 import argparse
+import datetime
 import importlib.util
+import json
 import os
 import re
 import shutil
@@ -25,6 +27,12 @@ import sys
 from . import API_VERSION, _env, contract
 
 MIN_NODE = 22
+# Bản ghim già hơn ngần này ngày thì `--check-updates` cảnh báo, kể cả khi chỉ lệch patch.
+# HyperFrames ra ~1,5 bản/ngày: cảnh báo theo TỪNG bản patch là tiếng ồn hằng ngày, và cảnh
+# báo mà ai cũng bỏ qua thì bằng không có. Hai ngưỡng dưới đây là hai câu hỏi khác nhau:
+# "đã lỡ một thay đổi có thể phá vỡ chưa" (minor) và "đã bao lâu không ai nhìn lại bản ghim"
+# (30 ngày).
+PIN_MAX_AGE_DAYS = 30
 # Chromium mà từng bản HyperFrames ghim (đọc từ mã nguồn upstream). Bản không có trong bảng:
 # chỉ kiểm "có ít nhất một bản", để `hyperframes doctor` nói phần còn lại.
 KNOWN_CHROMIUM = {"0.7.94": "152.0.7928.2", "0.8.51": "152.0.7977.30",
@@ -281,15 +289,49 @@ def skills_check():
                   hint="")
 
 
+def _published(npm, version):
+    """Ngày phát hành (chuỗi ISO) của một bản trên npm — None nếu không hỏi được.
+
+    Hỏi CẢ bảng `time` rồi tra trong đó, chứ không hỏi `time.<bản>`: npm hiểu dấu chấm trong
+    `time.0.8.54` là đường dẫn lồng nhau (`time` → `0` → `8` → `54`) nên trả về rỗng **mã 0** —
+    im lặng đúng kiểu làm cổng xanh giả.
+    """
+    try:
+        r = _run([npm, "view", "hyperframes", "time", "--json"], timeout=60)
+    except (OSError, subprocess.SubprocessError):
+        return None
+    if r.returncode != 0:
+        return None
+    try:
+        table = json.loads(r.stdout or "")
+    except ValueError:
+        return None
+    return table.get(version) if isinstance(table, dict) else None
+
+
+def _age_days(iso):
+    """Tuổi (ngày) của một mốc ISO — None nếu không đọc được. Không đọc được ≠ mới."""
+    try:
+        t = datetime.datetime.strptime(str(iso)[:19], "%Y-%m-%dT%H:%M:%S")
+    except (TypeError, ValueError):
+        return None
+    t = t.replace(tzinfo=datetime.timezone.utc)
+    return max(0, int((datetime.datetime.now(datetime.timezone.utc) - t).total_seconds() // 86400))
+
+
 def update_check(version, offline):
-    """-> (check|None, updates dict)."""
+    """-> (check|None, updates dict).
+
+    Cảnh báo khi **lệch từ minor trở lên** HOẶC **bản ghim đã quá `PIN_MAX_AGE_DAYS` ngày**.
+    Lệch patch trên một bản ghim còn mới chỉ được ghi nhận, không cảnh báo.
+    """
+    blank = {"pinned": version, "latest": None, "behind": None, "pinned_age_days": None}
     if offline:
-        return _skip("hyperframes-update", "--offline: không hỏi npm"), {"pinned": version,
-                                                                        "latest": None, "behind": None}
+        return _skip("hyperframes-update", "--offline: không hỏi npm"), blank
     npm = _env.npm_exe()
     if not npm:
         return _check("hyperframes-update", False, "không thấy npm", level="warn",
-                      hint=HINT_NODE), {"pinned": version, "latest": None, "behind": None}
+                      hint=HINT_NODE), blank
     try:
         r = _run([npm, "view", "hyperframes", "version"], timeout=60)
         latest = (r.stdout or "").strip().splitlines()[-1].strip() if r.returncode == 0 else ""
@@ -297,17 +339,23 @@ def update_check(version, offline):
         latest = ""
     if not _vtuple(latest):
         return _check("hyperframes-update", False, "không đọc được bản mới nhất từ npm", level="warn",
-                      hint="kiểm mạng / npm"), {"pinned": version, "latest": None, "behind": None}
+                      hint="kiểm mạng / npm"), blank
     a, b = _vtuple(version), _vtuple(latest)
     behind = None
     if b > a:
         behind = "major" if b[0] != a[0] else "minor" if b[1] != a[1] else "patch"
-    upd = {"pinned": version, "latest": latest, "behind": behind}
-    # HyperFrames phát hành gần như mỗi ngày: lệch patch chỉ ghi nhận, lệch minor trở lên mới cảnh báo.
-    ok = behind in (None, "patch")
-    return _check("hyperframes-update", ok, f"ghim {version} · mới nhất {latest}", level="warn",
-                  hint=f"có bản {latest} — nâng là việc CÓ CHỦ ĐÍCH: render hồi quy rồi mới đổi "
-                       "HYPERFRAMES_VERSION / station.json (doctor không tự nâng)"), upd
+    age = _age_days(_published(npm, version))
+    upd = {"pinned": version, "latest": latest, "behind": behind, "pinned_age_days": age}
+    stale = age is not None and age > PIN_MAX_AGE_DAYS
+    ok = behind in (None, "patch") and not stale
+    detail = f"ghim {version} · mới nhất {latest}"
+    if age is not None:
+        detail += f" · bản ghim {age} ngày tuổi"
+    why = (f"lệch {behind}" if behind not in (None, "patch")
+           else f"bản ghim đã quá {PIN_MAX_AGE_DAYS} ngày")
+    return _check("hyperframes-update", ok, detail, level="warn",
+                  hint=f"{why}; có bản {latest} — nâng là việc CÓ CHỦ ĐÍCH: render hồi quy rồi mới "
+                       "đổi HYPERFRAMES_VERSION / station.json (doctor không tự nâng)"), upd
 
 
 # ── ráp lại ────────────────────────────────────────────────────────────────────────────

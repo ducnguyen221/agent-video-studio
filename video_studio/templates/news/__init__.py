@@ -47,10 +47,27 @@ def video_obj_of(spec):
     return vo
 
 
+def _plain_name(value, field):
+    """Một mảnh TÊN FILE, không phải một đường dẫn.
+
+    `os.path.join(out_dir, "18/09/2026-top.mp4")` không báo lỗi: nó lặng lẽ đẻ ra
+    `<out>/18/09/` rồi đặt file ở đó. `--out` khi ấy không còn nghĩa "file nằm ở đây", và
+    bên gọi (runner, pipeline) đi tìm ở đúng chỗ mình khai thì không thấy gì. Ngày dạng
+    `dd/mm/yyyy` của sidecar cũ rơi đúng vào bẫy này — nên chặn ngay tại chỗ đặt tên.
+    """
+    s = str(value)
+    if os.sep in s or (os.altsep and os.altsep in s) or "/" in s or os.path.isabs(s):
+        raise ContractError(
+            f"\"{field}\" = {s!r} có dấu ngăn thư mục nên sẽ ghi file RA NGOÀI --out. "
+            "Dùng dạng ISO \"2026-01-02\" cho \"date\" (dạng đọc cho người để ở "
+            "\"display_date\"), và tên file trần cho \"outputs\".")
+    return s
+
+
 def out_name(spec, kind, default):
     """Tên file cho một đầu ra: `outputs.<kind>` nếu là chuỗi, không thì tên mặc định."""
     v = (spec.get("outputs") or {}).get(kind, True)
-    return v if isinstance(v, str) else default
+    return _plain_name(v, f"outputs.{kind}") if isinstance(v, str) else default
 
 
 def _wants(spec, kind):
@@ -74,7 +91,7 @@ def _date(spec):
     d = str(spec.get("date") or "").strip()
     if not d:
         raise ContractError("spec thiếu \"date\" (dùng để đặt tên file ra)")
-    return d
+    return _plain_name(d, "date")
 
 
 # ── bản tin ngày / bản tin tuần ─────────────────────────────────────────────────────────
@@ -159,7 +176,8 @@ def render_repo_today(spec, out_dir):
         raise ContractError("spec thiếu \"scenes\" (danh sách cảnh của bản deep-dive)")
     name, _prompt, _model = _voice(spec)
     epi = spec.get("epi") or spec.get("display_date") or ""
-    default = out_name(spec, "long", f"{str(spec.get('date') or 'deep-dive')}.mp4")
+    stem = _plain_name(spec.get("date") or "deep-dive", "date")
+    default = out_name(spec, "long", f"{stem}.mp4")
     p = os.path.join(out_dir, default)
     news_v2.render_deepdive(scenes, p, epi=epi, voice_profile=name,
                             brand=spec.get("brand"))

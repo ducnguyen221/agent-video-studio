@@ -146,3 +146,33 @@ def test_project_name_must_be_a_single_folder(tmp_path, monkeypatch, name):
     monkeypatch.setenv("VIDEO_STATION", str(tmp_path))
     with pytest.raises(ContractError):
         projects.project_dir(name)
+
+
+# ── tên file ra phải là TÊN, không phải đường dẫn ───────────────────────────────────────
+
+@pytest.fixture
+def tpl(news):
+    """Gói `templates.news` (đã có module giả nhờ fixture `news`)."""
+    import importlib
+    return importlib.import_module("video_studio.templates.news")
+
+
+@pytest.mark.parametrize("bad", ["18/09/2026", r"18\09\2026", "/tmp/x", r"C:\out\x",
+                                 "../../thoat"])
+def test_a_date_with_a_separator_is_code_2_not_a_surprise_folder(tpl, bad):
+    """`date` dạng dd/mm/yyyy của sidecar cũ từng lặng lẽ đẻ `<out>/18/09/` — nay là mã 2."""
+    with pytest.raises(ContractError) as e:
+        tpl._date({"date": bad})
+    assert "display_date" in str(e.value)
+
+
+@pytest.mark.parametrize("good", ["2026-09-18", "deep-dive", "2026-W38"])
+def test_a_plain_date_passes_through_unchanged(tpl, good):
+    assert tpl._date({"date": good}) == good
+
+
+def test_an_explicit_output_name_may_not_escape_out_dir(tpl):
+    with pytest.raises(ContractError):
+        tpl.out_name({"outputs": {"long": "sub/dir/a.mp4"}}, "long", "mac-dinh.mp4")
+    assert tpl.out_name({"outputs": {"long": "a.mp4"}}, "long", "mac-dinh.mp4") == "a.mp4"
+    assert tpl.out_name({}, "long", "mac-dinh.mp4") == "mac-dinh.mp4"

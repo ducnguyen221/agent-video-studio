@@ -1,5 +1,6 @@
 """`video-studio doctor`: mọi lệnh ngoài (node, npx, npm) và `which` là GIẢ — test không gọi
 mạng, không cần Node/ffmpeg thật, và kiểm được đúng argv mà doctor sẽ chạy."""
+import datetime
 import json
 import subprocess
 
@@ -8,6 +9,12 @@ import pytest
 from video_studio import doctor
 from video_studio.cli import main as cli_main
 from conftest import last_json
+
+
+def _days_ago(n):
+    """Mốc ISO kiểu npm trả về, cách đây n ngày."""
+    t = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=n, hours=1)
+    return t.strftime("%Y-%m-%dT%H:%M:%S.000Z")
 
 
 class FakeProc:
@@ -19,9 +26,10 @@ class Machine:
     """Máy giả: bảng công cụ có trên PATH + kịch bản trả lời cho từng lệnh."""
 
     def __init__(self, tools=("node", "npx", "npm", "ffmpeg", "ffprobe"), node="v24.12.0",
-                 hf_doctor_rc=0, npm_latest="0.8.51"):
+                 hf_doctor_rc=0, npm_latest="0.8.51", npm_time=_days_ago(3)):
         self.tools = set(tools)
         self.node, self.hf_doctor_rc, self.npm_latest = node, hf_doctor_rc, npm_latest
+        self.npm_time = npm_time          # ngày phát hành của bản ĐANG GHIM (chuỗi ISO / None)
         self.calls = []
 
     def which(self, name, path=None):
@@ -38,6 +46,12 @@ class Machine:
             return FakeProc(self.hf_doctor_rc, "ok" if self.hf_doctor_rc == 0 else "",
                             "" if self.hf_doctor_rc == 0 else "missing chrome")
         if exe == "npm":
+            if "time" in argv:
+                # npm trả CẢ bảng version -> ngày phát hành (JSON), không trả một dòng.
+                table = {"0.7.90": _days_ago(400)}
+                if self.npm_time is not None:
+                    table["0.7.94"] = self.npm_time
+                return FakeProc(0, json.dumps(table))
             return FakeProc(0, self.npm_latest + "\n")
         raise AssertionError(f"lệnh lạ: {argv}")
 
@@ -181,7 +195,7 @@ def test_check_updates_reports_minor_gap_only_reports(machine, good_station, cap
     assert rc == 0
     res = last_json(out)
     upd = res["updates"]
-    assert upd == {"pinned": "0.7.94", "latest": "0.8.51", "behind": "minor"}
+    assert upd["pinned"] == "0.7.94" and upd["latest"] == "0.8.51" and upd["behind"] == "minor"
     assert "hyperframes-update" in res["warnings"]
     assert ["/fake/bin/npm", "view", "hyperframes", "version"] in [a for a, _ in machine.calls]
     # chỉ báo: station.json không đổi
@@ -189,12 +203,65 @@ def test_check_updates_reports_minor_gap_only_reports(machine, good_station, cap
         "hyperframes_version"] == "0.7.94"
 
 
-def test_check_updates_patch_gap_is_not_a_warning(machine, good_station, capsys):
+def test_check_updates_patch_gap_on_a_fresh_pin_is_not_a_warning(machine, good_station, capsys):
+    """Nhịp phát hành ~1,5 bản/ngày: lệch patch trên bản ghim còn mới chỉ được GHI NHẬN."""
     machine.npm_latest = "0.7.99"
     rc, out, _ = run(["--check-updates", "--json"], capsys)
     res = last_json(out)
     assert res["updates"]["behind"] == "patch"
+    assert res["updates"]["pinned_age_days"] == 3
     assert "hyperframes-update" not in res["warnings"]
+
+
+def test_check_updates_warns_when_the_pin_is_older_than_the_age_threshold(machine, good_station,
+                                                                          capsys):
+    """Lệch patch nhưng bản ghim đã quá 30 ngày ⇒ cảnh báo: lâu rồi không ai nhìn lại bản ghim."""
+    machine.npm_latest = "0.7.99"
+    machine.npm_time = _days_ago(doctor.PIN_MAX_AGE_DAYS + 5)
+    rc, out, _ = run(["--check-updates", "--json"], capsys)
+    res = last_json(out)
+    assert rc == 0                                   # cảnh báo, không chặn
+    assert res["updates"]["behind"] == "patch"
+    assert res["updates"]["pinned_age_days"] == doctor.PIN_MAX_AGE_DAYS + 5
+    assert "hyperframes-update" in res["warnings"]
+    assert f"quá {doctor.PIN_MAX_AGE_DAYS} ngày" in _check(res, "hyperframes-update")["hint"]
+
+
+def test_check_updates_stays_quiet_right_at_the_age_threshold(machine, good_station, capsys):
+    """Đúng ngưỡng vẫn im — cổng là 'quá 30 ngày', không phải 'tròn 30 ngày'."""
+    machine.npm_latest = "0.7.99"
+    machine.npm_time = _days_ago(doctor.PIN_MAX_AGE_DAYS)
+    rc, out, _ = run(["--check-updates", "--json"], capsys)
+    res = last_json(out)
+    assert res["updates"]["pinned_age_days"] == doctor.PIN_MAX_AGE_DAYS
+    assert "hyperframes-update" not in res["warnings"]
+
+
+def test_check_updates_asks_npm_for_the_whole_publish_time_table(machine, good_station, capsys):
+    """Hỏi `time` rồi tra bản ghim — `npm view <gói> time.<bản>` trả RỖNG với mã 0 vì npm đọc
+    dấu chấm là đường dẫn lồng nhau, và một cổng tin vào nó sẽ luôn thấy 'không rõ tuổi'."""
+    run(["--check-updates", "--json"], capsys)
+    argvs = [a for a, _ in machine.calls]
+    assert ["/fake/bin/npm", "view", "hyperframes", "time", "--json"] in argvs
+    assert not any(any(str(x).startswith("time.") for x in a) for a in argvs)
+
+
+def test_unknown_publish_date_is_not_treated_as_fresh_nor_as_stale(machine, good_station, capsys):
+    """npm không có ngày của bản đang ghim ⇒ tuổi là None, cổng lùi về mỗi luật lệch bản."""
+    machine.npm_latest = "0.7.99"
+    machine.npm_time = None
+    rc, out, _ = run(["--check-updates", "--json"], capsys)
+    res = last_json(out)
+    assert res["updates"]["pinned_age_days"] is None
+    assert "hyperframes-update" not in res["warnings"]
+
+
+def test_offline_check_updates_reports_no_age(machine, good_station, capsys):
+    rc, out, _ = run(["--check-updates", "--offline", "--json"], capsys)
+    res = last_json(out)
+    assert res["updates"] == {"pinned": "0.7.94", "latest": None, "behind": None,
+                              "pinned_age_days": None}
+    assert not any(a[0].endswith("npm") for a, _ in machine.calls)
 
 
 def test_two_sources_is_red(machine, good_station, tmp_path, monkeypatch, capsys):
