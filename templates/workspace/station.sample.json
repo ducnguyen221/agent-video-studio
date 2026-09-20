@@ -1,0 +1,14 @@
+{
+  "_doc": "BẢN MẪU để đọc, không phải file đang dùng. `video-studio init` tự ghi station.json thật ở gốc trạm; sửa bản thật thì sửa trực tiếp file đó, giá trị bạn sửa luôn thắng khi chạy init lần sau.",
+  "contract": "1.0.0",
+  "mode": "separate",
+  "hyperframes_version": "0.7.94",
+  "projects_dir": "projects",
+  "video_use": {
+    "dir": "video-use",
+    "python": "video-use/.venv/bin/python"
+  },
+  "voice_station": null,
+  "created_by": "video-studio 0.1.0",
+  "created": "2026-01-01"
+}

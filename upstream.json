@@ -1,0 +1,172 @@
+{
+  "version": 1,
+  "note": "Ban ghi nguon upstream cua tung thanh phan chung cat trong repo nay. `video-studio doctor` doi chieu muc `hyperframes-skills.skills` voi cay `skills/` tren dia; `--check-updates` in ra ban da ghim de nguoi dung so voi upstream.",
+  "checked": "2026-09-20",
+  "sources": {
+    "hyperframes-skills": {
+      "repo": "heygen-com/hyperframes",
+      "ref": "v0.8.51",
+      "license": "Apache-2.0",
+      "license_file": "LICENSE-APACHE",
+      "manifest": "skills-manifest.json",
+      "manifest_url": "https://raw.githubusercontent.com/heygen-com/hyperframes/v0.8.51/skills-manifest.json",
+      "distilled": 21,
+      "upstream_total": 21,
+      "binaries_copied": 0,
+      "how": "Than SKILL.md dich sang tieng Viet va rut gon; frontmatter giu tieng Anh. Thu muc references/ cua upstream KHONG chep vao repo. Font woff2, mp3, png cua upstream KHONG chep (giay phep tung file chua kiem).",
+      "skills": {
+        "embedded-captions": {
+          "path": "skills/hyperframes/embedded-captions",
+          "upstream_path": "skills/embedded-captions",
+          "upstream_hash": "f1b298aa899d86df",
+          "upstream_files": 142
+        },
+        "faceless-explainer": {
+          "path": "skills/hyperframes/faceless-explainer",
+          "upstream_path": "skills/faceless-explainer",
+          "upstream_hash": "39e1e4d42e9a5ebe",
+          "upstream_files": 24
+        },
+        "figma": {
+          "path": "skills/hyperframes/figma",
+          "upstream_path": "skills/figma",
+          "upstream_hash": "642cce1b5e211182",
+          "upstream_files": 2
+        },
+        "general-video": {
+          "path": "skills/hyperframes/general-video",
+          "upstream_path": "skills/general-video",
+          "upstream_hash": "079d3479295e27b4",
+          "upstream_files": 4
+        },
+        "hyperframes": {
+          "path": "skills/hyperframes/hyperframes",
+          "upstream_path": "skills/hyperframes",
+          "upstream_hash": "05525e9c53582e4b",
+          "upstream_files": 26
+        },
+        "hyperframes-animation": {
+          "path": "skills/hyperframes/hyperframes-animation",
+          "upstream_path": "skills/hyperframes-animation",
+          "upstream_hash": "479c716293a26531",
+          "upstream_files": 122
+        },
+        "hyperframes-audio": {
+          "path": "skills/hyperframes/hyperframes-audio",
+          "upstream_path": "skills/hyperframes-audio",
+          "upstream_hash": "b39bac771e873eae",
+          "upstream_files": 7
+        },
+        "hyperframes-cli": {
+          "path": "skills/hyperframes/hyperframes-cli",
+          "upstream_path": "skills/hyperframes-cli",
+          "upstream_hash": "986414090bf6442f",
+          "upstream_files": 11
+        },
+        "hyperframes-core": {
+          "path": "skills/hyperframes/hyperframes-core",
+          "upstream_path": "skills/hyperframes-core",
+          "upstream_hash": "77ce4deba31148a2",
+          "upstream_files": 11
+        },
+        "hyperframes-creative": {
+          "path": "skills/hyperframes/hyperframes-creative",
+          "upstream_path": "skills/hyperframes-creative",
+          "upstream_hash": "0803c90800fda4ce",
+          "upstream_files": 79
+        },
+        "hyperframes-keyframes": {
+          "path": "skills/hyperframes/hyperframes-keyframes",
+          "upstream_path": "skills/hyperframes-keyframes",
+          "upstream_hash": "6bc62531ecea9a52",
+          "upstream_files": 3
+        },
+        "hyperframes-registry": {
+          "path": "skills/hyperframes/hyperframes-registry",
+          "upstream_path": "skills/hyperframes-registry",
+          "upstream_hash": "51e6dba95a8dfb45",
+          "upstream_files": 12
+        },
+        "hyperframes-studio": {
+          "path": "skills/hyperframes/hyperframes-studio",
+          "upstream_path": "skills/hyperframes-studio",
+          "upstream_hash": "b063eaa9eb1e4b9b",
+          "upstream_files": 1
+        },
+        "media-use": {
+          "path": "skills/hyperframes/media-use",
+          "upstream_path": "skills/media-use",
+          "upstream_hash": "8f21655cd07a62ea",
+          "upstream_files": 158
+        },
+        "motion-graphics": {
+          "path": "skills/hyperframes/motion-graphics",
+          "upstream_path": "skills/motion-graphics",
+          "upstream_hash": "32641ae2b94c4a8f",
+          "upstream_files": 23
+        },
+        "music-to-video": {
+          "path": "skills/hyperframes/music-to-video",
+          "upstream_path": "skills/music-to-video",
+          "upstream_hash": "190e9885dab9b11d",
+          "upstream_files": 169
+        },
+        "pr-to-video": {
+          "path": "skills/hyperframes/pr-to-video",
+          "upstream_path": "skills/pr-to-video",
+          "upstream_hash": "da3a68c5a2a86f77",
+          "upstream_files": 30
+        },
+        "product-launch-video": {
+          "path": "skills/hyperframes/product-launch-video",
+          "upstream_path": "skills/product-launch-video",
+          "upstream_hash": "ced501f76c52716b",
+          "upstream_files": 30
+        },
+        "remotion-to-hyperframes": {
+          "path": "skills/hyperframes/remotion-to-hyperframes",
+          "upstream_path": "skills/remotion-to-hyperframes",
+          "upstream_hash": "c8eb6f48889f5c06",
+          "upstream_files": 77
+        },
+        "slideshow": {
+          "path": "skills/hyperframes/slideshow",
+          "upstream_path": "skills/slideshow",
+          "upstream_hash": "71174bff2d869f18",
+          "upstream_files": 2
+        },
+        "talking-head-recut": {
+          "path": "skills/hyperframes/talking-head-recut",
+          "upstream_path": "skills/talking-head-recut",
+          "upstream_hash": "7018bf017e8606d2",
+          "upstream_files": 28
+        }
+      }
+    },
+    "hyperframes-engine": {
+      "package": "hyperframes",
+      "registry": "npm",
+      "pinned": "0.7.94",
+      "latest_seen": "0.8.51",
+      "license": "Apache-2.0",
+      "how": "Phu thuoc luc chay, goi qua `npx hyperframes@$HYPERFRAMES_VERSION`. Khong chep ma engine vao repo. Nang ban la viec cua PVi-T13 (can render hoi quy)."
+    },
+    "video-use": {
+      "repo": "browser-use/video-use",
+      "ref": "92c2b34",
+      "extra_commits": [
+        "giu fps nguon",
+        "ton trong goc xoay metadata",
+        "chon dung track tieng"
+      ],
+      "license": "MIT",
+      "how": "Chung cat ma sang `video_studio/edit/` (6 module) va `skills/video-edit/`. Moi file ghi ro nguon; xem NOTICE."
+    },
+    "vtake-skills": {
+      "repo": "notedit/vtake-skills",
+      "license": "MIT",
+      "copyright": "Copyright (c) 2026 leeoxiang",
+      "how": "He thiet ke card cua skill `talking-head-recut` upstream phong theo du an nay; ghi cong bat buoc giu lai, xem NOTICE."
+    }
+  }
+}

@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agent-video-studio"
+version = "0.1.0.dev0"
+description = "Engine dựng video cho agent quanh HyperFrames: dựng trạm, kiểm máy, render theo template, chỉnh footage — cài được, gọi được từ pipeline khác."
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.10"
+# Lõi CỐ Ý chỉ dùng thư viện chuẩn: `video-studio --help`, `init`, `doctor` chạy trên máy
+# chưa có Node, ffmpeg hay model nào. HyperFrames là phụ thuộc lúc chạy, gọi qua
+# `npx hyperframes@$HYPERFRAMES_VERSION` — không cài bằng pip.
+dependencies = []
+
+[project.optional-dependencies]
+# Lồng tiếng + render theo template: cần repo giọng (`agent-voice-studio`, bản clone
+# `pip install -e` vào CÙNG venv — chưa lên PyPI nên extras chỉ để pip kiểm, không tải được)
+# và hai thư viện âm thanh mà template dùng để ghép/ghi sóng.
+voice = ["agent-voice-studio>=0.2.0.dev0", "numpy", "soundfile"]
+# Chỉnh footage thật (bộ helper chưng cất từ video-use): nặng, không vào lõi.
+edit = ["numpy", "pillow", "matplotlib", "librosa", "requests", "faster-whisper"]
+# `pyyaml` chỉ để TEST đọc được frontmatter skill và file CI — lõi không import yaml.
+test = ["pytest", "pyyaml"]
+
+[project.scripts]
+video-studio = "video_studio.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["video_studio*"]
+
+# Template mang theo HTML/JSON mẫu; không khai ở đây thì bản cài wheel thiếu file và
+# `render` hỏng đúng lúc chạy thật.
+[tool.setuptools.package-data]
+video_studio = ["templates/**/*.html", "templates/**/*.json"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

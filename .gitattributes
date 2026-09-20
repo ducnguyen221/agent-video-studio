@@ -1,0 +1,17 @@
+# Normalize to LF in the repository; check out native on Windows.
+* text=auto eol=lf
+
+*.md   text eol=lf
+*.json text eol=lf
+*.yaml text eol=lf
+*.yml  text eol=lf
+*.html text eol=lf
+*.py   text eol=lf
+*.sh   text eol=lf
+# PowerShell 5.1 đọc file không BOM theo codepage hệ thống — giữ CRLF + BOM do người viết đặt.
+*.ps1  text eol=crlf
+
+*.svg  text eol=lf
+*.png  binary
+*.jpg  binary
+*.mp4  binary

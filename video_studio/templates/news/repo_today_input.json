@@ -1,0 +1,20 @@
+{
+  "full_name": "iptv-org/iptv",
+  "owner": "iptv-org",
+  "repo": "iptv",
+  "description": "Collection of publicly available IPTV channels from all over the world",
+  "language": "TypeScript",
+  "stars_total": 122655,
+  "stars_today": "2,650",
+  "homepage": "https://iptv-org.github.io",
+  "topics": [
+    "iptv",
+    "m3u",
+    "playlist",
+    "streams",
+    "tv"
+  ],
+  "avatar": "https://github.com/iptv-org.png",
+  "url": "https://github.com/iptv-org/iptv",
+  "readme": "# <tên repo>\n\n<README của repo, tối đa 7000 ký tự, do bước `fetch` tải về>\n\nMẫu này CỐ Ý không chứa văn bản thật của repo nào: nó chỉ tả HÌNH DẠNG dữ liệu mà bước fetch ghi ra.\n"
+}

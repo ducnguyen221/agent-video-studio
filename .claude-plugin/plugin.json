@@ -1,0 +1,21 @@
+{
+  "name": "agent-video-studio",
+  "description": "A video-production engine an AI agent drives end to end: it lays out a video station, checks the machine for Node, a pinned HyperFrames build, its headless Chromium, ffmpeg and fonts, migrates an older station without touching unrelated folders, and exposes one CLI whose exit codes and final JSON line are a contract other pipelines can call.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Duc Nguyen",
+    "url": "https://ducnguyen.vn"
+  },
+  "homepage": "https://github.com/ducnguyen221/agent-video-studio",
+  "license": "MIT",
+  "keywords": [
+    "video",
+    "hyperframes",
+    "html-to-video",
+    "gsap",
+    "ffmpeg",
+    "rendering",
+    "vietnamese",
+    "agent-pipeline"
+  ]
+}

@@ -1,0 +1,37 @@
+name: tests
+
+# Hai OS, vì repo này phải chạy trên cả máy Windows lẫn máy Mac. CI CỐ Ý không cài Node,
+# HyperFrames, ffmpeg hay model nào: bộ test phải xanh trên một máy trần — lệnh ngoài đều
+# được thay bằng hàm giả. Cần engine thật mới chạy được test nghĩa là test đang đo môi
+# trường chứ không đo mã.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: pytest (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Cài package (lõi + extras test)
+        run: python -m pip install --upgrade pip && python -m pip install -e ".[test]"
+
+      - name: Chạy bộ test
+        # Cây làm việc là một bản checkout git thật, nên các cổng `git check-ignore`
+        # (bị skip khi chạy trên cây chưa git init) chạy thật ở đây.
+        run: python -m pytest -q

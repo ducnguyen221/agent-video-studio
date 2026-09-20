@@ -1,0 +1,21 @@
+{
+  "name": "agent-video-studio",
+  "description": "A video studio for AI agents — HTML compositions to rendered MP4 through HyperFrames, with a station layout, a machine check, and a stable CLI contract.",
+  "owner": {
+    "name": "Duc Nguyen",
+    "url": "https://ducnguyen.vn"
+  },
+  "plugins": [
+    {
+      "name": "agent-video-studio",
+      "description": "Set up a video station, check the machine (Node, HyperFrames, Chromium, ffmpeg, fonts), and drive HyperFrames renders through a CLI with fixed exit codes and a JSON result line.",
+      "version": "0.1.0",
+      "source": "./",
+      "license": "MIT",
+      "author": {
+        "name": "Duc Nguyen",
+        "url": "https://ducnguyen.vn"
+      }
+    }
+  ]
+}

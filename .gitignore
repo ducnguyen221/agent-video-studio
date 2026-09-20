@@ -1,0 +1,78 @@
+# agent-video-studio — TƯỜNG CHẶN RÒ
+#
+# Nguyên tắc: DENY-BY-DEFAULT với mọi thứ là media, model hay dữ liệu trạm. Repo này dạy và
+# chạy cách dựng video, nó KHÔNG chứa video, ảnh, giọng hay project của ai. Muốn kèm file nào
+# thì mở lại ĐÍCH DANH bằng dòng `!` — không bao giờ mở cả thư mục.
+#
+# Cạm bẫy đã trả giá: một dòng `!` mở lại thư mục sẽ ghi đè LUÔN các luật chặn nằm trên nó.
+# Mở xong phải chặn lại từng thứ không muốn, và kiểm bằng `git ls-files` chứ không bằng niềm tin.
+# Test cổng: tests/test_repo_gates.py (xoá dòng bắt buộc nào là test đỏ).
+
+# ── video / audio / ảnh raster: không bao giờ vào repo trừ khi mở đích danh
+*.mp4
+*.mov
+*.webm
+*.mkv
+*.mp3
+*.wav
+*.m4a
+*.aac
+*.flac
+*.ogg
+*.png
+*.jpg
+*.jpeg
+*.webp
+*.gif
+
+# ── font và model (font của skill upstream có license riêng — không phân phối lại)
+*.woff
+*.woff2
+*.ttf
+*.otf
+*.pt
+*.onnx
+*.safetensors
+
+# ── output và thư mục làm việc (mọi cấp)
+out/
+work/
+scratch/
+cache/
+
+# ── trạm chế độ embedded + secret + lựa chọn cài (F17)
+/workspace/
+.env
+.env.*
+!.env.example
+studio.local.json
+
+# ── Node (HyperFrames chạy qua npx, không cài vào repo)
+node_modules/
+
+# ── Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+
+# ── OS / editor
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+*.swp
+
+# ── nháp
+.tmp/
+tmp/
+*.local.*
+*.log
+
+# Plan/thiết kế nội bộ không thuộc repo public
+docs/plans/

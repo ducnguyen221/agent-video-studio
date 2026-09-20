@@ -1,0 +1,61 @@
+{
+  "epi": "GitHub Trending · hôm nay",
+  "scenes": [
+    {
+      "layout": "stat",
+      "eyebrow": "🔥 REPO NỔI BẬT HÔM NAY",
+      "headline": "iptv-org / iptv",
+      "headline_accent": "iptv",
+      "big": "+2.650 ⭐",
+      "big_label": "sao mới hôm nay · tổng hơn 122 nghìn sao",
+      "rows": [
+        {"ic": "◈", "k": "NGÔN NGỮ", "v": "TypeScript", "c": "#00E5FF"},
+        {"ic": "★", "k": "TỔNG SAO", "v": "122.655", "c": "#FFC857"},
+        {"ic": "▲", "k": "XẾP HẠNG", "v": "#1 Trending trong ngày", "c": "#00E676"},
+        {"ic": "◷", "k": "CHỦ ĐỀ", "v": "iptv · m3u · playlist · streams", "c": "#A78BFA"}
+      ],
+      "hero_image": "https://github.com/iptv-org.png",
+      "narration": "Repo được tặng nhiều sao nhất trên GitHub hôm nay là iptv-org. Chỉ trong hôm nay nó nhận thêm khoảng hai nghìn sáu trăm sao, nâng tổng số lên hơn một trăm hai mươi hai nghìn sao."
+    },
+    {
+      "layout": "pillars",
+      "eyebrow": "📦 REPO NÀY LÀM GÌ?",
+      "heading": "Một kho kênh truyền hình mở, cập nhật liên tục",
+      "items": [
+        {"ic": "🌐", "title": "Tổng hợp kênh toàn cầu", "c": "#00E5FF", "desc": "Gom các kênh IPTV công khai từ khắp thế giới, do cộng đồng đóng góp."},
+        {"ic": "📺", "title": "Xuất playlist M3U", "c": "#A78BFA", "desc": "Tạo sẵn playlist theo quốc gia, ngôn ngữ, thể loại — dán vào VLC là xem."},
+        {"ic": "🧩", "title": "Hệ sinh thái dữ liệu", "c": "#00E676", "desc": "Kèm database, API và lịch phát sóng để khai thác sâu hơn."}
+      ],
+      "narration": "Repo này tổng hợp các kênh IPTV công khai từ khắp nơi, rồi xuất ra playlist chuẩn M3U theo quốc gia, ngôn ngữ và thể loại. Ngoài ra còn có cả database, API và lịch phát sóng riêng — tức là một hệ sinh thái dữ liệu mở, không chỉ là một danh sách."
+    },
+    {
+      "layout": "pillars",
+      "eyebrow": "✨ Ý NGHĨA VỚI VIBE CODER",
+      "heading": "Một lớp dữ liệu sẵn dùng để ghép ý tưởng nhanh",
+      "items": [
+        {"ic": "⚡", "title": "Khỏi tự crawl", "c": "#FFC857", "desc": "Dữ liệu đã chuẩn hoá và miễn phí — bắt tay vào ý tưởng ngay."},
+        {"ic": "🛠️", "title": "Không cần backend", "c": "#60A5FA", "desc": "Chỉ cần fetch link M3U hoặc gọi API, không phải dựng server."},
+        {"ic": "🚀", "title": "App trong một buổi", "c": "#F472B6", "desc": "Vibe-code một app xem TV hay bảng kênh theo quốc gia rất nhanh."}
+      ],
+      "narration": "Với một vibe coder, đây là một lớp dữ liệu sẵn dùng. Bạn không phải tự thu thập hay dựng backend — chỉ cần lấy link M3U hoặc gọi API là có ngay nội dung. Nhờ vậy, có thể dựng một ứng dụng xem truyền hình hay bảng kênh theo quốc gia chỉ trong một buổi."
+    },
+    {
+      "layout": "pillars",
+      "eyebrow": "🤖 ỨNG DỤNG KHI LÀM VIỆC CÙNG AGENT",
+      "heading": "Dữ liệu có cấu trúc để agent tự thao tác",
+      "items": [
+        {"ic": "🔎", "title": "Truy vấn & lọc", "c": "#00E5FF", "desc": "Agent đọc API, lọc kênh theo quốc gia, ngôn ngữ, thể loại."},
+        {"ic": "💓", "title": "Tự kiểm tra link", "c": "#00E676", "desc": "Agent health-check link nào còn sống rồi tự dọn playlist."},
+        {"ic": "🎯", "title": "Playlist cá nhân hoá", "c": "#A78BFA", "desc": "Ra lệnh tự nhiên 'tạo playlist tin tức tiếng Việt' — agent tự sinh."}
+      ],
+      "narration": "Vì dữ liệu có cấu trúc và có API, một agent có thể tự thao tác trên nó: truy vấn và lọc kênh theo yêu cầu, tự kiểm tra link nào còn sống, và sinh ra playlist cá nhân hoá chỉ từ một câu lệnh bằng ngôn ngữ tự nhiên. Đây là ví dụ điển hình cho việc dữ liệu mở cộng API biến thành công cụ mà agent điều khiển được."
+    },
+    {
+      "layout": "outro",
+      "big": "Mã nguồn mở",
+      "sub": "github.com/iptv-org/iptv",
+      "sub2": "{BA} {BB} · phân tích repo nổi bật mỗi ngày",
+      "narration": "Đó là repo nổi bật hôm nay. Mã nguồn mở, ai cũng có thể khám phá và đóng góp."
+    }
+  ]
+}

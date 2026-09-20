@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="vi" data-resolution="landscape">
+  <head>
+    <meta charset="UTF-8" />
+    <title>video-studio seed</title>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      html, body { margin: 0; padding: 0; width: 1920px; height: 1080px; overflow: hidden; }
+      body { background: #0b1220; color: #f5f7fa; font-family: Inter, "Segoe UI", Arial, sans-serif; }
+      #master-root { position: relative; width: 1920px; height: 1080px; }
+      .grid { position: absolute; inset: 0; opacity: .25; }
+      .center { position: absolute; inset: 0; display: flex; flex-direction: column;
+                justify-content: center; align-items: center; gap: 28px; }
+      .kicker { font-size: 34px; letter-spacing: .32em; text-transform: uppercase; color: #00e5ff; }
+      .title { font-size: 132px; font-weight: 800; letter-spacing: -.02em; }
+      .sub { font-size: 40px; color: #9fb3c8; }
+    </style>
+  </head>
+  <body>
+    <!--
+      Project seed: MỘT cảnh, đủ để trả lời "engine chạy được chưa?" trước khi bạn viết cảnh thật.
+
+      Ba điều trong file này KHÔNG phải trang trí:
+
+      * `data-start` / `data-duration` trên mỗi phần tử định thời — engine tua timeline tới một
+        mốc rồi chụp khung hình; phần tử nào không khai mốc thì khung chụp được là ngẫu nhiên.
+      * timeline `paused` đăng ký vào `window.__timelines` — engine cầm timeline đó mà tua; tự
+        chạy bằng thời gian thực thì mỗi lần render ra một video khác.
+      * mọi lặp đều HỮU HẠN. `repeat: -1` làm tiến trình render phình tới khi chết, và nó chết
+        sau vài phút chứ không chết ngay.
+    -->
+    <div id="master-root" data-composition-id="master" data-width="1920" data-height="1080"
+         data-start="0" data-duration="6">
+      <svg class="grid" viewBox="0 0 1920 1080" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <defs>
+          <pattern id="g" width="120" height="120" patternUnits="userSpaceOnUse">
+            <path d="M120 0 H0 V120" fill="none" stroke="#1e2a3f" stroke-width="2" />
+          </pattern>
+        </defs>
+        <rect width="1920" height="1080" fill="url(#g)" />
+      </svg>
+
+      <div class="center">
+        <div class="kicker" id="kicker" data-start="0" data-duration="6">video-studio</div>
+        <div class="title" id="title" data-start="0.2" data-duration="6">Trạm đã sẵn sàng</div>
+        <div class="sub" id="sub" data-start="0.6" data-duration="6">
+          Sửa file này, rồi: video-studio preview --project demo
+        </div>
+      </div>
+
+      <script>
+        window.__timelines = window.__timelines || {};
+        const tl = gsap.timeline({ paused: true });
+        tl.fromTo("#kicker", { opacity: 0, y: 24 },
+                  { opacity: 1, y: 0, duration: 0.5, ease: "power2.out" }, 0);
+        tl.fromTo("#title", { opacity: 0, y: 40 },
+                  { opacity: 1, y: 0, duration: 0.7, ease: "power3.out" }, 0.2);
+        tl.fromTo("#sub", { opacity: 0 },
+                  { opacity: 1, duration: 0.5, ease: "power1.out" }, 0.6);
+        window.__timelines["master"] = tl;
+      </script>
+    </div>
+  </body>
+</html>

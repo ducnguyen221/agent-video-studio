@@ -1,0 +1,187 @@
+<!doctype html><html lang="vi"><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0A0A0F; --panel:#14141C; --panel2:#1A1A24; --bd:#2A2A3A;
+  --tx:#F0F0F5; --mut:#A0A0B0; --dim:#6B6B7B;
+  --cyan:#00E5FF; --violet:#A78BFA; --pink:#F472B6; --blue:#60A5FA; --green:#00E676; --gold:#FFC857;
+}
+*{box-sizing:border-box;margin:0;padding:0;font-family:__FONT__}
+body{background:var(--bg);color:var(--tx)}
+.frame{width:1280px;height:720px;position:relative;overflow:hidden;border-bottom:1px solid #000;
+  background:radial-gradient(1100px 640px at 78% 10%,#15203a 0%,#0a0d18 55%,#070a12 100%)}
+.frame::before{content:"";position:absolute;inset:0;opacity:.4;pointer-events:none;
+  background-image:linear-gradient(rgba(255,255,255,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.04) 1px,transparent 1px);background-size:64px 64px}
+.brand{position:absolute;top:34px;left:56px;display:flex;align-items:center;gap:12px;z-index:5}
+.brand .mk{width:40px;height:40px;border-radius:11px;background:linear-gradient(135deg,var(--cyan),#2563eb);box-shadow:0 0 18px rgba(0,229,255,.5)}
+.brand .n{font-weight:800;font-size:24px}.brand .n span{color:var(--cyan)}
+.epi{position:absolute;top:42px;right:56px;color:var(--mut);font-size:18px}
+.lbl{position:absolute;left:56px;bottom:18px;color:var(--dim);font-size:14px;letter-spacing:1px}
+/* eyebrow pill */
+.eyebrow{display:inline-flex;align-items:center;gap:9px;padding:8px 18px;border-radius:999px;
+  background:rgba(0,229,255,.08);border:1px solid rgba(0,229,255,.35);color:var(--cyan);
+  font-size:18px;font-weight:700;letter-spacing:.5px}
+.eyebrow.v{background:rgba(167,139,250,.08);border-color:rgba(167,139,250,.4);color:var(--violet)}
+.rank{display:inline-block;font-size:22px;font-weight:800;color:#04060a;padding:5px 18px;border-radius:9px;
+  background:linear-gradient(90deg,var(--cyan),var(--green))}
+.cap{position:absolute;left:56px;right:56px;bottom:46px;text-align:center;z-index:6}
+.cap .bar{display:inline-block;max-width:1000px;background:rgba(8,10,18,.72);border:1px solid var(--bd);
+  border-radius:14px;padding:13px 26px;font-size:25px;line-height:1.35;color:#eaf2ff}
+.cap .bar b{color:var(--cyan);font-weight:800}
+h1.t{font-size:62px;font-weight:900;line-height:1.08;margin:18px 0 14px;max-width:1050px}
+.grad{background:linear-gradient(90deg,#ff5c7a,var(--gold),var(--cyan));-webkit-background-clip:text;background-clip:text;color:transparent}
+.wrap{position:absolute;left:56px;right:56px;top:150px}
+/* stat callout */
+.stat{display:flex;gap:48px;align-items:center;margin-top:26px}
+.stat .big{font-size:120px;font-weight:900;line-height:1;background:linear-gradient(180deg,#fff,var(--cyan));-webkit-background-clip:text;background-clip:text;color:transparent}
+.stat .lab{font-size:30px;color:var(--mut);max-width:520px;line-height:1.3}
+/* spec rows (icon · label · value) */
+.spec{margin-top:20px;border-top:1px solid var(--bd)}
+.spec .row{display:grid;grid-template-columns:54px 230px 1fr;align-items:center;gap:8px;
+  padding:17px 6px;border-bottom:1px solid var(--bd)}
+.spec .ic{width:34px;height:34px;border-radius:9px;display:grid;place-items:center;font-size:18px}
+.spec .k{font-size:19px;font-weight:800;letter-spacing:1px}
+.spec .val{font-size:26px;font-weight:700;color:var(--tx)}
+/* pillar cards */
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;margin-top:26px}
+.card{background:var(--panel2);border:1px solid var(--bd);border-radius:18px;padding:26px;position:relative}
+.card .ci{width:52px;height:52px;border-radius:13px;display:grid;place-items:center;font-size:24px;margin-bottom:16px}
+.card h3{font-size:27px;font-weight:800;margin-bottom:10px}
+.card p{font-size:20px;color:var(--mut);line-height:1.4}
+/* process steps */
+.steps{display:flex;align-items:stretch;gap:0;margin-top:40px}
+.step{flex:1;background:var(--panel2);border:1px solid var(--bd);border-radius:16px;padding:24px;position:relative}
+.step .no{width:46px;height:46px;border-radius:50%;display:grid;place-items:center;font-weight:900;font-size:22px;color:#04060a;margin-bottom:14px}
+.step h4{font-size:23px;margin-bottom:8px}.step p{font-size:18px;color:var(--mut);line-height:1.35}
+.arrow{align-self:center;color:var(--cyan);font-size:34px;padding:0 10px}
+/* vs comparison */
+.vs{display:grid;grid-template-columns:1fr 70px 1fr;gap:0;align-items:start;margin-top:34px}
+.col{background:var(--panel2);border:1px solid var(--bd);border-radius:18px;padding:26px}
+.col h3{font-size:30px;font-weight:800;margin-bottom:16px}
+.col .r{display:flex;justify-content:space-between;padding:13px 0;border-top:1px solid var(--bd);font-size:21px}
+.col .r .kk{color:var(--mut)} .vsmid{display:grid;place-items:center;font-size:36px;font-weight:900;color:var(--gold)}
+/* mini bar chart */
+.bars{margin-top:40px}
+.bars .b{display:grid;grid-template-columns:240px 1fr 110px;align-items:center;gap:18px;margin-bottom:22px}
+.bars .nm{font-size:24px;font-weight:700}
+.bars .track{height:34px;border-radius:8px;background:#11131d;overflow:hidden}
+.bars .fill{height:100%;border-radius:8px}
+.bars .pct{font-size:26px;font-weight:800;text-align:right}
+.imgacc{position:absolute;right:56px;top:150px;width:300px;height:300px;border-radius:18px;object-fit:cover;
+  border:1px solid var(--bd);box-shadow:0 24px 60px rgba(0,0,0,.5)}
+.bg-c{background:rgba(0,229,255,.13);color:var(--cyan)} .bg-v{background:rgba(167,139,250,.14);color:var(--violet)}
+.bg-p{background:rgba(244,114,182,.14);color:var(--pink)} .bg-b{background:rgba(96,165,250,.14);color:var(--blue)}
+.bg-g{background:rgba(0,230,118,.14);color:var(--green)} .bg-o{background:rgba(255,200,87,.16);color:var(--gold)}
+</style></head><body>
+
+<!-- FRAME 1: COVER (gradient title, eyebrow) -->
+<div class="frame">
+  <div class="brand"><span class="mk"></span><span class="n">{BA} <span>{BB}</span></span></div>
+  <div class="epi">Tuần 25 · 09–15/06/2026</div>
+  <div class="wrap" style="top:0;display:flex;flex-direction:column;align-items:center;justify-content:center;height:720px;text-align:center">
+    <span class="eyebrow">⚡ TỔNG HỢP TIN AI NÓNG NHẤT</span>
+    <h1 class="t" style="font-size:84px;margin-top:24px">Bản tin <span class="grad">AI</span> tuần này</h1>
+    <div style="font-size:30px;color:var(--mut)">5 câu chuyện định hình ngành — tóm tắt 6 phút</div>
+  </div>
+  <div class="lbl">FRAME 1 — COVER · chữ gradient + eyebrow pill</div>
+</div>
+
+<!-- FRAME 2: STAT CALLOUT + spec rows + 1 ảnh accent -->
+<div class="frame">
+  <div class="brand"><span class="mk"></span><span class="n">{BA} <span>{BB}</span></span></div>
+  <div class="epi">TOP 1</div>
+  <div class="wrap">
+    <span class="rank">TOP 1 · TUẦN NÀY</span>
+    <h1 class="t" style="margin-top:14px">OpenAI ra mắt <span class="grad">GPT-5</span></h1>
+    <div class="stat">
+      <div class="big">$6,5 tỷ</div>
+      <div class="lab">vòng gọi vốn mới, định giá công ty lên <b style="color:#fff">300 tỷ USD</b></div>
+    </div>
+    <div class="spec" style="max-width:760px">
+      <div class="row"><span class="ic bg-c">◈</span><span class="k" style="color:var(--cyan)">MÔ HÌNH</span><span class="val">GPT-5 · đa thể thức</span></div>
+      <div class="row"><span class="ic bg-g">▲</span><span class="k" style="color:var(--green)">HIỆU NĂNG</span><span class="val">+40% suy luận, ngữ cảnh 1M token</span></div>
+      <div class="row"><span class="ic bg-o">◷</span><span class="k" style="color:var(--gold)">RA MẮT</span><span class="val">Tháng 6/2026 · API + ChatGPT</span></div>
+    </div>
+  </div>
+  <img class="imgacc" src="https://images.unsplash.com/photo-1677442136019-21780ecad995?w=600&q=70" alt="">
+  <div class="cap"><span class="bar">OpenAI vừa công bố <b>GPT-5</b> cùng vòng gọi vốn sáu phẩy năm tỷ đô…</span></div>
+  <div class="lbl">FRAME 2 — STAT CALLOUT + SPEC ROWS + 1 ảnh accent + phụ đề</div>
+</div>
+
+<!-- FRAME 3: PILLARS (thay bullet list) -->
+<div class="frame">
+  <div class="brand"><span class="mk"></span><span class="n">{BA} <span>{BB}</span></span></div>
+  <div class="epi">TOP 2</div>
+  <div class="wrap">
+    <span class="rank">TOP 2 · TUẦN NÀY</span>
+    <h1 class="t" style="font-size:50px;margin-top:14px">Google Gemini 3 — ba điểm đáng chú ý</h1>
+    <div class="cards">
+      <div class="card"><div class="ci bg-c">⚡</div><h3>Nhanh gấp đôi</h3><p>Độ trễ giảm 50% nhờ kiến trúc suy luận mới.</p></div>
+      <div class="card"><div class="ci bg-v">🧠</div><h3>Bộ nhớ dài</h3><p>Cửa sổ ngữ cảnh 2 triệu token, nhớ cả dự án.</p></div>
+      <div class="card"><div class="ci bg-p">🎯</div><h3>Agent gốc</h3><p>Tự gọi công cụ, thao tác đa bước không cần plugin.</p></div>
+    </div>
+  </div>
+  <div class="cap"><span class="bar">Gemini ba mang tới ba nâng cấp lớn về tốc độ, bộ nhớ và khả năng tự hành…</span></div>
+  <div class="lbl">FRAME 3 — PILLAR CARDS (thay cho bullet list)</div>
+</div>
+
+<!-- FRAME 4: PROCESS / TIMELINE -->
+<div class="frame">
+  <div class="brand"><span class="mk"></span><span class="n">{BA} <span>{BB}</span></span></div>
+  <div class="epi">TOP 3</div>
+  <div class="wrap">
+    <span class="eyebrow v">◷ LỘ TRÌNH RA MẮT</span>
+    <h1 class="t" style="font-size:48px;margin-top:14px">Cách agent mới hoạt động</h1>
+    <div class="steps">
+      <div class="step"><div class="no bg-c" style="background:var(--cyan)">1</div><h4>Nhận yêu cầu</h4><p>Người dùng mô tả mục tiêu bằng ngôn ngữ tự nhiên.</p></div>
+      <div class="arrow">→</div>
+      <div class="step"><div class="no" style="background:var(--violet)">2</div><h4>Lập kế hoạch</h4><p>Mô hình chia nhỏ thành các bước có thể kiểm chứng.</p></div>
+      <div class="arrow">→</div>
+      <div class="step"><div class="no" style="background:var(--green)">3</div><h4>Thực thi</h4><p>Tự gọi công cụ, kiểm tra kết quả từng bước.</p></div>
+    </div>
+  </div>
+  <div class="cap"><span class="bar">Quy trình gồm ba bước: nhận yêu cầu, lập kế hoạch và thực thi tự động…</span></div>
+  <div class="lbl">FRAME 4 — PROCESS / TIMELINE (SmartArt quy trình)</div>
+</div>
+
+<!-- FRAME 5: VS COMPARISON -->
+<div class="frame">
+  <div class="brand"><span class="mk"></span><span class="n">{BA} <span>{BB}</span></span></div>
+  <div class="epi">TOP 4</div>
+  <div class="wrap">
+    <span class="rank">TOP 4 · TUẦN NÀY</span>
+    <h1 class="t" style="font-size:48px;margin-top:14px">GPT-5 <span class="grad">vs</span> Gemini 3</h1>
+    <div class="vs">
+      <div class="col"><h3 style="color:var(--cyan)">GPT-5</h3>
+        <div class="r"><span class="kk">Ngữ cảnh</span><b>1M token</b></div>
+        <div class="r"><span class="kk">Giá API</span><b>$10 / 1M</b></div>
+        <div class="r"><span class="kk">Đa thể thức</span><b>Có</b></div></div>
+      <div class="vsmid">VS</div>
+      <div class="col"><h3 style="color:var(--violet)">Gemini 3</h3>
+        <div class="r"><span class="kk">Ngữ cảnh</span><b>2M token</b></div>
+        <div class="r"><span class="kk">Giá API</span><b>$7 / 1M</b></div>
+        <div class="r"><span class="kk">Đa thể thức</span><b>Có</b></div></div>
+    </div>
+  </div>
+  <div class="cap"><span class="bar">So kè trực tiếp: Gemini ba nhỉnh hơn về ngữ cảnh và giá, GPT-5 mạnh suy luận…</span></div>
+  <div class="lbl">FRAME 5 — VS COMPARISON (SmartArt so sánh)</div>
+</div>
+
+<!-- FRAME 6: MINI BAR CHART -->
+<div class="frame">
+  <div class="brand"><span class="mk"></span><span class="n">{BA} <span>{BB}</span></span></div>
+  <div class="epi">TOP 5</div>
+  <div class="wrap">
+    <span class="eyebrow">▦ BENCHMARK SUY LUẬN (MMLU)</span>
+    <h1 class="t" style="font-size:48px;margin-top:14px">Ai dẫn đầu về điểm số?</h1>
+    <div class="bars">
+      <div class="b"><span class="nm">GPT-5</span><div class="track"><div class="fill" style="width:94%;background:linear-gradient(90deg,#0a5,#00E676)"></div></div><span class="pct" style="color:var(--green)">94%</span></div>
+      <div class="b"><span class="nm">Gemini 3</span><div class="track"><div class="fill" style="width:92%;background:linear-gradient(90deg,#36c,#60A5FA)"></div></div><span class="pct" style="color:var(--blue)">92%</span></div>
+      <div class="b"><span class="nm">Claude</span><div class="track"><div class="fill" style="width:90%;background:linear-gradient(90deg,#a36,#F472B6)"></div></div><span class="pct" style="color:var(--pink)">90%</span></div>
+    </div>
+  </div>
+  <div class="cap"><span class="bar">Trên thang điểm MMLU, ba mô hình bám sát nhau trong khoảng chín mươi phần trăm…</span></div>
+  <div class="lbl">FRAME 6 — MINI BAR CHART (số liệu, CSS thuần)</div>
+</div>
+
+</body></html>

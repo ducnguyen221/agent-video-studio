@@ -1,0 +1,45 @@
+agent-video-studio
+Copyright (c) 2026 Duc Nguyen — phát hành theo giấy phép MIT (xem LICENSE).
+
+Bản này KHÔNG phát hành lại code, skill, font, ảnh hay video của bên thứ ba. Các thành phần dưới
+đây được GỌI TỚI lúc chạy và do người dùng tự cài; giấy phép của chúng áp cho chính chúng:
+
+- HyperFrames (heygen-com/hyperframes, npm `hyperframes`) — Apache-2.0. Gọi qua
+  `npx hyperframes@$HYPERFRAMES_VERSION`, không nằm trong repo. Lần đầu chạy, HyperFrames tự tải
+  Chromium headless về cache của người dùng.
+- Node.js — MIT. ffmpeg — LGPL/GPL tuỳ bản build; gọi như tiến trình ngoài, không phân phối.
+
+Phần CHƯNG CẤT từ nguồn ngoài (mã và tài liệu viết lại, không phải bản sao nguyên văn):
+
+- HyperFrames — bộ skill (heygen-com/hyperframes) — **Apache-2.0**, Copyright 2026 HeyGen, Inc.
+  Toàn văn giấy phép: `LICENSE-APACHE` trong repo này (chép đúng file `LICENSE` ở tag `v0.8.51`).
+  21 thư mục dưới `skills/hyperframes/` là bản **đã dịch sang tiếng Việt, rút gọn và biên tập lại**
+  từ `skills/<tên>/SKILL.md` của upstream tại tag **v0.8.51** — đúng nghĩa vụ ghi chú "đã sửa" của
+  Apache-2.0 §4(b), và mỗi file nêu rõ điều đó ngay đầu thân bài kèm hash manifest của bản gốc.
+  Thư mục `references/` của upstream **không** được chép; **không** file nhị phân nào của upstream
+  (font `woff2`, `mp3`, `png`) được chép vào đây — giấy phép từng file đó chưa kiểm được, và repo
+  này không phát hành lại chúng. Bản đã ghim của từng skill nằm ở `upstream.json`.
+
+- vtake-skills (https://github.com/notedit/vtake-skills) — **MIT**, Copyright (c) 2026 leeoxiang.
+  Hệ thống thiết kế card của skill `talking-head-recut` ở upstream HyperFrames phỏng theo dự án
+  này; upstream bắt buộc giữ ghi công, nên mục này tồn tại. Bản distill trong repo này
+  (`skills/hyperframes/talking-head-recut/SKILL.md`) là bản viết lại bằng tiếng Việt, không chứa
+  tài sản thiết kế nào của hai dự án đó.
+  Giấy phép đầy đủ: https://github.com/notedit/vtake-skills/blob/main/LICENSE
+
+- video-use (https://github.com/browser-use/video-use) — MIT, Copyright (c) 2026 Browser Use.
+  Bộ `video_studio/edit/` (`_ff.py`, `edl.py`, `grade.py`, `pack.py`, `render.py`,
+  `transcribe.py`) và skill `skills/video-edit/SKILL.md` phỏng theo `helpers/*.py` và `SKILL.md`
+  của repo đó, đọc tại commit 92c2b34, có mang theo ba bản sửa upstream sau mốc đó (giữ fps
+  nguồn · tôn trọng góc xoay metadata · chọn đúng track tiếng). Đã dịch, viết lại và biên tập;
+  mỗi file ghi rõ nó đến từ file nào. Bản quyền của phần gốc thuộc về tác giả upstream, giấy
+  phép MIT đi kèm cho phép việc này với điều kiện giữ ghi công — đó là mục này.
+  Giấy phép đầy đủ: https://github.com/browser-use/video-use/blob/main/LICENSE
+
+- `templates/_seed/` là project seed **tự viết** (không phải bản sinh ra bởi `hyperframes init`),
+  nên không kéo theo nghĩa vụ nào của Apache-2.0; nó chỉ tuân theo khuôn `hyperframes.json` mà
+  engine yêu cầu.
+
+Quy tắc cho các bản sau: mọi phần CHƯNG CẤT từ nguồn ngoài (skill, seed project, helper) phải được
+liệt kê ở đây kèm repo · commit/phiên bản · giấy phép, và phần phỏng theo nguồn Apache-2.0 phải
+kèm LICENSE-APACHE cùng ghi chú "đã sửa" trong chính file đó.
