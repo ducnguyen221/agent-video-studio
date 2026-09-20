@@ -6,6 +6,7 @@ lệnh con. Lệnh chưa có trong bản này trả mã 2 kèm lời báo, khôn
 """
 import importlib
 import sys
+import traceback
 
 from . import API_VERSION, __version__, contract
 
@@ -50,9 +51,27 @@ def usage():
 
 
 def _call(target, argv):
+    """Nạp module của lệnh rồi gọi `main(argv)`.
+
+    `import_module` chạy TRƯỚC `contract.run` của lệnh, nên một module hỏng (thiếu phụ thuộc
+    tuỳ chọn, lỗi cú pháp sau một lần sửa) cho traceback trần — kể cả khi người gọi xin
+    `--json`. Bên gọi theo `docs/CONTRACT.md` §2 đọc dòng cuối stdout thì vỡ. Nên lớp nạp
+    cũng phải nằm trong hợp đồng.
+    """
     module, _, func = target.partition(":")
-    mod = importlib.import_module(module)
-    rc = getattr(mod, func or "main")(argv)
+    try:
+        mod = importlib.import_module(module)
+        entry = getattr(mod, func or "main")
+    except Exception as exc:    # noqa: BLE001 — biên của CLI: nạp hỏng cũng phải thành mã + JSON
+        code = contract.classify(exc)
+        msg = f"không nạp được lệnh '{module}': {exc.__class__.__name__}: {exc}"
+        contract.log(f"[video-studio] LỖI ({code}): {msg}")
+        if code == contract.ENGINE_ERROR:
+            contract.log(traceback.format_exc().rstrip())
+        if "--json" in argv:
+            contract.emit({"ok": False, "code": code, "error": msg})
+        return code
+    rc = entry(argv)
     return contract.OK if rc is None else int(rc)
 
 

@@ -201,6 +201,40 @@ def test_adapter_works_without_build_parser(tmp_path, monkeypatch):
     assert args["mode"] == "shortest" and args["text"] == "a"
 
 
+def test_a_voice_repo_with_different_flags_is_code_2_WITH_a_json_line(tmp_path, monkeypatch,
+                                                                      capsys):
+    """`SystemExit` của argparse là `BaseException` ⇒ `contract.run` KHÔNG bắt được nó.
+
+    Một bản `agent-voice-studio` lệch cờ làm `narrate --json` thoát 2 mà không in dòng JSON
+    nào; bên gọi đọc dòng cuối stdout theo `CONTRACT.md` §2 thì vỡ chứ không đọc được lỗi.
+    Nay `_args` đổi nó thành `ContractError` — vẫn mã 2, nhưng đi qua đường hợp đồng.
+    """
+    import argparse as ap_mod
+
+    pkg = fake_voice_studio(monkeypatch)
+    # Bản giọng "mới": bỏ --mode, thêm --style. Cờ của repo này không còn khớp.
+    def picky_parser():
+        ap = ap_mod.ArgumentParser(prog="voice-studio narrate")
+        ap.add_argument("--video", required=True)
+        ap.add_argument("--out", required=True)
+        ap.add_argument("--text")
+        ap.add_argument("--style")
+        return ap
+
+    monkeypatch.setattr(pkg.narrate, "build_parser", picky_parser)
+    with pytest.raises(ContractError) as e:
+        voice.narrate(_silent(tmp_path), str(tmp_path / "o.mp4"), text="a", mode="fit")
+    assert e.value.code == 2
+    assert "agent-voice-studio" in str(e.value)
+
+    # Và qua CLI thật: đúng một dòng JSON cuối stdout, mã 2.
+    rc = nar.main(["--video", _silent(tmp_path, "b.mp4"), "--out", str(tmp_path / "o2.mp4"),
+                   "--text", "a", "--json"])
+    assert rc == 2
+    payload = last_json(capsys.readouterr().out)
+    assert payload["ok"] is False and payload["code"] == 2
+
+
 @pytest.mark.parametrize("style", [None, "", "none", "NONE", "off"])
 def test_mix_bgm_does_nothing_without_a_style(style, monkeypatch, tmp_path):
     pkg = fake_voice_studio(monkeypatch)

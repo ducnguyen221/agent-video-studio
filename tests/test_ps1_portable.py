@@ -108,6 +108,25 @@ def test_script_forwards_to_the_cli_and_returns_its_exit_code(path):
     assert "exit $LASTEXITCODE" in text.replace("\r", "")
 
 
+@pytest.mark.parametrize("path", WRAPPERS, ids=lambda p: p.name)
+def test_wrapper_fatal_paths_pick_a_contract_exit_code(path):
+    """`throw` trần ⇒ `pwsh -File` thoát MÃ 1, mà mã 1 nghĩa là "thử lại có thể qua".
+
+    Lịch chạy sẽ retry vĩnh viễn "chưa cài video-studio" — đúng cái lỗi mà retry không bao giờ
+    chữa được. Mọi đường chết trong vỏ phải chọn 2 (sửa lời gọi) hoặc 3 (cài thêm), theo
+    `docs/CONTRACT.md`.
+    """
+    text = path.read_text(encoding="utf-8")
+    # Bỏ dòng chú thích: chính chú thích giải thích vì sao KHÔNG dùng `throw` sẽ tự làm đỏ.
+    code = "\n".join(ln for ln in text.splitlines() if not ln.lstrip().startswith("#"))
+    assert "throw" not in code, "throw trần = mã 1 = retry vĩnh viễn; dùng Fail 2 / Fail 3"
+    assert re.search(r"function Fail\(", text), "vỏ cần helper Fail <code> <message>"
+    codes = {int(m) for m in re.findall(r"^\s*Fail (\d)", text, flags=re.M)}
+    assert codes, f"{path.name}: không có đường chết nào khai mã"
+    assert codes <= {2, 3}, f"{path.name}: mã lạ {codes - {2, 3}}"
+    assert 3 in codes, f"{path.name}: 'chưa cài video-studio' phải là mã 3"
+
+
 @pytest.mark.parametrize("path", SH, ids=lambda p: p.name)
 def test_shell_installer_is_posix_and_strict(path):
     text = path.read_text(encoding="utf-8")

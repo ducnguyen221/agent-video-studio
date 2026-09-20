@@ -18,7 +18,7 @@ của cùng một bài học, và bản thứ hai luôn là bản lạc hậu.
 import argparse
 import importlib
 
-from .contract import StationMissing
+from .contract import ContractError, StationMissing
 
 INSTALL_HINT = (
     "cài repo giọng vào CÙNG venv: `pip install -e <bản clone agent-voice-studio>` "
@@ -65,7 +65,17 @@ def _args(argv, parser_factory):
     thì dựng Namespace tối thiểu.
     """
     if parser_factory is not None:
-        return parser_factory().parse_args(argv)
+        try:
+            return parser_factory().parse_args(argv)
+        except SystemExit as e:
+            # argparse thoát bằng `SystemExit`, mà `SystemExit` là `BaseException`: nó KHÔNG
+            # bị `contract.run` bắt (`contract.py` bắt `Exception`). Nên một bản
+            # `agent-voice-studio` lệch cờ làm `narrate --json` thoát 2 mà KHÔNG có dòng JSON
+            # nào — bên gọi đọc dòng cuối stdout theo hợp đồng thì vỡ, không đọc được lỗi.
+            # Đổi thành `ContractError`: vẫn mã 2, nhưng đi qua đường hợp đồng.
+            raise ContractError(
+                "bản `agent-voice-studio` đang cài không nhận bộ cờ này "
+                f"(argparse thoát {e.code}): " + " ".join(argv)) from e
     ns = argparse.Namespace(video=None, out=None, text=None, file=None, mode="fit", bgm=None,
                             bgm_volume=None, profile=None, instruct=None, lang=None, speed=None,
                             seed=None, normalize=False, json=False)

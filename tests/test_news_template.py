@@ -142,3 +142,30 @@ def test_an_explicit_output_name_may_not_escape_out_dir(tpl):
         tpl.out_name({"outputs": {"long": "sub/dir/a.mp4"}}, "long", "mac-dinh.mp4")
     assert tpl.out_name({"outputs": {"long": "a.mp4"}}, "long", "mac-dinh.mp4") == "a.mp4"
     assert tpl.out_name({}, "long", "mac-dinh.mp4") == "mac-dinh.mp4"
+
+
+# ── thiếu ffmpeg là "cài thêm" (mã 3), không phải "thử lại" (mã 1) ──────────────────────
+
+def test_a_machine_without_ffmpeg_gets_code_3_not_a_retryable_error(news, monkeypatch):
+    """`_ffbin` trả chuỗi trần `"ffprobe"` thì `subprocess.run` ném `FileNotFoundError`, mà
+    `contract.classify` xếp nó vào ENGINE_ERROR = mã 1 = "thử lại có thể qua". Máy chưa có
+    ffmpeg thì thử lại bao nhiêu lần cũng thế — và `subprocess.run` lại nằm NGOÀI `try` nên
+    không ai chặn được. `edit/_ff.probe_exe()` đã làm đúng bằng `StationMissing`; chỗ này
+    phải giống.
+    """
+    import importlib
+    ts = importlib.import_module("video_studio.templates.news.top_story_video")
+    monkeypatch.setattr(ts._env, "ffprobe_exe", lambda: None)
+    monkeypatch.setattr(ts._env, "ffmpeg_exe", lambda: None)
+    for name in ("ffprobe", "ffmpeg"):
+        with pytest.raises(StationMissing) as e:
+            ts._ffbin(name)
+        assert e.value.code == 3
+        assert name in str(e.value) and "FFMPEG_DIR" in str(e.value)
+
+
+def test_ffbin_returns_the_resolved_path_when_the_tool_is_there(news, monkeypatch):
+    import importlib
+    ts = importlib.import_module("video_studio.templates.news.top_story_video")
+    monkeypatch.setattr(ts._env, "ffprobe_exe", lambda: "/fake/bin/ffprobe")
+    assert ts._ffbin("ffprobe") == "/fake/bin/ffprobe"

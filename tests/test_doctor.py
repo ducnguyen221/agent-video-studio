@@ -291,7 +291,51 @@ def test_two_sources_is_red(machine, good_station, tmp_path, monkeypatch, capsys
     (repo / "workspace").mkdir()
     monkeypatch.setenv("VIDEO_STUDIO_REPO", str(repo))
     rc, out, _ = run(["--json"], capsys)
-    assert rc == 3 and "two-sources" in last_json(out)["errors"]
+    # MÃ 2, không phải 3: hai nguồn sự thật là lỗi CẤU HÌNH — cài thêm gì cũng không chữa
+    # được, phải gộp trạm rồi mới chạy lại. `station.py` đã trả 2 cho đúng điều kiện này, nên
+    # `doctor` trả 3 là hai mã khác nhau cho cùng một sự thật.
+    assert rc == 2 and "two-sources" in last_json(out)["errors"]
+    assert _check(last_json(out), "two-sources")["code"] == 2
+
+
+def test_the_worst_code_wins_when_several_checks_are_red(machine, good_station, tmp_path,
+                                                         monkeypatch, capsys):
+    """Thiếu node (3) LẪN cấu hình sai (2): bên gọi phải nghe mã nặng hơn, không phải mã đầu.
+
+    Cài node xong vẫn chưa chạy được vì cấu hình còn sai — nói "cài tiếp" là dẫn người ta
+    vào một vòng cài-rồi-vẫn-hỏng.
+    """
+    repo = tmp_path / "repo"
+    (repo / "video_studio").mkdir(parents=True)
+    (repo / "pyproject.toml").write_text("", encoding="utf-8")
+    (repo / "workspace").mkdir()
+    monkeypatch.setenv("VIDEO_STUDIO_REPO", str(repo))
+    machine.node = "v20.11.1"                        # quá cũ ⇒ check `node` đỏ với mã 3
+    rc, out, _ = run(["--json"], capsys)
+    errors = set(last_json(out)["errors"])
+    assert {"node", "two-sources"} <= errors
+    assert rc == 3
+
+
+def test_an_unexpected_os_error_still_ends_in_one_json_line(machine, good_station, monkeypatch,
+                                                            capsys):
+    """`doctor` sờ vào máy thật (os.walk font, git, npm) nên OSError là chuyện có thật.
+
+    Trước đây `main` chỉ bắt `_DoctorFailed`/`VideoStudioError`, nên một OSError cho traceback
+    TRẦN: `--json` không có dòng JSON nào và bên gọi theo CONTRACT.md §2 vỡ chứ không đọc
+    được lỗi.
+    """
+    from video_studio import doctor as doc
+
+    def boom():
+        raise OSError("liên kết mềm gãy trong thư mục font")
+
+    monkeypatch.setattr(doc, "font_check", boom)
+    rc, out, _ = run(["--json"], capsys)
+    assert rc == 1                                   # không phân loại được ⇒ lỗi engine
+    payload = last_json(out)                         # <- chính là thứ trước đây KHÔNG có
+    assert payload["ok"] is False and payload["code"] == 1
+    assert "font" in payload["error"]
 
 
 def test_optional_parts_only_warn(machine, good_station, capsys):

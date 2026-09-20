@@ -14,6 +14,15 @@ param(
 
 # Do NOT set ErrorActionPreference=Stop: node/hyperframes write ordinary logs to stderr and
 # PowerShell 5.1 would turn them into terminating errors. Check $LASTEXITCODE instead.
+#
+# Exit codes are part of the contract (docs/CONTRACT.md): 1 means "retry may work", 3 means
+# "install something". A bare `throw` makes `pwsh -File` exit 1, so a caller that retries on 1
+# would retry "video-studio is not installed" forever.
+
+function Fail($code, $message) {
+    Write-Error $message
+    exit $code
+}
 
 function Find-VideoStudio {
     # 1) console script on PATH (pip install put it there)
@@ -29,7 +38,7 @@ function Find-VideoStudio {
         & $c.Source -c 'import sys' 2>$null | Out-Null
         if ($LASTEXITCODE -eq 0) { return , @($c.Source, '-m', 'video_studio') }
     }
-    throw "video-studio not found. Install it: pip install -e <clone of agent-video-studio>"
+    Fail 3 "video-studio not found. Install it: pip install -e <clone of agent-video-studio>"
 }
 
 $argv = @('preview')

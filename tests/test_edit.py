@@ -6,12 +6,13 @@ thứ tự các cờ (phụ đề sau cùng, nối bằng -c copy, giữ fps ngu
 """
 import json
 import os
+import subprocess
 
 import pytest
 
 from conftest import last_json
 from video_studio import edit
-from video_studio.contract import ContractError, StationMissing
+from video_studio.contract import ContractError, EngineError, StationMissing
 from video_studio.edit import _ff, edl as edl_mod, grade, pack
 from video_studio.edit import render as edit_render
 
@@ -537,3 +538,40 @@ def test_a_missing_plan_file_is_code_2(tmp_path, station):
     f.mkdir()
     assert edit.main(["--footage", str(f), "--out", str(tmp_path / "o"),
                       "--plan", str(tmp_path / "khong-co.md")]) == 2
+
+
+# ── ffmpeg/ffprobe không được treo vĩnh viễn ───────────────────────────────────────────
+
+def test_ffmpeg_has_a_default_timeout_and_reports_it_as_an_engine_error(monkeypatch, tmp_path):
+    """`timeout=None` nghĩa là ffmpeg treo thì treo VĨNH VIỄN: lượt lịch 18h không bao giờ
+    kết thúc, không báo hỏng, và cái kẹt lại là một tiến trình con không ai thấy. Nhánh
+    HyperFrames đã có `DEFAULT_TIMEOUT = 3600`; chỗ này phải có trần của riêng nó.
+    """
+    seen = {}
+
+    def fake_run(argv, **kw):
+        seen["timeout"] = kw.get("timeout")
+        raise subprocess.TimeoutExpired(argv, kw.get("timeout"))
+
+    monkeypatch.setattr(_ff, "exe", lambda: "ffmpeg")
+    monkeypatch.setattr(_ff.subprocess, "run", fake_run)
+    with pytest.raises(EngineError) as e:
+        _ff.run(["-i", "a.mp4", "b.mp4"])
+    assert seen["timeout"] == _ff.DEFAULT_TIMEOUT == 3600
+    assert "qua" in str(e.value).lower() or str(_ff.DEFAULT_TIMEOUT) in str(e.value)
+
+
+def test_ffprobe_has_a_tighter_timeout_than_a_render(monkeypatch):
+    """Thăm dò chỉ đọc metadata: lâu hơn `PROBE_TIMEOUT` là nguồn có vấn đề (ổ mạng,
+    placeholder OneDrive chưa tải), không phải việc nặng."""
+    seen = {}
+
+    def fake_run(argv, **kw):
+        seen["timeout"] = kw.get("timeout")
+        raise subprocess.TimeoutExpired(argv, kw.get("timeout"))
+
+    monkeypatch.setattr(_ff, "probe_exe", lambda: "ffprobe")
+    monkeypatch.setattr(_ff.subprocess, "run", fake_run)
+    with pytest.raises(EngineError):
+        _ff._probe_raw("a.mp4")
+    assert seen["timeout"] == _ff.PROBE_TIMEOUT < _ff.DEFAULT_TIMEOUT

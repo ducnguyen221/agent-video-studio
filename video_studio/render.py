@@ -130,7 +130,10 @@ def render_project(proj_dir, out_file, timeout=DEFAULT_TIMEOUT, retries=RETRIES,
                          f"lần {attempt + 1}/{retries}{more}\n{tail}")
             if attempt < retries - 1:
                 sleep(RETRY_SLEEP)
-    raise EngineError(f"{tag}HyperFrames render hỏng sau {retries} lần (mã {last.returncode}) — "
+    # `max(1, retries)` ở vòng lặp: `retries=0` vẫn chạy MỘT lần, nên câu "hỏng sau 0 lần"
+    # là sai sự thật với chính vòng lặp ngay trên nó.
+    raise EngineError(f"{tag}HyperFrames render hỏng sau {max(1, retries)} lần "
+                      f"(mã {last.returncode}) — "
                       f"xem log ở trên; chạy `video-studio doctor --hf` để kiểm engine")
 
 
@@ -168,8 +171,16 @@ def apply_bgm(outputs, spec):
                 contract.log(f"  ! nhạc nền '{style}' không trộn được vào {o['path']} — "
                              "giữ nguyên bản không nhạc (kiểm thư viện nhạc của trạm giọng)")
         except StationMissing as e:
+            # Thiếu trạm giọng / thiếu thư viện nhạc: mọi file sau cũng thế, dừng thử luôn.
             contract.log(f"  ! bỏ qua nhạc nền: {e}")
             break
+        except Exception as e:      # noqa: BLE001 — xem docstring: mất nhạc ≠ hỏng lượt render
+            # Chỉ cứu `StationMissing` là hứa một đằng làm một nẻo: một file nhạc hỏng hay một
+            # lỗi ffmpeg trong `av.mix_bgm` sẽ thoát MÃ 1 **sau khi mp4 đã nằm trên đĩa**.
+            # Bên gọi đọc mã 1 là "render hỏng, thử lại", nên nó render lại cả lượt rồi đâm
+            # vào đúng file nhạc đó — hỏng mãi mãi, và tốn cả một lượt render mỗi lần.
+            contract.log(f"  ! nhạc nền '{style}' lỗi trên {o['path']}: "
+                         f"{e.__class__.__name__}: {e} — giữ nguyên bản không nhạc")
     return mixed
 
 

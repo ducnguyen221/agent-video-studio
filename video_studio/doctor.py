@@ -11,8 +11,9 @@ Kiểm: python · node ≥ 22 · npx · `npx hyperframes@<bản> doctor` · Chro
 `VIDEO_ROOT` bị nhắc đổi) · `station.json` · hai nguồn sự thật (F17) · repo giọng (tuỳ chọn,
 cho narrate) · video-use (tuỳ chọn, cho edit).
 
-Mã thoát: 0 dùng được (có thể kèm cảnh báo) · 2 bản HyperFrames không hợp lệ · 3 thiếu thứ bắt
-buộc (node, npx, ffmpeg, trạm) — kèm hướng dẫn cài phần còn thiếu.
+Mã thoát: 0 dùng được (có thể kèm cảnh báo) · 2 phải SỬA CẤU HÌNH (bản HyperFrames không hợp
+lệ, `two-sources`, `gitignore` thủng) · 3 phải CÀI TIẾP (node, npx, ffmpeg, trạm) — kèm hướng
+dẫn phần còn thiếu. Mỗi check tự khai mã của mình; đỏ nhiều check thì lấy mã NẶNG NHẤT.
 """
 import argparse
 import datetime
@@ -23,6 +24,7 @@ import re
 import shutil
 import subprocess
 import sys
+import traceback
 
 from . import API_VERSION, _env, contract
 
@@ -51,13 +53,22 @@ CLOUD_MARKERS = ("onedrive", "google drive", "googledrive", "my drive", "icloud"
                  "mobile documents", "cloudstorage")
 
 
-def _check(name, ok, detail="", level="error", hint=""):
+def _check(name, ok, detail="", level="error", hint="", code=None):
+    """Một dòng kết quả kiểm. `code` = mã thoát mà check này ĐÒI khi nó đỏ.
+
+    Mặc định là 3 ("cài thêm đi") vì đa số check là thiếu công cụ. Nhưng `two-sources` và
+    `gitignore` không phải thiếu gì cả — chúng là CẤU HÌNH sai, và cài thêm bao nhiêu lần
+    cũng không chữa được. Cùng điều kiện ấy ở `station.py` đã là `ContractError` = mã 2; để
+    `doctor` trả 3 thì lịch chạy đọc hai mã khác nhau cho cùng một sự thật.
+    """
     return {"name": name, "ok": bool(ok), "level": "ok" if ok else level,
-            "detail": detail, "hint": "" if ok else hint}
+            "detail": detail, "hint": "" if ok else hint,
+            "code": int(code or contract.STATION_MISSING)}
 
 
 def _skip(name, detail):
-    return {"name": name, "ok": True, "level": "skip", "detail": detail, "hint": ""}
+    return {"name": name, "ok": True, "level": "skip", "detail": detail, "hint": "",
+            "code": contract.OK}
 
 
 def _run(argv, timeout=60):
@@ -204,7 +215,8 @@ def two_sources_check():
         others.append("~/.video")
     out = [_check("two-sources", not others, f"{ws} + {', '.join(others)}" if others else ws,
                   hint="hai nguồn sự thật cho một repo: giữ MỘT trạm — gộp dữ liệu rồi xoá "
-                       "workspace/ hoặc gỡ biến/trạm ngoài")]
+                       "workspace/ hoặc gỡ biến/trạm ngoài",
+                  code=contract.CONTRACT_ERROR)]
     low = repo.lower()
     cloud = [m for m in CLOUD_MARKERS if m in low]
     out.append(_check("cloud-sync", not cloud, repo, level="warn",
@@ -240,7 +252,8 @@ def embedded_guard_checks():
                   ("git KHÔNG chặn: " + ", ".join(leaked)) if leaked else
                   "git chặn " + ", ".join(IGNORE_MUST),
                   hint="chế độ embedded để dữ liệu trạm trong repo — khôi phục các dòng "
-                       "workspace/, .env, studio.local.json trong .gitignore trước khi commit")]
+                       "workspace/, .env, studio.local.json trong .gitignore trước khi commit",
+                  code=contract.CONTRACT_ERROR)]
     hook = os.path.join(repo, ".git", "hooks", "pre-commit")
     out.append(_check("pre-commit", os.path.isfile(hook), hook, level="warn",
                       hint="lớp rào thứ hai chưa có — chạy lại `video-studio init` để cài "
@@ -310,7 +323,12 @@ def _published(npm, version):
 
 
 def _age_days(iso):
-    """Tuổi (ngày) của một mốc ISO — None nếu không đọc được. Không đọc được ≠ mới."""
+    """Tuổi (ngày) của một mốc ISO — `None` nếu không đọc được.
+
+    `None` nghĩa là KHÔNG BIẾT, và bên gọi (`update_check`) xử nó là "không stale": không
+    đọc được ngày thì không có căn cứ để kêu, nhưng cũng không phải bằng chứng là bản mới.
+    Luật lệch-bản vẫn áp bình thường — chỉ riêng cổng tuổi là im.
+    """
     try:
         t = datetime.datetime.strptime(str(iso)[:19], "%Y-%m-%dT%H:%M:%S")
     except (TypeError, ValueError):
@@ -389,9 +407,17 @@ def run_checks(hf=None, offline=False, check_updates=False):
 
 
 class _DoctorFailed(contract.StationMissing):
+    """Có ít nhất một check đỏ. `code` = mã NẶNG NHẤT trong các check đỏ.
+
+    `max()` chứ không phải "thấy cái nào lấy cái đó": thiếu node (3) mà lại còn cấu hình sai
+    (2) thì cài node xong vẫn chưa chạy được, nên bên gọi cần nghe "còn phải sửa cấu hình".
+    """
+
     def __init__(self, result):
         super().__init__("trạm video chưa đủ: " + ", ".join(result["errors"]))
         self.result = result
+        self.code = max([c["code"] for c in result["checks"] if c["level"] == "error"]
+                        or [contract.STATION_MISSING])
 
 
 def doctor(args):
@@ -424,20 +450,34 @@ def build_parser(prog="video-studio doctor"):
 
 
 def main(argv=None):
+    """Như mọi lệnh khác, nhưng `doctor` tự dựng dòng JSON vì nó mang theo cả bảng `checks`.
+
+    `except Exception` ở cuối là BẮT BUỘC, không phải cẩn thận thừa: `doctor` là lệnh đi sờ
+    vào máy thật (`os.walk` thư mục font, `git check-ignore`, `npm view`), nên một `OSError`
+    — liên kết mềm gãy trong thư mục font chẳng hạn — hoàn toàn có thể xảy ra. Trước đây nó
+    lọt ra ngoài thành traceback trần: `--json` KHÔNG có dòng JSON nào, và bên gọi theo hợp
+    đồng `docs/CONTRACT.md` §2 (đọc dòng cuối stdout) thì vỡ chứ không phải đọc được lỗi.
+    """
     args, code = contract.parse(build_parser(), argv)
     if args is None:
         return code
     try:
         result = doctor(args)
+    except KeyboardInterrupt:
+        raise
     except _DoctorFailed as e:
         if args.json:
-            contract.emit({"ok": False, "code": contract.STATION_MISSING, "error": str(e), **e.result})
-        return contract.STATION_MISSING
-    except contract.VideoStudioError as e:
-        contract.log(f"[video-studio] LỖI ({e.code}): {e}")
-        if args.json:
-            contract.emit({"ok": False, "code": e.code, "error": str(e)})
+            contract.emit({"ok": False, "code": e.code, "error": str(e), **e.result})
         return e.code
+    except Exception as e:      # noqa: BLE001 — biên của CLI: mọi lỗi phải thành mã + JSON
+        code = contract.classify(e)
+        msg = str(e) or e.__class__.__name__
+        contract.log(f"[video-studio] LỖI ({code}): {msg}")
+        if code == contract.ENGINE_ERROR:
+            contract.log(traceback.format_exc().rstrip())
+        if args.json:
+            contract.emit({"ok": False, "code": code, "error": msg})
+        return code
     if args.json:
         contract.emit({"ok": True, **result})
     return contract.OK

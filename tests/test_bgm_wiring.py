@@ -4,6 +4,8 @@ Trước gói này `bgm` chỉ là dữ liệu đi qua: spec kiểm nó, rồi k
 được kiểm nhưng không nối vào đâu là thứ tệ hơn khoá không có — người dùng khai nhạc nền, lệnh
 báo xanh, video ra không có nhạc và không ai biết vì sao.
 """
+import os
+
 import pytest
 
 from conftest import fake_voice_studio
@@ -40,6 +42,29 @@ def test_a_missing_music_file_does_not_kill_the_render(tmp_path, monkeypatch, ca
     outs = _outputs(tmp_path, "a.mp4")
     assert render.apply_bgm(outs, {"bgm": {"style": "khong-co"}}) == []
     assert "giữ nguyên bản không nhạc" in capsys.readouterr().err
+
+
+def test_a_broken_music_file_does_not_kill_the_render_either(tmp_path, monkeypatch, capsys):
+    """Docstring hứa "mất nhạc nền không được giết lượt render" — phải đúng với MỌI lỗi.
+
+    Chỉ cứu `StationMissing` thì một file nhạc hỏng (ffmpeg ném EngineError) làm cả lượt thoát
+    MÃ 1 **sau khi mp4 đã nằm trên đĩa**. Bên gọi đọc mã 1 là "render hỏng, thử lại" nên nó
+    render lại cả lượt rồi đâm vào đúng file nhạc đó — hỏng mãi mãi, mỗi lần tốn một lượt render.
+    """
+    from video_studio.contract import EngineError
+
+    def boom(path, bgm, volume):
+        raise EngineError("ffmpeg: Invalid data found when processing input")
+
+    fake_voice_studio(monkeypatch, mix_bgm=boom)
+    outs = _outputs(tmp_path, "a.mp4", "b.mp4")
+    assert render.apply_bgm(outs, {"bgm": {"style": "lofi"}}) == []
+    err = capsys.readouterr().err
+    assert "giữ nguyên bản không nhạc" in err
+    assert "Invalid data" in err                     # lỗi thật vẫn tới được người đọc
+    assert err.count("giữ nguyên bản không nhạc") == 2, "lỗi một file không được bỏ file kia"
+    for o in outs:
+        assert os.path.isfile(o["path"]), "file đã dựng phải còn nguyên trên đĩa"
 
 
 def test_without_the_voice_repo_bgm_is_skipped_not_fatal(tmp_path, monkeypatch, capsys):

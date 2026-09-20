@@ -69,6 +69,28 @@ def test_bad_arguments_to_a_real_command_still_emit_json(capsys):
     assert last_json(out)["ok"] is False and last_json(out)["code"] == 2
 
 
+def test_a_module_that_fails_to_import_still_ends_in_one_json_line(monkeypatch, capsys):
+    """`import_module` chạy TRƯỚC `contract.run` của lệnh con.
+
+    Một module hỏng (thiếu phụ thuộc tuỳ chọn, lỗi cú pháp sau một lần sửa) cho traceback
+    TRẦN: `--json` không có dòng JSON nào, và bên gọi theo CONTRACT.md §2 vỡ chứ không đọc
+    được lỗi. Lớp NẠP cũng phải nằm trong hợp đồng.
+    """
+    monkeypatch.setitem(COMMANDS, "hong", ("video_studio._khong_he_ton_tai", "lệnh hỏng"))
+    rc = main(["hong", "--json"])
+    assert rc in (1, 3)                              # tuỳ ImportError được phân loại thế nào
+    payload = last_json(capsys.readouterr().out)     # <- chính là thứ trước đây KHÔNG có
+    assert payload["ok"] is False
+    assert "không nạp được lệnh" in payload["error"]
+
+
+def test_a_module_without_the_entry_function_is_not_a_bare_traceback(monkeypatch, capsys):
+    monkeypatch.setitem(COMMANDS, "hong2", ("video_studio.contract:khong_co_ham", "lệnh hỏng"))
+    rc = main(["hong2", "--json"])
+    assert rc != 0
+    assert last_json(capsys.readouterr().out)["ok"] is False
+
+
 def test_every_command_documented_in_help():
     from video_studio.cli import usage
     text = usage()

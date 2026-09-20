@@ -21,6 +21,13 @@ from .. import _env
 from ..contract import EngineError, StationMissing
 
 HDR_TRANSFERS = {"smpte2084", "arib-std-b67"}       # PQ (HDR10) và HLG
+#: Trần thời gian cho MỘT lần gọi ffmpeg. `timeout=None` (bản trước) nghĩa là ffmpeg treo thì
+#: treo VĨNH VIỄN: lượt lịch 18h không bao giờ kết thúc, không báo hỏng, và cái kẹt lại là một
+#: tiến trình con không ai thấy. Nhánh HyperFrames đã có `DEFAULT_TIMEOUT = 3600` — chỗ này
+#: lấy cùng con số, và bên gọi vẫn truyền `timeout=` riêng khi biết việc mình lâu hơn.
+DEFAULT_TIMEOUT = 3600
+#: Thăm dò chỉ đọc metadata nên phải nhanh; lâu hơn thế là nguồn có vấn đề, không phải việc nặng.
+PROBE_TIMEOUT = 120
 HINT = ("cài ffmpeg (kèm ffprobe) rồi thử lại — hoặc đặt FFMPEG_DIR trỏ thư mục chứa chúng. "
         "Kiểm bằng `video-studio doctor`.")
 
@@ -41,14 +48,19 @@ def probe_exe():
     return p
 
 
-def run(args, quiet=True, timeout=None):
+def run(args, quiet=True, timeout=DEFAULT_TIMEOUT):
     """Chạy ffmpeg với argv list. Hỏng ⇒ EngineError kèm 15 dòng cuối stderr.
 
     Bản gốc dùng `stderr=PIPE` rồi bỏ đi: lỗi thật của ffmpeg nằm ở đó, và không in ra thì
     người đọc chỉ thấy "CalledProcessError: returned non-zero".
+
+    Quá `timeout` ⇒ EngineError (mã 1, thử lại được) chứ không phải treo im lặng.
     """
     argv = [exe(), "-hide_banner", "-nostats", *args]
-    r = subprocess.run(argv, capture_output=True, timeout=timeout)
+    try:
+        r = subprocess.run(argv, capture_output=True, timeout=timeout)
+    except subprocess.TimeoutExpired as e:
+        raise EngineError(f"ffmpeg quá {timeout}s chưa xong: {' '.join(map(str, args[:6]))}…") from e
     if r.returncode != 0:
         err = (r.stderr or b"").decode("utf-8", "replace")
         tail = "\n".join(err.strip().splitlines()[-15:])
@@ -60,7 +72,12 @@ def run(args, quiet=True, timeout=None):
 
 def _probe_raw(path):
     argv = [probe_exe(), "-v", "error", "-show_streams", "-show_format", "-of", "json", str(path)]
-    r = subprocess.run(argv, capture_output=True, text=True, encoding="utf-8", errors="replace")
+    try:
+        # ffprobe trên một file trên ổ mạng / OneDrive placeholder treo được như ffmpeg.
+        r = subprocess.run(argv, capture_output=True, text=True, encoding="utf-8",
+                           errors="replace", timeout=PROBE_TIMEOUT)
+    except subprocess.TimeoutExpired as e:
+        raise EngineError(f"ffprobe quá {PROBE_TIMEOUT}s chưa đọc xong {path}") from e
     if r.returncode != 0:
         raise EngineError(f"ffprobe không đọc được {path}: {(r.stderr or '').strip()}")
     try:

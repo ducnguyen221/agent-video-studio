@@ -57,6 +57,7 @@ import soundfile as sf
 from voice_studio import av, engine, profiles
 
 from ... import _env, projects, render
+from ...contract import StationMissing
 from . import news_video as nv
 
 PROJECT = "topstory"
@@ -91,8 +92,19 @@ def _vn_display(date_iso):
 
 
 def _ffbin(name):
-    """ffmpeg/ffprobe: FFMPEG_DIR → PATH. Bản cũ tự nối `.exe` — sai ở mọi máy không-Windows."""
-    return (_env.ffmpeg_exe() if name == "ffmpeg" else _env.ffprobe_exe()) or name
+    """ffmpeg/ffprobe: FFMPEG_DIR → PATH. Bản cũ tự nối `.exe` — sai ở mọi máy không-Windows.
+
+    Không tìm thấy ⇒ `StationMissing` (mã 3, "cài thêm đi"), giống `edit/_ff.probe_exe()`.
+    Trả về chuỗi trần `"ffprobe"` như bản cũ thì `subprocess.run` ném `FileNotFoundError`, và
+    nó bị phân loại thành mã 1 — "thử lại có thể qua". Máy chưa có ffmpeg thì thử lại bao
+    nhiêu lần cũng thế; người đọc cần nghe "cài ffmpeg", không phải "chạy lại xem sao".
+    """
+    p = _env.ffmpeg_exe() if name == "ffmpeg" else _env.ffprobe_exe()
+    if not p:
+        raise StationMissing(
+            f"không thấy `{name}` — cài ffmpeg (Windows: `winget install Gyan.FFmpeg`; "
+            "macOS: `brew install ffmpeg`), hoặc đặt FFMPEG_DIR")
+    return p
 
 
 def _clip_duration(path):

@@ -113,8 +113,8 @@ video-studio edit --footage <dir> --out <dir> --backend vendored
 
 ## 6. macOS: ba chỗ khác Windows
 
-1. **Không có PowerShell mặc định** — hai file `scripts/*.ps1` là vỏ tiện cho Windows; trên
-   macOS gọi thẳng `video-studio …`.
+1. **Không có PowerShell mặc định** — ba file `scripts/*.ps1` là vỏ tiện cho Windows; trên
+   macOS gọi thẳng `video-studio …` (bản cài video-use dùng `scripts/install-video-use.sh`).
 2. **Chromium ghim theo bản engine** chưa có sẵn trong cache ⇒ chạy `browser ensure` một lần.
 3. **Bóc lời tại máy chạy CPU** (không có CUDA): chậm hơn nhiều. Dùng model nhỏ hơn bằng biến
    `VIDEO_WHISPER_MODEL=medium` nếu chỉ cần mốc thời gian để cắt.

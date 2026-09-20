@@ -27,6 +27,16 @@ param(
 )
 
 # Do NOT set ErrorActionPreference=Stop: the engines log to stderr on a healthy run.
+#
+# Exit codes are part of the contract (docs/CONTRACT.md): 1 means "retry may work", 2 means
+# "fix the call", 3 means "install something". A bare `throw` makes `pwsh -File` exit 1, so a
+# scheduled task would retry "video-studio is not installed" forever - the one failure that
+# retrying can never fix. Every fatal path below picks 2 or 3 explicitly.
+
+function Fail($code, $message) {
+    Write-Error $message
+    exit $code
+}
 
 function Find-VideoStudio {
     $cmd = Get-Command 'video-studio' -ErrorAction SilentlyContinue
@@ -38,11 +48,11 @@ function Find-VideoStudio {
         & $c.Source -c 'import sys' 2>$null | Out-Null
         if ($LASTEXITCODE -eq 0) { return , @($c.Source, '-m', 'video_studio') }
     }
-    throw "video-studio not found. Install it: pip install -e <clone of agent-video-studio>"
+    Fail 3 "video-studio not found. Install it: pip install -e <clone of agent-video-studio>"
 }
 
-if (-not $Project -and -not $Video) { throw "Give -Project <name|dir> or -Video <silent.mp4>." }
-if (-not $Text -and -not $TextFile) { throw "Give -Text or -TextFile (the narration)." }
+if (-not $Project -and -not $Video) { Fail 2 "Give -Project <name|dir> or -Video <silent.mp4>." }
+if (-not $Text -and -not $TextFile) { Fail 2 "Give -Text or -TextFile (the narration)." }
 
 $argv = @('narrate', '--out', $Out, '--mode', $Mode)
 if ($Project) { $argv += @('--project', $Project) }
