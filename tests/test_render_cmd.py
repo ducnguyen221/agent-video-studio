@@ -72,6 +72,20 @@ def test_floating_version_is_a_contract_error(npx, monkeypatch, bad):
     assert e.value.code == contract.CONTRACT_ERROR
 
 
+def test_render_declares_quality_explicitly(npx, run, tmp_path, monkeypatch):
+    """`render` phải khai `-q standard`, không để engine tự chọn.
+
+    Từ 0.8.38 mặc định của HyperFrames đổi sang `looks` (CRF 16): cùng một cảnh nặng thêm
+    ~45 % mà mắt không thấy khác. Bỏ cờ này đi là để bản engine đang cài quyết định file
+    giao nặng bao nhiêu — đo được ở PVi-T13, không phải phỏng đoán.
+    """
+    monkeypatch.setenv("HYPERFRAMES_VERSION", "0.8.54")
+    render.render_project(str(tmp_path), "silent.mp4")
+    argv = run.calls[0][0]
+    assert argv == [FAKE_NPX, "--yes", "hyperframes@0.8.54", "render", "-o", "silent.mp4",
+                    "-q", "standard"]
+
+
 def test_render_passes_a_list_and_never_uses_a_shell(npx, run, tmp_path, monkeypatch):
     monkeypatch.setenv("HYPERFRAMES_VERSION", "0.7.94")
     render.render_project(str(tmp_path), "silent.mp4", timeout=42)

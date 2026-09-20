@@ -41,8 +41,10 @@ LOCAL_CONFIG = "studio.local.json"
 WORKSPACE = "workspace"
 STATION_FILE = "station.json"
 
-# Bản đang chạy thật trong pipeline lúc dựng repo. TẠM: đổi sau khi render hồi quy bản mới đạt.
-DEFAULT_HYPERFRAMES_VERSION = "0.7.94"
+# Bản đã qua render hồi quy (PVi-T13, 20/09/2026): cùng index.html, cùng thời lượng, khung
+# trùng tới từng điểm ảnh ở 3/6 mốc đo và PSNR 48–59 dB ở phần còn lại, dung lượng lệch
+# +0,007 % — với điều kiện `render` khai `-q standard` (xem render.QUALITY).
+DEFAULT_HYPERFRAMES_VERSION = "0.8.54"
 _EXACT_VERSION = re.compile(r"^\d+\.\d+\.\d+(?:-[0-9A-Za-z.]+)?$")
 
 DEFAULT_FONT_STACK = "Inter, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif"

@@ -2,7 +2,7 @@
   "_doc": "BẢN MẪU để đọc, không phải file đang dùng. `video-studio init` tự ghi station.json thật ở gốc trạm; sửa bản thật thì sửa trực tiếp file đó, giá trị bạn sửa luôn thắng khi chạy init lần sau.",
   "contract": "1.0.0",
   "mode": "separate",
-  "hyperframes_version": "0.7.94",
+  "hyperframes_version": "0.8.54",
   "projects_dir": "projects",
   "video_use": {
     "dir": "video-use",

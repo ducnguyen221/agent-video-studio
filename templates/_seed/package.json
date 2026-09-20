@@ -3,8 +3,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "preview": "npx --yes hyperframes@0.7.94 preview",
-    "check": "npx --yes hyperframes@0.7.94 lint",
-    "render": "npx --yes hyperframes@0.7.94 render -o out.mp4"
+    "preview": "npx --yes hyperframes@0.8.54 preview",
+    "check": "npx --yes hyperframes@0.8.54 lint",
+    "render": "npx --yes hyperframes@0.8.54 render -o out.mp4"
   }
 }

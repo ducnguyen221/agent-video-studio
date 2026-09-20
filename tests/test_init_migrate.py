@@ -12,7 +12,7 @@ import os
 
 import pytest
 
-from video_studio import API_VERSION, station
+from video_studio import API_VERSION, _env, station
 from video_studio.cli import main as cli_main
 from conftest import last_json
 
@@ -346,7 +346,7 @@ def test_fresh_station_from_seed_and_undo(tmp_path, monkeypatch, capsys):
     assert rc == 0, err
     assert (st / "demo" / "compositions" / "intro.html").is_file()
     pkg = (st / "demo" / "package.json").read_text(encoding="utf-8")
-    assert "hyperframes@0.7.94" in pkg and "0.0.0" not in pkg
+    assert f"hyperframes@{_env.DEFAULT_HYPERFRAMES_VERSION}" in pkg and "0.0.0" not in pkg
     for d in ("projects", "scratch", "cache", ".claude/skills/hf-core", ".agents/skills/video-routing"):
         assert (st / d).is_dir(), d
     assert run(["init", "--station", str(st), "--undo"], capsys)[0] == 0

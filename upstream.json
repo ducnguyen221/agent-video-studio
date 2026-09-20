@@ -146,10 +146,11 @@
     "hyperframes-engine": {
       "package": "hyperframes",
       "registry": "npm",
-      "pinned": "0.7.94",
-      "latest_seen": "0.8.51",
+      "pinned": "0.8.54",
+      "previous_pin": "0.7.94",
+      "latest_seen": "0.8.54",
       "license": "Apache-2.0",
-      "how": "Phu thuoc luc chay, goi qua `npx hyperframes@$HYPERFRAMES_VERSION`. Khong chep ma engine vao repo. Nang ban la viec cua PVi-T13 (can render hoi quy)."
+      "how": "Phu thuoc luc chay, goi qua `npx hyperframes@$HYPERFRAMES_VERSION`. Khong chep ma engine vao repo. Nang tu 0.7.94 len 0.8.54 ngay 2026-09-20 sau render hoi quy 1 long + 1 short (PVi-T13): cung thoi luong, khung trung, dung luong lech +0,007 % khi `render` khai `-q standard`. Lui ban: dat HYPERFRAMES_VERSION=0.7.94 va xoa khoa `registryItems` trong hyperframes.json neu co."
     },
     "video-use": {
       "repo": "browser-use/video-use",

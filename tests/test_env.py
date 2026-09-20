@@ -103,7 +103,9 @@ def test_projects_dir_env_station_default(tmp_path, monkeypatch):
 # ── HyperFrames ─────────────────────────────────────────────────────────────────────────
 
 def test_hyperframes_default_version():
-    assert _env.hyperframes_version() == _env.DEFAULT_HYPERFRAMES_VERSION == "0.7.94"
+    # Bản ghi thẳng ở đây CỐ Ý: đổi mặc định là quyết định phải qua render hồi quy
+    # (PVi-T13), nên nó phải làm đỏ một test chứ không lặng lẽ trôi theo hằng số.
+    assert _env.hyperframes_version() == _env.DEFAULT_HYPERFRAMES_VERSION == "0.8.54"
 
 
 def test_hyperframes_version_env_then_station(tmp_path, monkeypatch):

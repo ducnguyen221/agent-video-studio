@@ -27,7 +27,8 @@ from . import API_VERSION, _env, contract
 MIN_NODE = 22
 # Chromium mà từng bản HyperFrames ghim (đọc từ mã nguồn upstream). Bản không có trong bảng:
 # chỉ kiểm "có ít nhất một bản", để `hyperframes doctor` nói phần còn lại.
-KNOWN_CHROMIUM = {"0.7.94": "152.0.7928.2", "0.8.51": "152.0.7977.30"}
+KNOWN_CHROMIUM = {"0.7.94": "152.0.7928.2", "0.8.51": "152.0.7977.30",
+                  "0.8.54": "152.0.7977.30"}
 
 HINT_NODE = ("cài Node ≥ 22 — Windows: `winget install OpenJS.NodeJS.LTS`; macOS: `brew install node`; "
              "hoặc nodejs.org. Không nằm trên PATH thì đặt NODE_DIR")

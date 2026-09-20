@@ -33,6 +33,8 @@ INDEX = "index.html"
 DEFAULT_TIMEOUT = 3600
 RETRIES = 3
 RETRY_SLEEP = 20
+# Mức chất lượng khai tường minh cho `hyperframes render` — xem render_project().
+QUALITY = "standard"
 
 # tên project ở dòng lệnh -> (module template, hàm, mô tả)
 TEMPLATES = {
@@ -42,8 +44,8 @@ TEMPLATES = {
     "repo-today":  ("news", "render_repo_today", "deep-dive nhiều cảnh (news v2)"),
 }
 
-__all__ = ["FONT_TOKEN", "TEMPLATES", "render_env", "hyperframes_argv", "write_index",
-           "render_project", "main"]
+__all__ = ["FONT_TOKEN", "QUALITY", "TEMPLATES", "render_env", "hyperframes_argv",
+           "write_index", "render_project", "main"]
 
 
 # ── vỏ bọc HyperFrames ──────────────────────────────────────────────────────────────────
@@ -100,8 +102,14 @@ def render_project(proj_dir, out_file, timeout=DEFAULT_TIMEOUT, retries=RETRIES,
 
     `out_file` tương đối được hiểu là tương đối với thư mục project (HyperFrames chạy `cwd`
     ở đó). Ném EngineError (mã 1) khi HyperFrames hỏng sau khi đã thử lại.
+
+    `-q standard` được khai TƯỜNG MINH, không để engine tự chọn: từ 0.8.38 mặc định đổi sang
+    `looks` (CRF 16), đo trên bản tin thật là **+44…+49 % dung lượng** mà mắt không thấy khác
+    (PSNR 45–51 dB). Chất lượng ra là quyết định của người dựng, không phải của bản engine
+    tình cờ đang cài — khai rõ thì đổi bản không âm thầm đổi file giao. Cờ này hợp lệ ở cả
+    0.7.94 lẫn nhánh 0.8.x nên đường lùi vẫn chạy.
     """
-    argv = hyperframes_argv("render", "-o", out_file, version=version)
+    argv = hyperframes_argv("render", "-o", out_file, "-q", QUALITY, version=version)
     env = render_env()
     tag = f"[{label}] " if label else ""
     last = None
