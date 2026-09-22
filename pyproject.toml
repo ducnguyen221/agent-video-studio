@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "agent-video-studio"
-version = "0.1.0.dev0"
+version = "0.1.0"
 description = "Engine dựng video cho agent quanh HyperFrames: dựng trạm, kiểm máy, render theo template, chỉnh footage — cài được, gọi được từ pipeline khác."
 readme = "README.md"
 license = { text = "MIT" }
