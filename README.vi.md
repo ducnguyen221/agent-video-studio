@@ -1,12 +1,12 @@
 # agent-video-studio
 
-*[English](README.md)*
+*[English](README.md)* · [Trang giới thiệu](https://ducnguyen.vn/agent-video-studio/)
 
 Engine dựng video cho agent: composition HTML/CSS/GSAP được
 [HyperFrames](https://github.com/heygen-com/hyperframes) render ra MP4, bọc trong một package
 Python cài được với một lệnh duy nhất, `video-studio`.
 
-> **Trạng thái: bản thử (0.1.0.dev0).** Bản này có bố cục trạm, lệnh kiểm máy, công cụ di trú,
+> **Trạng thái: bản phát hành đầu tiên, v0.1.0.** Bản này có bố cục trạm, lệnh kiểm máy, công cụ di trú,
 > họ template bản tin, lồng tiếng, xem trước, chỉnh footage, và `export` / `import` để mang dữ
 > liệu trạm sang máy khác. Mọi lệnh trong bảng dưới đều đã có mã thật.
 
@@ -62,6 +62,7 @@ Hướng dẫn từng bước cho người dùng: [GUIDE.vi.md](GUIDE.vi.md).
 
 ## Tài liệu
 
+- [Trang giới thiệu](https://ducnguyen.vn/agent-video-studio/) — nó làm gì, cài thế nào, quy tắc.
 - [docs/INSTALL.md](docs/INSTALL.md) — Node, ffmpeg, font, và **cài vào venv nào**.
 - [docs/WORKSPACE.md](docs/WORKSPACE.md) — trạm, hai chế độ cài, thứ gì xoá được.
 - [docs/AGENT_VIDEO_GUIDE.md](docs/AGENT_VIDEO_GUIDE.md) — agent lái trọn quy trình thế nào.
@@ -81,6 +82,30 @@ harness đọc để định tuyến. Không file nhị phân nào của upstrea
 `video-studio init` chép cả 24 skill vào `<trạm>/.claude/skills` và `<trạm>/.agents/skills`, và
 ghi `skills-lock.json`. Trạm còn skill đời cũ do công cụ khác cài thì `init --migrate` **gỡ**
 chúng đi — bản cũ được lưu vào nhật ký của lần init nên `init --undo` trả lại được.
+
+## Quy tắc
+
+Đây không phải lời khuyên. Chúng là lý do repo này dựng theo cách hiện tại, và là điều kiện để
+dùng nó mà không gây rắc rối cho ai.
+
+1. **Ghi công đúng nguồn, đúng giấy phép.** Bộ skill chưng cất từ HyperFrames mang giấy phép
+   **Apache-2.0** kèm nghĩa vụ ghi chú "đã sửa" (§4(b)); bộ helper của `edit` chưng cất từ
+   `video-use` mang giấy phép **MIT**; một skill của upstream còn kéo theo ghi công **MIT** cho
+   `vtake-skills`. Cả ba ghi đầy đủ trong `NOTICE` kèm tag nguồn. **Gỡ ghi công là vi phạm giấy
+   phép**, không phải một lựa chọn biên tập.
+2. **Không phát hành lại tài sản của người khác.** Không font, không nhạc, không ảnh, không
+   video của upstream được chép vào repo này — giấy phép từng file đó chưa kiểm được. Cái gì cần
+   thì **gọi lúc chạy** và do người dùng tự cài.
+3. **Thương hiệu phải khai, không có mặc định.** Spec thiếu `brand.a` / `brand.b` / `brand.site`
+   là **mã thoát 2**. Một mặc định im lặng ở chỗ này nghĩa là video của bạn mang tên người khác,
+   và bạn chỉ phát hiện ra sau khi đã đăng.
+4. **Ghim bản, và chỉ báo chứ không tự nâng.** Engine luôn gọi qua
+   `npx hyperframes@$HYPERFRAMES_VERSION`, không bao giờ `latest`. `doctor --check-updates` chỉ
+   **báo** có bản mới; nâng hay không là quyết định của bạn, vì nâng engine là đổi thứ sẽ ra file.
+
+Bộ test có cổng chặn tên khách hàng, tên thương hiệu riêng, tên profile giọng, đường dẫn máy và
+biến môi trường trỏ thư mục người dùng — quét cả tài liệu lẫn trang giới thiệu, **miễn trừ theo số
+đếm** chứ không miễn cả file.
 
 ## Giấy phép
 

@@ -43,7 +43,7 @@ Thành công:
  "outputs": [{"kind": "long",  "path": "…/2026-01-02-top.mp4",       "duration": 372.4},
              {"kind": "short", "path": "…/2026-01-02-top-short.mp4", "duration": 78.1}],
  "timings": {"total": 812.5},
- "engine": {"hyperframes": "0.8.54", "voice_studio": "0.2.0", "video_studio": "0.1.0.dev0",
+ "engine": {"hyperframes": "0.8.54", "voice_studio": "0.2.0", "video_studio": "0.1.0",
             "contract": "1.0.0"}}
 ```
 

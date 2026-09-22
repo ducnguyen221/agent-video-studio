@@ -63,8 +63,17 @@ ALLOW = {
     (".codex-plugin/plugin.json", "mien"): 1,
     ("LICENSE", "tac-gia"): 1,
     ("NOTICE", "tac-gia"): 1,
-    ("README.md", "tac-gia"): 1,
-    ("README.vi.md", "tac-gia"): 1,
+    ("README.md", "tac-gia"): 3,
+    ("README.vi.md", "tac-gia"): 3,
+    # Liên kết tới trang giới thiệu công khai của chính repo này, ở đầu README và
+    # trong danh sách tài liệu — cùng loại với `author.url` của manifest.
+    ("README.md", "mien"): 2,
+    ("README.vi.md", "mien"): 2,
+    # Trang giới thiệu công khai (GitHub Pages): địa chỉ kho mã, tài liệu và các trang cùng họ
+    # là NỘI DUNG của trang, không phải rò rỉ. Vẫn khoá theo số đếm: thêm một liên kết là đỏ,
+    # nên không ai nhét được đường dẫn máy hay tên thật vào đây mà không bị nhìn thấy.
+    ("docs/index.html", "tac-gia"): 22,
+    ("docs/index.html", "mien"): 9,
 }
 
 

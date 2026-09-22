@@ -1,12 +1,12 @@
 # agent-video-studio
 
-*[Tiếng Việt](README.vi.md)*
+*[Tiếng Việt](README.vi.md)* · [Website](https://ducnguyen.vn/agent-video-studio/)
 
 A video-production engine an AI agent can drive: HTML/CSS/GSAP compositions rendered to MP4 by
 [HyperFrames](https://github.com/heygen-com/hyperframes), wrapped in an installable Python package
 with one CLI, `video-studio`.
 
-> **Status: pre-release (0.1.0.dev0).** This build ships the station layout, the machine check,
+> **Status: first release, v0.1.0.** This build ships the station layout, the machine check,
 > the migration tool, the news template family, narration, preview, footage editing, and
 > `export` / `import` for moving station data between machines. Every command in the table
 > below is backed by real code.
@@ -66,6 +66,7 @@ always an exact version (never `latest`).
 
 ## Documentation
 
+- [Website](https://ducnguyen.vn/agent-video-studio/) — what it does, how to install, the rules.
 - [docs/INSTALL.md](docs/INSTALL.md) — Node, ffmpeg, fonts, and *which venv to install into*.
 - [docs/WORKSPACE.md](docs/WORKSPACE.md) — the station, the two install modes, what is safe to delete.
 - [docs/AGENT_VIDEO_GUIDE.md](docs/AGENT_VIDEO_GUIDE.md) — how an agent drives the whole thing.
@@ -86,6 +87,31 @@ that is what a harness reads to route. No upstream binary (font, audio, image) a
 and writes `skills-lock.json`. If the station still carries an older skill set installed by
 another tool, `init --migrate` removes it — the old copy is kept in the run journal, so
 `init --undo` puts it back.
+
+## Rules
+
+Not advice — these are why the repository is built the way it is, and the conditions for using
+it without causing anybody trouble.
+
+1. **Credit the right source under the right licence.** The distilled HyperFrames skills are
+   **Apache-2.0** and carry the "state your changes" obligation (§4(b)); the `edit` helpers are
+   distilled from `video-use` under **MIT**; one upstream skill drags in an **MIT** credit for
+   `vtake-skills`. All three are spelled out in `NOTICE` with the pinned source tag. **Removing
+   the attribution breaks the licence**, it is not an editorial choice.
+2. **Never redistribute somebody else's assets.** No upstream font, audio, image or video is
+   copied into this repository — the per-file licences have not been checked. Whatever is needed
+   is **called at runtime** and installed by the user.
+3. **The brand must be declared; there is no default.** A spec missing `brand.a` / `brand.b` /
+   `brand.site` is **exit code 2**. A silent fallback here means your video carries somebody
+   else's name, and you only find out after publishing.
+4. **Pin the version; report, never auto-upgrade.** The engine always runs through
+   `npx hyperframes@$HYPERFRAMES_VERSION`, never `latest`. `doctor --check-updates` only
+   *reports* a newer build — upgrading is your call, because upgrading the engine changes what
+   comes out of it.
+
+A test gate blocks customer names, private brand names, voice profile names, machine paths and
+home-directory environment variables — across the docs and the website page too, **allowed by
+count** rather than by exempting whole files.
 
 ## License
 

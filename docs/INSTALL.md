@@ -138,7 +138,20 @@ video-studio edit --footage <dir> --out <dir> --backend vendored
 3. **Bóc lời tại máy chạy CPU** (không có CUDA): chậm hơn nhiều. Dùng model nhỏ hơn bằng biến
    `VIDEO_WHISPER_MODEL=medium` nếu chỉ cần mốc thời gian để cắt.
 
-## 7. Gỡ
+## 7. Nền tảng: cái gì đã chạy thật, cái gì chưa
+
+| Nền tảng | Bộ khung (CLI, trạm, test) | Render thật |
+|---|---|---|
+| Windows | đã chạy thật | đã chạy thật |
+| macOS (Apple Silicon) | CI chạy mỗi lần đẩy mã: cài gói + toàn bộ test | **chưa kiểm** — CI **cố ý** không cài Node, HyperFrames, ffmpeg hay model (test phải xanh trên máy trần), nên cả chuỗi Node → Chromium → render trên arm64 chưa ai chạy |
+| Linux | CI chạy cổng đối chiếu skill với `upstream.json` | **chưa kiểm** |
+
+Thứ đã được chứng minh trên mọi nền tảng là **bộ khung**: lệnh chạy, trạm dựng đúng, hợp đồng gọi
+và mã thoát giữ nguyên. Phần render thật mới chỉ có số đo trên Windows. Trên Mac, ba chỗ ở mục 6
+là chỗ dễ vấp nhất — chạy `browser ensure` một lần rồi `doctor --json` trước khi tin vào bất cứ
+lịch chạy nào.
+
+## 8. Gỡ
 
 ```
 pip uninstall agent-video-studio
