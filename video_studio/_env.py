@@ -7,7 +7,7 @@ hàm dưới đây, đọc biến môi trường MỖI LẦN gọi (không đón
 
 Biến hợp đồng:
 
-    VIDEO_STATION        gốc trạm video                       (mặc định ~/.video)
+    VIDEO_STATION        gốc trạm video                       (mặc định <repo>/workspace/)
     VIDEO_ROOT           tên cũ của VIDEO_STATION — đọc được, kèm DeprecationWarning
     HYPERFRAMES_VERSION  bản HyperFrames gọi qua npx — PHẢI là bản cụ thể (x.y.z), cấm
                          `latest`/`^`/`~` để lịch chạy không trôi bản âm thầm
@@ -19,15 +19,26 @@ Biến hợp đồng:
     VIDEO_FONT           font đứng đầu stack chữ          (mặc định stack bắt đầu bằng Inter)
     CHROME_BIN           Chrome cho công cụ chụp ảnh ngoài HyperFrames (tuỳ chọn)
     VOICE_STATION        trạm giọng (lồng tiếng, filler)  — tên cũ OMNIVOICE_DIR = thư mục
-                         engine ($VOICE_STATION/omnivoice)
+                         engine ($VOICE_STATION/omnivoice). Không đặt cả hai thì hỏi
+                         chính repo giọng (nếu cài cùng venv) — nhận trạm nó đã được
+                         CHỌN (biến, studio.local.json, workspace/), không nhận mặc định nó
+                         tự đoán; không có gì thì là "chưa có trạm giọng", không đoán ~/.tts
 
 Hai chế độ cài (F17) dùng chung MỘT thứ tự phân giải trạm — `resolve_station()`:
 
     --station (lệnh đặt VIDEO_STATION trong tiến trình) → VIDEO_STATION → VIDEO_ROOT (cũ)
-    → <repo>/studio.local.json ("station_path") → <repo>/workspace/ nếu có → ~/.video
+    → <repo>/studio.local.json ("station_path") → <repo>/workspace/
+
+Tầng cuối là `<repo>/workspace/` DÙ CHƯA CÓ (`video-studio init` tạo nó, Git bỏ qua cả thư
+mục): người dùng không đặt gì thì trạm nằm trong chính folder họ đã clone, không phải một thư
+mục ẩn ở home mà họ không biết là có. Máy dùng trạm ngoài thì CHỌN nó tường minh — biến
+`VIDEO_STATION` hoặc `init --station DIR` (ghi vào `studio.local.json`). Không còn tầng đoán
+`~/.video` nào.
 
 `<repo>` là bản clone đã `pip install -e` (có `pyproject.toml` cạnh package); đặt
-`VIDEO_STUDIO_REPO` để trỏ tường minh. Cài dạng wheel thì không có repo ⇒ bỏ hai tầng giữa.
+`VIDEO_STUDIO_REPO` để trỏ tường minh (trỏ vào chỗ không tồn tại = không có repo). Cài dạng
+wheel thì không có repo ⇒ không có tầng mặc định: `resolve_station()` trả `(None, "unset")`
+và mọi lệnh cần trạm dừng với mã 3, đòi `VIDEO_STATION` hoặc `--station`.
 
 Biến cấu hình đi theo thứ tự riêng: biến môi trường thật → `<repo>/.env` (**chỉ** khi
 `studio.local.json: mode = embedded`) → chưa đặt. Chế độ `separate` KHÔNG bao giờ tự nạp
@@ -41,7 +52,7 @@ import re
 import shutil
 import warnings
 
-from .contract import ContractError
+from .contract import ContractError, StationMissing
 
 LOCAL_CONFIG = "studio.local.json"
 WORKSPACE = "workspace"
@@ -135,6 +146,13 @@ def repo_root():
     return None
 
 
+def existing_repo():
+    """`repo_root()` nếu thư mục đó có thật; không thì None. (`VIDEO_STUDIO_REPO` trỏ vào chỗ
+    không tồn tại vẫn được `repo_root()` trả nguyên, để lời báo lỗi nói đúng đường đã đặt.)"""
+    r = repo_root()
+    return r if r and os.path.isdir(r) else None
+
+
 def package_repo():
     """Thư mục chứa MÃ đang chạy (nơi có `skills/`, `templates/` đi kèm), kể cả khi
     VIDEO_STUDIO_REPO trỏ chỗ khác."""
@@ -198,6 +216,9 @@ def read_env_file(repo=None):
 
 
 def default_station():
+    """`~/.video` — CHỈ còn là (1) chỗ gợi ý khi người dùng chọn `separate` mà không nói đường,
+    và (2) nơi nhận ra trạm đời cũ để `init` không dựng trạm thứ hai. Nó KHÔNG còn là tầng
+    cuối của `resolve_station()`: không đặt gì ⇒ `<repo>/workspace/`."""
     return os.path.join(os.path.expanduser("~"), ".video")
 
 
@@ -213,7 +234,12 @@ def has_marker(path):
 
 def resolve_station():
     """-> (gốc trạm, nguồn). Nguồn ∈ VIDEO_STATION · VIDEO_ROOT · studio.local.json ·
-    workspace · default. Đọc lại mỗi lần gọi."""
+    workspace · unset. Đọc lại mỗi lần gọi.
+
+    `workspace` được trả cả khi thư mục chưa có (init chưa chạy) — người gọi tự kiểm `isdir`.
+    `unset` = không biến, không repo (bản cài wheel): gốc trạm là None, `station_dir()` ném
+    `StationMissing` (mã 3) kèm cách chọn trạm.
+    """
     st = env("VIDEO_STATION")
     if st:
         return _expand(st), "VIDEO_STATION"
@@ -222,25 +248,43 @@ def resolve_station():
         warnings.warn("Biến VIDEO_ROOT đã đổi tên thành VIDEO_STATION; tên cũ còn đọc được "
                       "một phiên bản nữa.", DeprecationWarning, stacklevel=2)
         return _expand(old), "VIDEO_ROOT"
-    repo = repo_root()
+    repo = existing_repo()
     if repo:
         sp = (local_config(repo).get("station_path") or "").strip()
         if sp:
             sp = os.path.expanduser(sp)
             return (sp if os.path.isabs(sp) else os.path.abspath(os.path.join(repo, sp))), LOCAL_CONFIG
-        ws = os.path.join(repo, WORKSPACE)
-        if os.path.isdir(ws):
-            return ws, WORKSPACE
-    return default_station(), "default"
+        return os.path.join(repo, WORKSPACE), WORKSPACE
+    return None, "unset"
+
+
+UNSET_HINT = ("chưa chọn trạm video: bản cài này không có repo để đặt workspace/ — đặt biến "
+              "VIDEO_STATION=<thư mục trạm> hoặc chạy `video-studio init --station <thư mục>`")
+
+
+def init_command(st):
+    """Lệnh dựng đúng trạm `st`: trạm là `<repo>/workspace/` ⇒ `video-studio init` (embedded);
+    trạm khác ⇒ `init --station "<st>"`. Khuyên `--station <repo>/workspace` là khuyên dựng một
+    trạm "ngoài repo" nằm trong repo — đúng thứ hai-nguồn-sự-thật mà F17 chặn."""
+    repo = existing_repo()
+    if repo and st and os.path.normcase(os.path.abspath(st)) == os.path.normcase(
+            os.path.join(repo, WORKSPACE)):
+        return "video-studio init"
+    return f'video-studio init --station "{st}"'
 
 
 def station_dir():
-    return resolve_station()[0]
+    """Gốc trạm đang phân giải; chưa chọn được trạm nào ⇒ `StationMissing` (mã 3)."""
+    st = resolve_station()[0]
+    if not st:
+        raise StationMissing(UNSET_HINT)
+    return st
 
 
 def station_info(station=None):
-    """Nội dung `station.json` của trạm ({} nếu chưa có hoặc hỏng)."""
-    return read_json(os.path.join(station or station_dir(), STATION_FILE))[0]
+    """Nội dung `station.json` của trạm ({} nếu chưa có, hỏng, hoặc chưa chọn trạm nào)."""
+    st = station or resolve_station()[0]
+    return read_json(os.path.join(st, STATION_FILE))[0] if st else {}
 
 
 def _rel_to_station(st, rel):
@@ -336,15 +380,43 @@ def hyperframes_cache():
 
 # ── trạm giọng ──────────────────────────────────────────────────────────────────────────
 
+# Nguồn trạm mà repo giọng coi là ĐÃ ĐƯỢC CHỌN. Nguồn còn lại (`default` — nó tự đoán một
+# thư mục ở home) không được nhận: đoán hộ trạm của repo khác là đúng cái Đ4 cấm.
+_VOICE_CHOSEN = frozenset({"VOICE_STATION", "OMNIVOICE_DIR", "studio.local.json", "workspace"})
+
+
+def _voice_repo_station():
+    """Trạm mà repo giọng (cài cùng venv) đã được chọn — None nếu không có repo giọng, nó chưa
+    được chọn trạm, hoặc bề mặt của nó khác bản đã biết.
+
+    Chỉ nạp `voice_studio._env` (thư viện chuẩn, không kéo torch). Mọi lỗi ⇒ None: đây là tầng
+    thông tin, không được làm hỏng một lệnh video chỉ vì repo giọng đổi nội bộ.
+    """
+    import importlib
+    import importlib.util
+    try:
+        if importlib.util.find_spec("voice_studio") is None:
+            return None
+        st, src = importlib.import_module("voice_studio._env").resolve_station()
+    except Exception:           # noqa: BLE001 — repo khác, phiên bản khác: im lặng là đúng
+        return None
+    if not st or src not in _VOICE_CHOSEN:
+        return None
+    if src == "workspace" and not os.path.isdir(st):
+        return None             # repo giọng chưa init: chưa có trạm giọng nào
+    return _expand(st)
+
+
 def voice_station():
-    """Gốc trạm giọng: VOICE_STATION → cha của OMNIVOICE_DIR (tên cũ) → None."""
+    """Gốc trạm giọng: VOICE_STATION → cha của OMNIVOICE_DIR (tên cũ) → trạm mà repo giọng đã
+    được chọn (studio.local.json / workspace/) → None. Không bao giờ đoán `~/.tts`/`~/.voice`."""
     v = env("VOICE_STATION")
     if v:
         return _expand(v)
     eng = env("OMNIVOICE_DIR")
     if eng:
         return os.path.dirname(_expand(eng))
-    return None
+    return _voice_repo_station()
 
 
 def voice_engine_dir():

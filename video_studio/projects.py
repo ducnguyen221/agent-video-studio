@@ -57,7 +57,7 @@ def ensure(name, station=None):
     st = _env._expand(station) if station else _env.station_dir()
     if not os.path.isdir(st):
         raise StationMissing(
-            f"chưa có trạm video ở {st} — chạy: video-studio init --station \"{st}\"")
+            f"chưa có trạm video ở {st} — chạy: {_env.init_command(st)}")
     seed = seed_dir(station)
     os.makedirs(proj, exist_ok=True)
     for fn in CONFIG_FILES:
@@ -68,7 +68,7 @@ def ensure(name, station=None):
     if "hyperframes.json" in missing:
         raise StationMissing(
             f"project {name!r} thiếu {', '.join(missing)} và trạm chưa có seed ở {seed} — "
-            f"chạy: video-studio init --station \"{st}\" (dựng demo/ từ templates/_seed của repo)")
+            f"chạy: {_env.init_command(st)} (dựng demo/ từ templates/_seed của repo)")
     return proj
 
 

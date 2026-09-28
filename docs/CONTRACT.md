@@ -59,7 +59,7 @@ Hỏng:
 
 | Biến | Vai trò |
 |---|---|
-| `VIDEO_STATION` | gốc trạm video (mặc định `~/.video`). Tên cũ `VIDEO_ROOT` còn đọc được, kèm cảnh báo |
+| `VIDEO_STATION` | gốc trạm video (không đặt ⇒ `<repo>/workspace/`; bản cài wheel thì bắt buộc). Tên cũ `VIDEO_ROOT` còn đọc được, kèm cảnh báo |
 | `HYPERFRAMES_VERSION` | bản HyperFrames gọi qua npx — **phải là `x.y.z`**; một dải bản không xác định bị từ chối với mã 2 |
 | `HYPERFRAMES_WORKDIR` | thư mục chứa project render (mặc định `<trạm>/projects`) |
 | `NODE_DIR`, `FFMPEG_DIR` | thư mục chứa `node`/`npx`, `ffmpeg`/`ffprobe` (rỗng = tìm trên PATH) |

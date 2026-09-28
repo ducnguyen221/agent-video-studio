@@ -44,7 +44,7 @@ def resolve_project(name):
     if not os.path.isdir(proj):
         raise StationMissing(
             f"trạm chưa có project {name!r} ({proj}) — dựng trạm bằng "
-            f"`video-studio init --station \"{_env.station_dir()}\"`, hoặc truyền --project "
+            f"`{_env.init_command(_env.station_dir())}`, hoặc truyền --project "
             "<đường dẫn thư mục project>")
     return proj
 
@@ -54,7 +54,7 @@ def _silent_path(out):
     base = os.path.basename(out) + SILENT_SUFFIX
     try:
         return projects.scratch_file("narrate", base)
-    except OSError:
+    except (OSError, StationMissing):           # không ghi được, hoặc chưa chọn trạm nào
         return os.path.join(os.path.dirname(os.path.abspath(out)) or ".", base)
 
 

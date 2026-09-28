@@ -172,8 +172,12 @@ def tool_checks():
 
 
 def station_checks(st, src):
-    out = [_check("station", os.path.isdir(st), f"{st} ({src})",
-                  hint="chưa có trạm video — `video-studio init` (hoặc đặt VIDEO_STATION)")]
+    if not st:
+        # Bản cài wheel, không biến: không có tầng mặc định nào để đoán.
+        return [_check("station", False, f"(chưa chọn — {src})", hint=_env.UNSET_HINT)]
+    hint = ("chưa có trạm video — `video-studio init` (mặc định tạo workspace/ trong repo; "
+            "trạm ngoài: đặt VIDEO_STATION hoặc `init --station DIR`)")
+    out = [_check("station", os.path.isdir(st), f"{st} ({src})", hint=hint)]
     if _env.env("VIDEO_ROOT") and not _env.env("VIDEO_STATION"):
         out.append(_check("env-name", False, "VIDEO_ROOT", level="warn",
                           hint="tên biến cũ — đặt VIDEO_STATION=<gốc trạm> (VIDEO_ROOT vẫn đọc được)"))
@@ -188,7 +192,7 @@ def station_checks(st, src):
             out.append(_check("station-json", False, sj, level="warn", hint=(
                 f"trạm đời cũ chưa có station.json — xem kế hoạch: `video-studio init --station \"{st}\" "
                 "--migrate --dry-run`, đọc kỹ rồi bỏ --dry-run" if legacy else
-                f"`video-studio init --station \"{st}\"`")))
+                f"`{_env.init_command(st)}`")))
         elif _major(info.get("contract")) != _major(API_VERSION):
             out.append(_check("station-json", False, f"contract {info.get('contract')} ≠ {API_VERSION}",
                               level="warn", hint="trạm dựng bởi bản hợp đồng khác — kiểm lại rồi chạy init"))

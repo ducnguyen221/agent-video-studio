@@ -35,6 +35,9 @@ def _clean_contract_env(monkeypatch, tmp_path):
     # Bản clone đang chạy test có thể có workspace/ hoặc studio.local.json thật — trỏ "repo"
     # sang một thư mục tạm rỗng; test nào cần repo thì tự dựng.
     monkeypatch.setenv("VIDEO_STUDIO_REPO", str(tmp_path / "no-repo"))
+    # Repo giọng cài cùng venv cũng tự tìm trạm theo bản clone của NÓ (workspace/ thật trên máy
+    # dev). `_env.voice_station()` hỏi nó khi không có biến — nên trỏ nó vào chỗ rỗng luôn.
+    monkeypatch.setenv("VOICE_STUDIO_REPO", str(tmp_path / "no-voice-repo"))
     yield
 
 

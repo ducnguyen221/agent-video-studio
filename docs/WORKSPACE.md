@@ -72,11 +72,21 @@ cách người dùng `embedded` nối hai năng lực lại mà không phải đ
 
 ```
 --station  →  VIDEO_STATION  →  VIDEO_ROOT (tên cũ)  →
-<repo>/studio.local.json  →  <repo>/workspace/ nếu có  →  ~/.video
+<repo>/studio.local.json  →  <repo>/workspace/
 ```
 
+Không đặt gì thì trạm là `<repo>/workspace/` — **kể cả trước khi `init` tạo nó** (lệnh cần trạm
+sẽ báo mã 3 và chỉ `video-studio init`). Không có tầng đoán thư mục ở home: máy dùng trạm ngoài
+thì chọn nó tường minh bằng `VIDEO_STATION` hoặc `video-studio init --station DIR` (ghi vào
+`studio.local.json`). `~/.video` chỉ còn là chỗ gợi ý khi bạn chọn `separate` mà không nói đường,
+và là nơi `init` nhận ra trạm đời cũ để không dựng thêm trạm thứ hai.
+
 `<repo>` là bản clone đã `pip install -e` (hoặc đặt `VIDEO_STUDIO_REPO`). Bản cài wheel không có
-repo — chỉ dùng được `separate`.
+repo — chỉ dùng được `separate`, và không đặt `VIDEO_STATION` thì mọi lệnh cần trạm dừng mã 3.
+
+Trạm **giọng** theo cùng tinh thần: `VOICE_STATION` → `OMNIVOICE_DIR` (tên cũ) → trạm mà repo giọng
+cài cùng venv **đã được chọn** (`studio.local.json` hoặc `workspace/` của nó). Không có gì thì là
+"chưa có trạm giọng" — không đoán một thư mục ở home.
 
 ## Cây trạm
 
