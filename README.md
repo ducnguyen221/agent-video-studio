@@ -67,11 +67,13 @@ always an exact version (never `latest`).
 ## Documentation
 
 - [Website](https://ducnguyen.vn/agent-video-studio/) — what it does, how to install, the rules.
+- [START-HERE.md](START-HERE.md) — first steps on Windows or macOS, and the sample to render first (Vietnamese).
 - [docs/INSTALL.md](docs/INSTALL.md) — Node, ffmpeg, fonts, and *which venv to install into*.
 - [docs/WORKSPACE.md](docs/WORKSPACE.md) — the station, the two install modes, what is safe to delete.
 - [docs/AGENT_VIDEO_GUIDE.md](docs/AGENT_VIDEO_GUIDE.md) — how an agent drives the whole thing.
 - [docs/CONTRACT.md](docs/CONTRACT.md) — the spec schema and the calling contract.
 - [docs/THEME-LIBRARY.md](docs/THEME-LIBRARY.md) — layout patterns and the hard rendering rules.
+- [docs/CHANGELOG.md](docs/CHANGELOG.md) — what changed in each release (Vietnamese).
 
 ## Agent skills
 

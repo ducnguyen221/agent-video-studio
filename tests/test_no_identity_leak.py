@@ -74,6 +74,9 @@ ALLOW = {
     # nên không ai nhét được đường dẫn máy hay tên thật vào đây mà không bị nhìn thấy.
     ("docs/index.html", "tac-gia"): 22,
     ("docs/index.html", "mien"): 9,
+    # Địa chỉ kho mã công khai trong lệnh `git clone` (Windows + macOS) — người mới chép
+    # nguyên lệnh, nên nó phải là URL thật của repo, không phải chỗ trống để tự điền.
+    ("START-HERE.md", "tac-gia"): 2,
 }
 
 

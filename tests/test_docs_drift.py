@@ -103,3 +103,31 @@ def test_page_counts_the_skills_that_really_exist():
     assert f"{len(upstream)} skill chưng cất" in text or \
            f"{len(upstream)} skill còn lại" in text, \
            f"trang không nói đúng số skill chưng cất từ upstream ({len(upstream)})"
+
+
+# ── START-HERE + CHANGELOG ──────────────────────────────────────────────────────────────
+
+NEW_DOCS = ("START-HERE.md", "docs/CHANGELOG.md")
+
+
+@pytest.mark.parametrize("rel", NEW_DOCS)
+def test_relative_links_resolve(rel):
+    """Link tương đối gãy là trang 404 đầu tiên người mới gặp."""
+    doc = ROOT / rel
+    missing = []
+    for target in re.findall(r"\]\(([^)\s]+)\)", doc.read_text(encoding="utf-8")):
+        if target.startswith(("http://", "https://", "#", "mailto:")):
+            continue
+        path = target.split("#", 1)[0]
+        if path and not (doc.parent / path).exists():
+            missing.append(target)
+    assert not missing, f"{rel}: link tương đối gãy {missing}"
+
+
+def test_start_here_runs_the_sample_the_way_expected_md_does():
+    """START-HERE và EXPECTED.md in cùng MỘT lệnh bài mẫu — lệch là người mới chạy lệnh cũ."""
+    def cmd(rel):
+        text = (ROOT / rel).read_text(encoding="utf-8")
+        return [ln for ln in text.splitlines() if ln.startswith("video-studio render")]
+    assert cmd("START-HERE.md") == cmd("samples/news-mini/EXPECTED.md") != []
+

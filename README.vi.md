@@ -63,11 +63,13 @@ Hướng dẫn từng bước cho người dùng: [GUIDE.vi.md](GUIDE.vi.md).
 ## Tài liệu
 
 - [Trang giới thiệu](https://ducnguyen.vn/agent-video-studio/) — nó làm gì, cài thế nào, quy tắc.
+- [START-HERE.md](START-HERE.md) — bước đầu trên Windows hoặc macOS, và bài mẫu nên dựng trước.
 - [docs/INSTALL.md](docs/INSTALL.md) — Node, ffmpeg, font, và **cài vào venv nào**.
 - [docs/WORKSPACE.md](docs/WORKSPACE.md) — trạm, hai chế độ cài, thứ gì xoá được.
 - [docs/AGENT_VIDEO_GUIDE.md](docs/AGENT_VIDEO_GUIDE.md) — agent lái trọn quy trình thế nào.
 - [docs/CONTRACT.md](docs/CONTRACT.md) — khuôn spec và hợp đồng gọi.
 - [docs/THEME-LIBRARY.md](docs/THEME-LIBRARY.md) — thư viện layout + luật cứng khi render.
+- [docs/CHANGELOG.md](docs/CHANGELOG.md) — mỗi bản phát hành đổi gì.
 
 ## Skill cho agent
 
