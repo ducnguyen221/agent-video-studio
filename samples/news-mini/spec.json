@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "date": "2026-01-02",
+  "display_date": "Thứ Sáu · 02/01/2026",
+  "voice": {"seed": 1234},
+  "bgm": "none",
+  "outputs": {"long": true, "short": true},
+  "daily_video": {
+    "intro": "Chào bạn, đây là bản tin mẫu của agent video studio. Hôm nay có hai tin ngắn để kiểm thử toàn bộ chuỗi dựng video.",
+    "outro": "Bản tin mẫu đến đây là hết. Nếu bạn nghe được giọng đọc và thấy đủ hai cảnh tin, bộ cài đã chạy đúng.",
+    "outro_short": "Hết bản tin mẫu. Hai cảnh, một giọng đọc, không cần mạng cho nội dung.",
+    "segments": [
+      {
+        "aid": 1,
+        "headline": "Tin mẫu thứ nhất: trạm video đã sẵn sàng",
+        "narration": "Tin đầu tiên là một câu chuyện dựng sẵn để thử máy. Trạm video vừa được tạo trong thư mục workspace của repo, không cần đặt biến môi trường nào. Engine đọc đặc tả này, sinh trang HTML theo template bản tin, rồi gọi HyperFrames để dựng thành video. Nếu bạn đang xem cảnh này, bước dựng trang và bước render đều đã qua.",
+        "bullets": ["Trạm nằm trong workspace của repo", "Không cần biến môi trường", "HyperFrames dựng từ trang HTML"],
+        "images": []
+      },
+      {
+        "aid": 2,
+        "headline": "Tin mẫu thứ hai: giọng đọc ghim hạt giống",
+        "narration": "Tin thứ hai kiểm phần giọng đọc. Đặc tả ghim hạt giống bằng một số cố định, nên chạy lại trên cùng máy sẽ cho cùng một giọng và cùng nhịp đọc. Máy khác, hệ điều hành khác thì font và bộ giải mã có thể khác, nên thời lượng được so theo khoảng chứ không so từng byte.",
+        "bullets": ["Hạt giống giọng cố định 1234", "Cùng máy thì cùng kết quả", "Khác máy thì so theo khoảng"],
+        "images": []
+      }
+    ]
+  }
+}
