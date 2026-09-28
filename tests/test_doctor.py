@@ -187,7 +187,11 @@ def test_offline_never_calls_npx_or_npm(machine, good_station, capsys):
     rc, out, _ = run(["--offline", "--check-updates", "--json"], capsys)
     assert rc == 0
     assert not any(a[0].endswith(("npx", "npm")) for a, _ in machine.calls)
-    assert _check(last_json(out), "hyperframes-doctor")["level"] == "skip"
+    res = last_json(out)
+    # Không gọi npx = CHƯA KIỂM, không phải "không áp dụng": máy này vẫn cần engine chạy được.
+    assert _check(res, "hyperframes-doctor")["level"] == "not_checked"
+    assert _check(res, "hyperframes-update")["level"] == "not_checked"
+    assert {"hyperframes-doctor", "hyperframes-update"} <= set(res["not_checked"])
 
 
 def test_check_updates_reports_minor_gap_only_reports(machine, good_station, capsys):
@@ -442,3 +446,25 @@ def test_repo_without_workspace_points_to_plain_init(machine, tmp_path, monkeypa
     assert rc == 3 and res["station"] == str(repo / "workspace")
     assert "(workspace)" in _check(res, "station")["detail"]
     assert "video-studio init" in err and '--station "' not in _check(res, "station")["hint"]
+
+
+def test_render_is_always_reported_as_not_checked(machine, good_station, capsys):
+    """doctor không render; bảng toàn PASS mà không nói điều đó là bảng nói dối."""
+    rc, out, err = run(["--json"], capsys)
+    res = last_json(out)
+    c = _check(res, "render")
+    assert rc == 0 and c["level"] == "not_checked" and "samples/news-mini" in c["hint"]
+    assert "render" in res["not_checked"] and "render" not in res["warnings"]
+    assert "[NOT_CHECKED] render" in err
+
+
+def test_human_lines_use_the_shared_four_labels(machine, good_station, capsys):
+    rc, out, err = run(["--offline"], capsys)
+    assert "[PASS] node" in err and "[NOT_CHECKED] hyperframes-doctor" in err
+    assert "[OK  ]" not in err and "[BỎ  ]" not in err
+
+
+def test_not_checked_never_changes_the_exit_code(machine, good_station, capsys):
+    rc_online, _, _ = run(["--json"], capsys)
+    rc_offline, out, _ = run(["--offline", "--json"], capsys)
+    assert rc_online == rc_offline == 0 and last_json(out)["ok"] is True

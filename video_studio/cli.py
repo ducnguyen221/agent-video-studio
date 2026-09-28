@@ -27,6 +27,8 @@ COMMANDS = {
     "migrate": ("video_studio.station:migrate_main",
                 "chuyển trạm embedded ra ngoài repo (--to separate)"),
     "update":  ("video_studio.station:update_main", "cập nhật repo (git pull --ff-only)"),
+    "uninstall": ("video_studio.uninstall",
+                  "gỡ phần bộ cài đã đặt (skill đã chép, liên kết repo → trạm); GIỮ trạm"),
 }
 
 
@@ -44,7 +46,7 @@ def usage():
              "Cách dùng: video-studio <lệnh> [tham số…]   ·   video-studio <lệnh> --help", "",
              "Lệnh:"]
     for name, (target, desc) in COMMANDS.items():
-        lines.append(f"  {name:<9} {desc}" + ("" if target else "  [chưa có trong bản này]"))
+        lines.append(f"  {name:<10} {desc}" + ("" if target else "  [chưa có trong bản này]"))
     lines += ["", "Mã thoát chung: 0 ok · 1 lỗi engine/render · 2 gọi/cấu hình sai · "
                   "3 trạm/công cụ chưa cài."]
     return "\n".join(lines)

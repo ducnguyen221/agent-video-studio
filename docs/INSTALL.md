@@ -118,6 +118,13 @@ video-studio doctor --json
 
 Mã 3 ⇒ đọc `errors` + `hint`, cài phần thiếu. `--offline` khi không được gọi mạng.
 
+Mỗi dòng mang một trong bốn nhãn: `PASS` (đã kiểm, đạt) · `WARN` (thiếu phần tuỳ chọn, không
+chặn) · `FAIL` (hỏng, mã ≠ 0) · `NOT_CHECKED` (**chưa kiểm được** — không mạng, thiếu thứ đứng
+trước, hoặc việc doctor không bao giờ tự làm). `NOT_CHECKED` không phải lỗi cài, nhưng cũng
+không phải xác nhận: dòng `render` luôn ở mức này, vì chỉ một lần dựng bài mẫu
+([samples/news-mini](../samples/news-mini/EXPECTED.md)) mới chứng minh được cả chuỗi. Trong
+JSON, các dòng đó nằm ở danh sách `not_checked`.
+
 ## 5. Tuỳ chọn: bản `video-use` gốc cho việc chỉnh footage
 
 `video-studio edit` đã có bộ helper chưng cất sẵn trong repo — **không cần** bước này. Chỉ cài
@@ -154,8 +161,15 @@ lịch chạy nào.
 ## 8. Gỡ
 
 ```
-pip uninstall agent-video-studio
+video-studio uninstall --dry-run     # xem trước sẽ gỡ gì
+video-studio uninstall               # gỡ phần bộ cài đã đặt
+pip uninstall agent-video-studio     # rồi mới gỡ package
 ```
+
+`uninstall` chỉ gỡ thứ `init` đã đặt vào: skill đã chép vào trạm (bản bạn đã sửa thì giữ),
+`studio.local.json`, `.env` nếu còn y hệt `.env.example`, và hook `pre-commit` do chính nó cài.
+Thứ bị gỡ được **dời** vào `<trạm>/.video-studio/runs/<id>/prev/`, không xoá thẳng; cài lại chỉ
+cần `video-studio init`.
 
 Trạm **không bị đụng tới**: nó là dữ liệu của bạn. Muốn xoá thì xoá thư mục trạm — sau khi đã
 `video-studio backup --out <file>.zip`.

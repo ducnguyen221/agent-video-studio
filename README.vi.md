@@ -29,6 +29,7 @@ câm vẫn chạy, chỉ là không lồng tiếng được. Không có thứ t�
 | `video-studio edit` | Cắt footage quay thật: bóc lời tại máy, gom cụm thành markdown đọc được, rồi dựng theo EDL kèm chỉnh màu, overlay, phụ đề và chuẩn âm lượng. Helper chưng cất từ `video-use` (MIT); cũng gọi được bản upstream đã cài ở trạm. |
 | `video-studio export` / `import` | Đóng gói trạm thành zip và bung vào máy khác. `--personal` chỉ lấy tài sản của project (`projects/*/assets`) cộng đúng những thư mục bạn kể tên bằng `--include`; nháp, cache, venv và cây git không bao giờ vào gói. `import` mặc định **không đè**, có `--dry-run` và `--overwrite`. |
 | `video-studio backup` / `migrate` / `update` | Zip cả trạm; chuyển trạm `embedded` ra ngoài repo; cập nhật bản clone (không bao giờ xoá gì). |
+| `video-studio uninstall` | Chỉ gỡ thứ bộ cài đã đặt — skill đã chép (nếu chưa sửa), liên kết repo → trạm, `.env` chưa điền, hook pre-commit của chính nó — và dời chúng vào nhật ký của trạm thay vì xoá. Trạm và mọi project giữ nguyên. `--dry-run` in kế hoạch. |
 
 Mọi lệnh theo một hợp đồng: mã `0` ok · `1` lỗi render/engine (chạy lại được) · `2` gọi hoặc
 cấu hình sai · `3` thiếu trạm/công cụ; có `--json` thì dòng cuối stdout là một object JSON, log

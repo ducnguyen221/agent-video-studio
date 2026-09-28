@@ -31,6 +31,7 @@ work, you just cannot add narration. There is no required install order and no b
 | `video-studio edit` | Cuts real footage: transcribe locally, pack the transcript into phrase-level markdown, then render an EDL with grade, overlays, subtitles and loudness normalisation. Helpers distilled from `video-use` (MIT); can also drive a vendored upstream copy. |
 | `video-studio export` / `import` | Zip a station and unpack it on another machine. `--personal` takes only project assets (`projects/*/assets`) plus the top-level folders you name with `--include`; scratch, cache, virtualenvs and git trees never enter the pack. `import` never overwrites unless you ask, and has `--dry-run`. |
 | `video-studio backup` / `migrate` / `update` | Zip the station; move an `embedded` station out of the repo; fast-forward the clone (never cleans). |
+| `video-studio uninstall` | Removes only what the installer put in place — the skills it copied (if unmodified), the repo → station link, an unfilled `.env`, its own pre-commit hook — and moves them into the station journal instead of deleting. The station and every project stay. `--dry-run` shows the plan. |
 
 Every command follows one contract: exit `0` ok · `1` render/engine error (retryable) ·
 `2` bad call or config · `3` station or tool missing; with `--json` the last stdout line is a

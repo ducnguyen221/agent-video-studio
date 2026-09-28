@@ -19,6 +19,12 @@ kiểm).
   (lệnh chạy, tên file ra, bảng số đo theo máy) và test không cần mạng.
 - **CI** chạy trên mọi nhánh, ma trận Windows + macOS × Python 3.10 / 3.12 / 3.13, action ghim
   theo SHA commit.
+- **`video-studio uninstall`** — chỉ gỡ thứ bộ cài đã đặt (skill đã chép nếu chưa sửa, liên kết
+  repo → trạm, `.env` chưa điền, hook pre-commit của chính nó), dời vào nhật ký của trạm thay vì
+  xoá; trạm và mọi project giữ nguyên. `--dry-run` in kế hoạch.
+- **`doctor` có mức `NOT_CHECKED`** cho thứ chưa kiểm được (chạy `--offline`, thiếu npx) và cho
+  `render` — doctor không tự render, nên không để một bảng toàn PASS nói thay. Nhãn người đọc
+  đổi thành `PASS` / `WARN` / `FAIL` / `NOT_CHECKED` / `SKIP`; JSON thêm danh sách `not_checked`.
 - `START-HERE.md` và nhật ký thay đổi này.
 
 ## 0.1.0 — 2026-09-22
