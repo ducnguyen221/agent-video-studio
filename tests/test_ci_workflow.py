@@ -68,3 +68,52 @@ def test_ci_checks_out_the_repo(wf):
     """Cổng `git check-ignore` chỉ chạy trên một cây git thật — không checkout thì chúng skip câm."""
     uses = [s.get("uses", "") for s in wf["jobs"]["test"]["steps"]]
     assert any(u.startswith("actions/checkout@") for u in uses)
+
+
+def _triggers(wf):
+    return wf.get("on", wf.get(True))
+
+
+def test_push_runs_on_every_branch(wf):
+    """Lọc `push` về `[main]` là để nhánh làm việc chạy không có CI tới tận lúc mở PR."""
+    push = _triggers(wf).get("push", "missing")
+    assert push != "missing", "workflow phải chạy khi push"
+    assert not (push or {}).get("branches"), "push không được lọc nhánh — mọi nhánh đều phải được đo"
+    assert "pull_request" in _triggers(wf)
+
+
+def _min_python():
+    import re
+    text = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
+    m = re.search(r'requires-python\s*=\s*">=\s*(\d+\.\d+)"', text)
+    assert m, "pyproject phải khai requires-python dạng >=x.y"
+    return m.group(1)
+
+
+def test_matrix_covers_the_python_range(wf):
+    """Ma trận phải chạm ĐẦU DƯỚI mà pyproject hứa — hứa 3.10 mà chỉ đo 3.12 là hứa suông."""
+    versions = [str(v) for v in wf["jobs"]["test"]["strategy"]["matrix"]["python-version"]]
+    assert _min_python() in versions, f"ma trận thiếu bản thấp nhất {_min_python()}: {versions}"
+    assert len(versions) >= 3, "cần ít nhất ba bản Python: đầu dưới, bản đang dùng, bản mới"
+    # YAML đọc 3.10 không nháy thành số 3.1 — bản đó không tồn tại, runner sẽ đỏ vì lý do vớ vẩn.
+    assert "3.1" not in versions, "viết '3.10' trong nháy, không thì YAML đọc thành 3.1"
+
+
+def test_every_action_is_pinned_to_a_commit_sha(wf):
+    """Tag `@v4` là con trỏ di động; chỉ SHA 40 ký tự mới cố định đúng mã CI sẽ chạy."""
+    import re
+    loose = []
+    for name, job in wf["jobs"].items():
+        for step in job.get("steps", []):
+            uses = step.get("uses")
+            if uses and not re.fullmatch(r"[\w.-]+/[\w.-]+@[0-9a-f]{40}", uses):
+                loose.append(f"{name}: {uses}")
+    assert not loose, "action chưa ghim SHA:\n  " + "\n  ".join(loose)
+
+
+def test_checkout_does_not_persist_credentials(wf):
+    """Job test không cần push; token để lại trong `.git/config` chỉ là thứ cho mã lạ mượn."""
+    for name, job in wf["jobs"].items():
+        for step in job.get("steps", []):
+            if step.get("uses", "").startswith("actions/checkout@"):
+                assert (step.get("with") or {}).get("persist-credentials") is False, name
