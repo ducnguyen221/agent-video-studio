@@ -25,6 +25,12 @@ kiểm).
 - **`doctor` có mức `NOT_CHECKED`** cho thứ chưa kiểm được (chạy `--offline`, thiếu npx) và cho
   `render` — doctor không tự render, nên không để một bảng toàn PASS nói thay. Nhãn người đọc
   đổi thành `PASS` / `WARN` / `FAIL` / `NOT_CHECKED` / `SKIP`; JSON thêm danh sách `not_checked`.
+- **Cài bằng một lời nhờ agent:** `INSTALL.md` ở gốc repo là hướng dẫn dành cho agent (Windows và
+  macOS, hỏi trước khi cài phần mềm, không tải-rồi-chạy, báo nguyên văn từng dòng `doctor`) kèm
+  prompt copy-dán tiếng Việt và tiếng Anh; README và START-HERE chép đúng prompt đó.
+- `AGENTS.md` (hướng dẫn chung cho mọi agent) với `CLAUDE.md` / `GEMINI.md` là con trỏ, và
+  `hosts/` cho Claude Code, Codex, Antigravity, Claude Desktop — nói rõ đường nạp skill nào đã
+  chạy, đường nào chưa kiểm.
 - `START-HERE.md` và nhật ký thay đổi này.
 
 ## 0.1.0 — 2026-09-22

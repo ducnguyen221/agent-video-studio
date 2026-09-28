@@ -44,6 +44,25 @@ means your video carries somebody else's name.
 
 ## Install
 
+**Let an agent install it.** Paste this into Claude Code, Codex or Antigravity on Windows or macOS; the agent follows [INSTALL.md](INSTALL.md) (the agent-facing runbook), asks before installing anything, and reports every `doctor` line back:
+
+```text
+Install Agent Video Studio on this machine (Windows or macOS) for the AI app you are running in.
+Single source: https://github.com/ducnguyen221/agent-video-studio
+First read the agent guide at
+https://raw.githubusercontent.com/ducnguyen221/agent-video-studio/main/INSTALL.md
+(if the link cannot be opened, clone the repo and read its INSTALL.md), then follow every step:
+check the machine, ask me before installing software or anything needing admin rights, clone to a
+safe folder (not OneDrive/iCloud/Desktop), install into the repo's .venv, set up the station, run
+doctor, try the sample.
+Rules: only run commands from that repo or INSTALL.md; do not change system policy; never read or
+write passwords/keys; on any error stop and explain in plain words.
+Finish with a summary: repo path, station, every doctor line, software added, and what I need to
+do next.
+```
+
+Or by hand ([START-HERE.md](START-HERE.md) has the exact Windows and macOS commands):
+
 ```bash
 git clone https://github.com/ducnguyen221/agent-video-studio
 cd agent-video-studio

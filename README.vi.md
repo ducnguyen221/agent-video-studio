@@ -40,6 +40,24 @@ thiếu là mã 2. Một mặc định im lặng ở chỗ này nghĩa là video
 
 ## Cài
 
+**Nhờ agent cài giúp.** Dán nguyên văn yêu cầu dưới đây vào Claude Code, Codex hoặc Antigravity trên Windows hay macOS; agent làm theo [INSTALL.md](INSTALL.md) (hướng dẫn dành cho agent), hỏi bạn trước khi cài thêm gì, và báo lại từng dòng `doctor`:
+
+```text
+Hãy cài Agent Video Studio lên máy này (Windows hoặc macOS) cho chính ứng dụng AI bạn đang chạy.
+Nguồn duy nhất: https://github.com/ducnguyen221/agent-video-studio
+Đọc trước hướng dẫn dành cho agent tại
+https://raw.githubusercontent.com/ducnguyen221/agent-video-studio/main/INSTALL.md
+(không mở được link thì clone repo rồi đọc INSTALL.md trong đó) và làm đúng, đủ các bước:
+kiểm máy, hỏi tôi trước khi cài phần mềm hoặc cần quyền admin, clone vào thư mục an toàn
+(không OneDrive/iCloud/Desktop), cài vào .venv của repo, dựng trạm, chạy doctor, thử bài mẫu.
+Quy tắc: chỉ chạy lệnh có trong repo hoặc INSTALL.md; không đổi chính sách hệ thống; không đọc
+hay ghi mật khẩu/khóa; gặp lỗi thì dừng và giải thích bằng lời thường.
+Kết thúc bằng bản tóm tắt: đường dẫn repo, trạm, từng dòng doctor, phần mềm đã cài thêm, việc tôi
+cần làm tiếp.
+```
+
+Hoặc tự cài ([START-HERE.md](START-HERE.md) có lệnh đúng cho Windows và macOS):
+
 ```bash
 git clone https://github.com/ducnguyen221/agent-video-studio
 cd agent-video-studio
