@@ -5,9 +5,9 @@ chính nhưng chưa có tag; khi phát hành, mục đó đổi tên thành số
 `pyproject.toml`, `video_studio/__init__.py` cùng ba manifest plugin (`tests/test_version_sync.py`
 kiểm).
 
-## Chưa phát hành
+## 0.2.0 — 2026-09-29
 
-Đích: `0.2.0` — chuẩn hóa để chạy như nhau trên Windows và macOS, cài được bằng một lời nhờ agent.
+Chuẩn hóa để chạy như nhau trên Windows và macOS, cài được bằng một lời nhờ agent.
 
 - **Trạm mặc định nằm trong repo.** Không đặt biến nào thì trạm là `<repo>/workspace/` (Git bỏ
   qua cả thư mục), kể cả trước khi `video-studio init` tạo nó. Bỏ tầng đoán `~/.video`: máy dùng
