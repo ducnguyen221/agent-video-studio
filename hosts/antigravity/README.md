@@ -6,9 +6,9 @@ Tự cài: [START-HERE.md](../../START-HERE.md).
 Antigravity đọc [`GEMINI.md`](../../GEMINI.md), file này trỏ sang [`AGENTS.md`](../../AGENTS.md).
 Mở **thư mục repo** làm workspace.
 
-**Skill:** cách chắc chắn là bảo agent "đọc `skills/video-routing/SKILL.md` rồi làm theo". Bản chép
-trong `<trạm>/.agents/skills` chỉ được tự nạp khi thư mục làm việc là trạm
-([vì sao](../README.md#host-thấy-skill-bằng-cách-nào)).
+**Skill:** cách chắc chắn là bảo agent "đọc `skills/video-routing/SKILL.md` rồi làm theo". Khi mở
+thư mục repo, adapter `.agents/skills/` ở gốc repo trỏ về từng skill gốc
+([cách hoạt động](../README.md#host-thấy-skill-bằng-cách-nào)).
 
 **Kiểm sau khi cài:** `video-studio doctor`, chép nguyên các dòng; bài mẫu
 [`samples/news-mini`](../../samples/news-mini/EXPECTED.md) nếu máy đủ công cụ render.

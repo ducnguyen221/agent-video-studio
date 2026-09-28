@@ -166,8 +166,8 @@ video-studio uninstall               # gỡ phần bộ cài đã đặt
 pip uninstall agent-video-studio     # rồi mới gỡ package
 ```
 
-`uninstall` chỉ gỡ thứ `init` đã đặt vào: skill đã chép vào trạm (bản bạn đã sửa thì giữ),
-`studio.local.json`, `.env` nếu còn y hệt `.env.example`, và hook `pre-commit` do chính nó cài.
+`uninstall` chỉ gỡ thứ `init` đã đặt vào: `studio.local.json`, skill mà bản trước 0.2.0 đã chép
+vào trạm (bản bạn đã sửa thì giữ), `.env` nếu còn y hệt `.env.example`, và hook `pre-commit` do chính nó cài.
 Thứ bị gỡ được **dời** vào `<trạm>/.video-studio/runs/<id>/prev/`, không xoá thẳng; cài lại chỉ
 cần `video-studio init`.
 

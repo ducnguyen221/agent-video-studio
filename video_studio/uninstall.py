@@ -6,8 +6,10 @@
 
 Thứ bị gỡ — chỉ những thứ `init` tạo ra và dựng lại được bằng `init`:
 
-  * skill đã chép vào `<trạm>/.claude/skills/` và `<trạm>/.agents/skills/`, CHỈ bản còn khớp
-    hash trong `skills-lock.json` (người dùng đã sửa thì giữ, báo tên), rồi chính file khoá;
+  * skill mà `init` của bản trước 0.2.0 đã chép vào `<trạm>/.claude/skills/` và
+    `<trạm>/.agents/skills/`, CHỈ bản còn khớp hash trong `skills-lock.json` (người dùng đã sửa
+    thì giữ, báo tên), rồi chính file khoá. Từ 0.2.0 `init` không chép skill vào trạm nữa (host
+    đọc skill từ repo qua adapter), nên trạm dựng mới không có phần này;
   * `<repo>/studio.local.json` — lựa chọn chế độ + đường trạm (liên kết repo → trạm);
   * `<repo>/.env` CHỈ khi nó còn y hệt `.env.example` (chưa ai điền) — đã điền là cấu hình của
     người dùng, giữ;

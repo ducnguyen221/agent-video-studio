@@ -19,7 +19,12 @@ Chuẩn hóa để chạy như nhau trên Windows và macOS, cài được bằn
   (lệnh chạy, tên file ra, bảng số đo theo máy) và test không cần mạng.
 - **CI** chạy trên mọi nhánh, ma trận Windows + macOS × Python 3.10 / 3.12 / 3.13, action ghim
   theo SHA commit.
-- **`video-studio uninstall`** — chỉ gỡ thứ bộ cài đã đặt (skill đã chép nếu chưa sửa, liên kết
+- **Skill không còn được chép vào trạm.** `init` thôi chép 24 skill vào `<trạm>/.claude/skills` +
+  `.agents/skills` và thôi ghi `skills-lock.json`. Gốc repo có adapter `.claude/skills/` và
+  `.agents/skills/` (sinh bằng `scripts/build_host_adapters.py`, `--check` báo lệch) trỏ về skill
+  gốc trong `skills/` — một nguồn, `git pull` là có bản mới. Trạm cũ: `init --station DIR --migrate`
+  gỡ bản đã chép cùng file khoá (dời vào nhật ký, `--undo` trả về), skill riêng của người dùng giữ.
+- **`video-studio uninstall`** — chỉ gỡ thứ bộ cài đã đặt (skill bản cũ đã chép nếu chưa sửa, liên kết
   repo → trạm, `.env` chưa điền, hook pre-commit của chính nó), dời vào nhật ký của trạm thay vì
   xoá; trạm và mọi project giữ nguyên. `--dry-run` in kế hoạch.
 - **`doctor` có mức `NOT_CHECKED`** cho thứ chưa kiểm được (chạy `--offline`, thiếu npx) và cho

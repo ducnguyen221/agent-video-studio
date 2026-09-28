@@ -155,7 +155,10 @@ video-studio init --station <thư mục trạm ngoài repo>
 - `--yes` (khuyến nghị cho người mới): trạm ở `workspace/` ngay trong repo, Git bỏ qua cả thư mục.
 - `--station`: trạm ở thư mục riêng — khi người dùng đã có trạm, dùng nhiều máy, hoặc repo là bản
   public của chính họ. Trạm có sẵn từ bản cũ thì thêm `--migrate --dry-run`, đọc kế hoạch, rồi
-  mới chạy thật.
+  mới chạy thật; kế hoạch đó gồm cả việc gỡ bản skill mà bản cũ đã chép vào trạm.
+
+`init` không chép skill vào trạm: host đọc skill từ repo qua adapter `.claude/skills` /
+`.agents/skills` ở gốc repo, nên mở **thư mục repo** là đủ ([hosts/README.md](hosts/README.md)).
 
 Gọi lệnh qua `.venv` như mục 5 (`.\.venv\Scripts\video-studio` hoặc `.venv/bin/video-studio`).
 `init` không bao giờ đoán thay: thiếu lựa chọn khi không có người trả lời thì nó in bảng hai lựa

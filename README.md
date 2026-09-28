@@ -24,14 +24,14 @@ work, you just cannot add narration. There is no required install order and no b
 | Command | Does |
 |---|---|
 | `video-studio doctor` | Checks Node ≥ 22, npx, the pinned HyperFrames build, its headless Chromium, ffmpeg/ffprobe, the Inter font, the station and `station.json`. `--check-updates` only *reports* a newer HyperFrames. |
-| `video-studio init` | Lays out a station (`embedded` inside the repo, or `separate` outside it), writes `station.json`, copies the agent skills. `--migrate` adopts an older station layout, `--dry-run` prints the plan without writing, `--undo` reverses the last run from its journal. |
+| `video-studio init` | Lays out a station (`embedded` inside the repo, or `separate` outside it), writes `station.json`. `--migrate` adopts an older station layout (and removes skill copies an older version left there), `--dry-run` prints the plan without writing, `--undo` reverses the last run from its journal. |
 | `video-studio render` | A JSON spec (`schema_version: 1`) → MP4s from a template: `news`, `news-weekly`, `topstory`, `repo-today`. Needs the `[voice]` extra. |
 | `video-studio narrate` | A silent MP4 (or a whole project, rendered first) + narration text → one finished MP4 with voice and optional background music, through the voice studio. |
 | `video-studio preview` | Opens the HyperFrames preview studio for a project — with the *pinned* build, so what you inspect is what will render. |
 | `video-studio edit` | Cuts real footage: transcribe locally, pack the transcript into phrase-level markdown, then render an EDL with grade, overlays, subtitles and loudness normalisation. Helpers distilled from `video-use` (MIT); can also drive a vendored upstream copy. |
 | `video-studio export` / `import` | Zip a station and unpack it on another machine. `--personal` takes only project assets (`projects/*/assets`) plus the top-level folders you name with `--include`; scratch, cache, virtualenvs and git trees never enter the pack. `import` never overwrites unless you ask, and has `--dry-run`. |
 | `video-studio backup` / `migrate` / `update` | Zip the station; move an `embedded` station out of the repo; fast-forward the clone (never cleans). |
-| `video-studio uninstall` | Removes only what the installer put in place — the skills it copied (if unmodified), the repo → station link, an unfilled `.env`, its own pre-commit hook — and moves them into the station journal instead of deleting. The station and every project stay. `--dry-run` shows the plan. |
+| `video-studio uninstall` | Removes only what the installer put in place — the repo → station link, skills an older version copied (if unmodified), an unfilled `.env`, its own pre-commit hook — and moves them into the station journal instead of deleting. The station and every project stay. `--dry-run` shows the plan. |
 
 Every command follows one contract: exit `0` ok · `1` render/engine error (retryable) ·
 `2` bad call or config · `3` station or tool missing; with `--json` the last stdout line is a
@@ -105,10 +105,14 @@ that is what a harness reads to route. No upstream binary (font, audio, image) a
 `references/` tree was copied. The pinned source of each skill lives in
 [`upstream.json`](upstream.json), and `video-studio doctor` checks that ledger against the tree.
 
-`video-studio init` copies all 24 into `<station>/.claude/skills` and `<station>/.agents/skills`
-and writes `skills-lock.json`. If the station still carries an older skill set installed by
-another tool, `init --migrate` removes it — the old copy is kept in the run journal, so
-`init --undo` puts it back.
+Skills are **not** copied into the station. The repo root carries one small adapter per skill in
+`.claude/skills/` (Claude Code) and `.agents/skills/` (Codex, Antigravity): it holds only the
+skill's `name` and `description` and points the agent at the original under `skills/`. Open the
+repository folder in your host and it sees all 24; `git pull` is enough to get new skill content.
+After adding, removing or re-describing a skill, run `python scripts/build_host_adapters.py`;
+`tests/test_host_adapters.py` fails when an adapter drifts from its source. A station set up by
+an older version still holds copies plus `skills-lock.json`: `init --station DIR --migrate`
+removes them, keeping the old copies in the run journal so `init --undo` puts them back.
 
 ## Rules
 

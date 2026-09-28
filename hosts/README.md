@@ -13,18 +13,20 @@ nhất: dán prompt trong [INSTALL.md](../INSTALL.md#prompt-copy-dán) vào ứn
 
 ## Host thấy skill bằng cách nào
 
-Nguồn duy nhất của 24 skill là [`skills/`](../skills/) trong repo. Hiện có ba đường, mức kiểm khác
-nhau — nói thẳng để bạn không tưởng một đường chưa ai thử là đã chạy:
+Nguồn duy nhất của 24 skill là [`skills/`](../skills/) trong repo; **không** có bản chép nào trong
+trạm. Có ba đường, mức kiểm khác nhau — nói thẳng để bạn không tưởng một đường chưa ai thử là đã
+chạy:
 
 | Đường | Cách | Trạng thái |
 |---|---|---|
-| Đọc thẳng từ repo | Mở **thư mục repo** trong host, bảo agent: "đọc `skills/video-routing/SKILL.md` rồi làm theo" | Chạy với mọi host đọc được file |
-| Bản chép trong trạm | `video-studio init` chép skill vào `<trạm>/.claude/skills` (Claude) và `<trạm>/.agents/skills` (Codex, Antigravity); host tự thấy khi **thư mục làm việc là trạm** | Đang dùng trên máy phát triển; cách này sắp được xem lại (nạp thẳng từ repo thay vì chép) |
+| Adapter ở gốc repo | Mở **thư mục repo** trong host. `.claude/skills/<tên>/SKILL.md` (Claude Code) và `.agents/skills/<tên>/SKILL.md` (Codex, Antigravity) chỉ mang `name` + `description` và trỏ agent về skill gốc trong `skills/` | Cùng khuôn đang dùng ở repo dữ liệu anh em; lượt nạp trên từng host thật của repo này chưa được ghi lại |
+| Đọc thẳng từ repo | Bảo agent: "đọc `skills/video-routing/SKILL.md` rồi làm theo" | Chạy với mọi host đọc được file — đường dự phòng khi host không tự thấy adapter |
 | Manifest plugin | `.claude-plugin/` và `.codex-plugin/` ở gốc repo | **Chưa kiểm** trên host thật |
 
-Trạm mặc định là `workspace/` trong repo, nên khi mở thư mục repo, host **không** tự thấy bản chép
-trong `workspace/.claude/skills` — dùng đường thứ nhất. Sau `git pull`, mở lại host để đọc nội dung
-skill mới.
+Adapter do `python scripts/build_host_adapters.py` sinh từ `skills/`; `--check` báo lệch và
+`tests/test_host_adapters.py` đỏ khi quên sinh lại. Sau `git pull`, mở lại host để đọc nội dung
+skill mới. Trạm dựng bằng bản trước 0.2.0 còn bản chép cũ: `video-studio init --station <trạm>
+--migrate` gỡ chúng (có nhật ký, `--undo` trả về).
 
 ## Không có cấu hình host nào bị sửa
 

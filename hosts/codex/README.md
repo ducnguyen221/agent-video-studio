@@ -11,9 +11,9 @@ HyperFrames tải Chromium) hoặc chặn ghi ra ngoài thư mục project (tr�
 **không** đổi thiết lập sandbox để lách: đưa đúng lệnh cho người dùng tự chạy trong terminal
 thường rồi dán kết quả lại. Trạm mặc định `workspace/` nằm trong repo nên không cần ghi ra ngoài.
 
-**Skill:** cách chắc chắn là bảo Codex "đọc `skills/video-routing/SKILL.md` rồi làm theo". Bản chép
-trong `<trạm>/.agents/skills` chỉ được tự nạp khi thư mục làm việc là trạm
-([vì sao](../README.md#host-thấy-skill-bằng-cách-nào)). Manifest `.codex-plugin/` có trong repo nhưng
+**Skill:** cách chắc chắn là bảo Codex "đọc `skills/video-routing/SKILL.md` rồi làm theo". Khi mở
+thư mục repo, Codex còn thấy adapter `.agents/skills/` ở gốc repo, trỏ về từng skill gốc
+([cách hoạt động](../README.md#host-thấy-skill-bằng-cách-nào)). Manifest `.codex-plugin/` có trong repo nhưng
 chưa kiểm trên Codex thật.
 
 **Kiểm sau khi cài:** `video-studio doctor`, chép nguyên các dòng; bài mẫu

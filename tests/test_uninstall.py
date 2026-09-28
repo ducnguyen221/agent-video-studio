@@ -48,13 +48,35 @@ def _skills(st, tool=".claude/skills"):
     return sorted(os.listdir(d)) if d.is_dir() else []
 
 
+def _old_install(st, names=("video-routing", "video-edit", "hyperframes-core")):
+    """Dựng lại thứ `init` của bản trước 0.2.0 đã đặt vào trạm: bản chép skill ở hai thư mục
+    host + `skills-lock.json` mang hash từng bản. Bản mới không chép nữa, nhưng `uninstall` vẫn
+    phải gỡ sạch những trạm cài từ trước."""
+    lock = {"version": 1, "source": station.LOCK_SOURCE, "skills": {}}
+    for tool in station.SKILL_TOOLS:
+        for name in names:
+            p = st.joinpath(*tool.split("/"), name, "SKILL.md")
+            p.parent.mkdir(parents=True, exist_ok=True)
+            p.write_text(f"---\nname: {name}\n---\nbản chép cũ\n", encoding="utf-8")
+            lock["skills"][name] = {"sha256": station._tree_hash(str(p.parent))}
+    (st / station.LOCK_FILE).write_text(json.dumps(lock), encoding="utf-8")
+
+
 # ── vòng đời đầy đủ ────────────────────────────────────────────────────────────────────
+
+def test_init_no_longer_copies_skills_into_the_station(repo, capsys):
+    rc, res, err = run(["init", "--yes", "--json"], capsys)
+    ws = repo / "workspace"
+    assert rc == 0, err
+    assert not (ws / ".claude").exists() and not (ws / ".agents").exists()
+    assert not (ws / station.LOCK_FILE).exists()
+
 
 def test_lifecycle_embedded_keeps_every_user_byte(repo, tmp_path, monkeypatch, capsys):
     ws = repo / "workspace"
     rc, res, err = run(["init", "--yes", "--json"], capsys)
     assert rc == 0 and res["mode"] == "embedded" and res["station"] == str(ws), err
-    assert _skills(ws) and _skills(ws, ".agents/skills")
+    _old_install(ws)
     canary = _canary(ws)
     edited = ws / ".claude" / "skills" / "video-routing" / "SKILL.md"
     edited.write_text(edited.read_text(encoding="utf-8") + "\nghi chú riêng\n", encoding="utf-8")
@@ -95,10 +117,10 @@ def test_lifecycle_embedded_keeps_every_user_byte(repo, tmp_path, monkeypatch, c
     assert (prev / "prev-repo" / "studio.local.json").is_file()
     assert json.loads((prev / "journal.json").read_text(encoding="utf-8"))["status"] == "uninstalled"
 
-    # Cài lại là đủ để về như cũ; skill đã sửa vẫn được giữ, không bị đè.
+    # Cài lại là đủ để về như cũ; skill đã sửa vẫn được giữ, không bị đè, không chép thêm.
     rc, res, err = run(["init", "--yes", "--json"], capsys)
     assert rc == 0 and (repo / "studio.local.json").is_file(), err
-    assert len(_skills(ws)) > 1 and "ghi chú riêng" in edited.read_text(encoding="utf-8")
+    assert _skills(ws) == ["video-routing"] and "ghi chú riêng" in edited.read_text(encoding="utf-8")
     assert canary.read_text(encoding="utf-8") == CANARY
 
 
@@ -178,6 +200,7 @@ def test_a_failure_half_way_puts_everything_back(repo, monkeypatch, capsys):
     N hỏng thì N-1 bước trước phải được trả về — trạm không bao giờ ở trạng thái nửa gỡ."""
     run(["init", "--yes", "--json"], capsys)
     ws = repo / "workspace"
+    _old_install(ws)
     before = {str(p.relative_to(ws)) for p in ws.rglob("*") if ".video-studio" not in p.parts}
     real_backup = station._Run.backup
     calls = {"n": 0}

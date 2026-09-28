@@ -34,8 +34,9 @@ Trạm là nơi chứa project, seed, skill cho agent, nháp, cache — **không
    - Được đồng ý mới bỏ `--dry-run`. Làm ngoài giờ lịch render; đóng preview/trình duyệt đang
      mở file trong trạm.
    - Di trú chỉ chạm: `news/`, `topstory/` → `projects/`, ghim bản HyperFrames trong
-     `package.json`, filler từ trạm giọng, `demo/`, skill trong `.claude/skills` + `.agents/skills`,
-     `skills-lock.json`, `station.json`. Mọi thư mục khác ở gốc trạm để nguyên.
+     `package.json`, filler từ trạm giọng, `demo/`, `station.json`, và gỡ bản skill đời cũ đã
+     chép vào `.claude/skills` + `.agents/skills` cùng `skills-lock.json` (skill đọc từ repo, trạm
+     không giữ bản chép). Mọi thư mục khác ở gốc trạm để nguyên.
    - Sai thì `video-studio init --station <trạm> --undo` (file người dùng đã sửa sau lần init
      được giữ lại và báo tên).
 

@@ -28,7 +28,7 @@ COMMANDS = {
                 "chuyển trạm embedded ra ngoài repo (--to separate)"),
     "update":  ("video_studio.station:update_main", "cập nhật repo (git pull --ff-only)"),
     "uninstall": ("video_studio.uninstall",
-                  "gỡ phần bộ cài đã đặt (skill đã chép, liên kết repo → trạm); GIỮ trạm"),
+                  "gỡ phần bộ cài đã đặt (liên kết repo → trạm, skill bản cũ đã chép); GIỮ trạm"),
 }
 
 

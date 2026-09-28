@@ -2,12 +2,14 @@
 
     video-studio init --station DIR                 dựng (hoặc bổ sung) trạm ngoài repo
     video-studio init --station DIR --migrate       + di trú bố cục cũ: news/, topstory/ ở gốc
-                                                      → projects/<tên>/, ghim bản HyperFrames
+                                                      → projects/<tên>/, ghim bản HyperFrames,
+                                                      gỡ skill đời cũ đã chép vào trạm
     video-studio init … --dry-run                   chỉ in kế hoạch, KHÔNG ghi gì
     video-studio init --station DIR --undo          đảo lần init gần nhất theo nhật ký
 
-TRẠM là nơi chứa những gì của riêng người dùng (project đang dựng, seed, skill cho agent, nháp,
-cache); repo chỉ chứa mã. Hai chế độ cài (F17):
+TRẠM là nơi chứa những gì của riêng người dùng (project đang dựng, seed, nháp, cache); repo
+chứa mã và skill. Skill KHÔNG được chép vào trạm: host đọc chúng từ repo qua adapter
+`.claude/skills` / `.agents/skills` ở gốc repo. Hai chế độ cài (F17):
 
     embedded   trạm = <repo>/workspace/ (gitignore) — "mở một folder là thấy hết". Mặc định và
                là khuyến nghị cho người dùng mới.
@@ -65,7 +67,7 @@ ALLOWED_TOP = {"projects", "scratch", "cache", "demo", ".claude", ".agents", LOC
 PIN_RE = re.compile(r"(hyperframes@)([0-9A-Za-z.\-^~]+)")
 
 CHOICE_TABLE = """\
-Chọn chỗ đặt TRẠM VIDEO (nơi chứa project đang dựng, seed, skill cho agent, nháp, cache):
+Chọn chỗ đặt TRẠM VIDEO (nơi chứa project đang dựng, seed, nháp, cache):
 
   [1] embedded — gọn trong repo   ← KHUYẾN NGHỊ (bấm Enter)
       Là gì : trạm nằm ở <repo>/workspace/, biến cấu hình ở <repo>/.env (git bỏ qua cả hai).
@@ -365,54 +367,44 @@ def build_plan(st, mode, migrate, version):
         else:
             notes.append("repo chưa có templates/_seed/ — chưa dựng demo/ (seed project HyperFrames)")
 
-    # 5. skill cho agent: chép từ repo vào .claude/skills và .agents/skills
-    skills = _repo_skills()
-    replace_lock = False
+    # 5. skill KHÔNG ở trạm. Host đọc skill từ repo qua adapter `.claude/skills` và
+    # `.agents/skills` ở gốc repo (sinh bởi `scripts/build_host_adapters.py`) — một nguồn sự
+    # thật, `git pull` là thấy bản mới. Trạm đời cũ còn bản chép thì `--migrate` gỡ: skill trùng
+    # tên repo, skill mà `skills-lock.json` kê (bộ cài skill đã đặt), rồi chính file khoá. Skill
+    # riêng của người dùng (không trong repo, không trong khoá) để nguyên. Gỡ = dời vào `prev/`
+    # của nhật ký, `--undo` trả lại từng byte.
+    repo_names = set(_repo_skills())
+    lock_path = _p(st, LOCK_FILE)
+    cur_lock, lock_err = _env.read_json(lock_path)
+    lock_names = set() if lock_err else set((cur_lock or {}).get("skills") or {})
+    copied, own = [], []
     for tool in SKILL_TOOLS:
-        for name, src in sorted(skills.items()):
-            rel = f"{tool}/{name}"
-            dst = _p(st, rel)
-            if not os.path.isdir(dst):
-                plan.append({"op": "skill", "action": "add", "src": src, "dst": rel})
-            elif _tree_hash(dst) == _tree_hash(src):
+        base = _p(st, tool)
+        for name in sorted(os.listdir(base) if os.path.isdir(base) else []):
+            if not os.path.isdir(os.path.join(base, name)):
                 continue
-            elif migrate:
-                plan.append({"op": "skill", "action": "replace", "src": src, "dst": rel})
-            else:
-                kept.append(f"{rel} (khác bản trong repo — giữ; --migrate để thay, bản cũ được lưu)")
-    # Skill ở trạm mà repo KHÔNG có: bộ đời cũ do công cụ khác cài. `--migrate` dọn chúng đi
-    # (bản cũ vào prev/ của nhật ký ⇒ `--undo` trả lại được); không --migrate thì chỉ báo tên.
-    legacy = sorted({n for tool in SKILL_TOOLS if os.path.isdir(_p(st, tool))
-                     for n in os.listdir(_p(st, tool))
-                     if os.path.isdir(_p(st, f"{tool}/{n}")) and n not in skills})
+            (copied if name in repo_names or name in lock_names else own).append(f"{tool}/{name}")
+    legacy = sorted({rel.split("/")[-1] for rel in copied})
     pruned = []
-    if migrate and legacy:
-        for tool in SKILL_TOOLS:
-            for name in legacy:
-                rel = f"{tool}/{name}"
-                if os.path.isdir(_p(st, rel)):
-                    plan.append({"op": "prune-skill", "dst": rel})
-                    pruned.append(rel)
+    if migrate:
+        for rel in copied:
+            plan.append({"op": "prune-skill", "dst": rel})
+            pruned.append(rel)
+        if os.path.isfile(lock_path):
+            plan.append({"op": "prune-file", "path": LOCK_FILE})
+        if copied:
+            for tool in SKILL_TOOLS:            # `.claude/skills` rồi `.claude`, nếu đã rỗng
+                parts = tool.split("/")
+                for i in range(len(parts), 0, -1):
+                    plan.append({"op": "rmdir-empty", "path": "/".join(parts[:i])})
+        kept.extend(f"{rel} (skill riêng — không có trong repo hay {LOCK_FILE}, giữ)" for rel in own)
+    elif copied or os.path.isfile(lock_path):
+        notes.append(f"trạm còn {len(copied)} bản skill chép từ đời cũ"
+                     + (f" + {LOCK_FILE}" if os.path.isfile(lock_path) else "")
+                     + " — host nay đọc skill từ repo; chạy lại với --migrate để gỡ (bản cũ được lưu, "
+                       "--undo trả về)")
 
-    # 6. skills-lock.json
-    lock = {"version": 1, "source": LOCK_SOURCE, "video_studio": __version__,
-            # `p` (skills/ đi cùng mã) và gốc repo có thể nằm trên hai Ổ ĐĨA khác nhau — đây
-            # là phép tính đường DUY NHẤT đi giữa hai cây, nên là chỗ duy nhất cần `rel_path`.
-            "skills": {n: {"path": _env.rel_path(p, _env.package_repo()),
-                           "sha256": _tree_hash(p)} for n, p in sorted(skills.items())}}
-    cur_lock, lock_err = _env.read_json(_p(st, LOCK_FILE))
-    if not os.path.isfile(_p(st, LOCK_FILE)):
-        plan.append({"op": "write", "path": LOCK_FILE, "content": _json_text(lock)})
-    elif lock_err or cur_lock.get("source") != LOCK_SOURCE:
-        if migrate:
-            plan.append({"op": "write", "path": LOCK_FILE, "content": _json_text(lock)})
-            replace_lock = True
-        else:
-            kept.append(f"{LOCK_FILE} (do công cụ khác ghi — giữ; --migrate để thay, bản cũ được lưu)")
-    elif cur_lock != lock:
-        plan.append({"op": "write", "path": LOCK_FILE, "content": _json_text(lock)})
-
-    # 7. station.json
+    # 6. station.json
     data, changed = _station_json(st, mode, version, projects_rel)
     if changed:
         plan.append({"op": "write", "path": _env.STATION_FILE, "content": _json_text(data)})
@@ -424,7 +416,7 @@ def build_plan(st, mode, migrate, version):
     _guard(plan, extra={projects_rel.split("/")[0]} | ws_extra)
     return {"plan": plan, "notes": notes, "kept": kept, "legacy_skills": legacy,
             "pruned_skills": sorted(pruned), "untouched": untouched,
-            "replace_lock": replace_lock, "station_json": data}
+            "station_json": data}
 
 
 def _guard(plan, extra=()):
@@ -572,17 +564,16 @@ def _apply(run, p):
     elif op == "workspace":
         for rel in p["files"]:
             run.copy_file(os.path.join(p["src"], *rel.split("/")), rel)
-    elif op == "prune-skill":
+    elif op in ("prune-skill", "prune-file"):
         # Không xoá thẳng: dời vào prev/ của nhật ký, để `--undo` trả lại nguyên vẹn.
-        b = run.backup(p["dst"])
-        run.record({"op": "move", "src": p["dst"], "dst": b})
-    elif op == "skill":
-        if p["action"] == "replace":
-            b = run.backup(p["dst"])
-            run.record({"op": "move", "src": p["dst"], "dst": b})
-        run.mkdir(p["dst"])
-        for rel in _files(p["src"]):
-            run.copy_file(os.path.join(p["src"], *rel.split("/")), f"{p['dst']}/{rel}")
+        rel = p.get("dst") or p["path"]
+        b = run.backup(rel)
+        run.record({"op": "move", "src": rel, "dst": b})
+    elif op == "rmdir-empty":
+        path = _p(st, p["path"])
+        if os.path.isdir(path) and not os.listdir(path):
+            os.rmdir(path)
+            run.record({"op": "rmdir", "path": p["path"]})
     else:                                   # pragma: no cover
         raise AssertionError(op)
 
@@ -602,6 +593,11 @@ def _undo_ops(st, ops, dry_run=False):
                 done += 1
             elif os.path.isdir(path):
                 kept.append(f"{op['path']}/ (không rỗng — giữ)")
+        elif kind == "rmdir":
+            if not os.path.isdir(_p(st, op["path"])):
+                if not dry_run:
+                    os.makedirs(_p(st, op["path"]))
+                done += 1
         elif kind == "move":
             src, dst = _p(st, op["src"]), _p(st, op["dst"])
             if os.path.exists(dst) and not os.path.exists(src):
@@ -796,9 +792,11 @@ def _describe(p):
     if op == "workspace":
         return f"dựng cây mẫu của trạm mới ({p['files']} file: README, project ví dụ, brand mẫu)"
     if op == "prune-skill":
-        return f"gỡ skill đời cũ {p['dst']}/ (không có trong repo; bản cũ lưu lại, --undo trả về)"
-    if op == "skill":
-        return ("thay" if p["action"] == "replace" else "thêm") + f" skill {p['dst']}/ (từ repo)"
+        return f"gỡ skill đời cũ {p['dst']}/ (host đọc skill từ repo; bản cũ lưu lại, --undo trả về)"
+    if op == "prune-file":
+        return f"gỡ {p['path']} (khoá của bản skill đã chép; bản cũ lưu lại, --undo trả về)"
+    if op == "rmdir-empty":
+        return f"gỡ {p['path']}/ nếu đã rỗng"
     if op == "write":
         return f"ghi {p['path']}"
     return op
@@ -819,9 +817,9 @@ def _print_init(res):
         log("  = không đụng: " + ", ".join(res["untouched"]))
     if res["legacy_skills"]:
         if res.get("pruned_skills"):
-            log("  - skill đời cũ được gỡ (không có trong repo): " + ", ".join(res["legacy_skills"]))
+            log("  - skill chép từ đời cũ được gỡ khỏi trạm: " + ", ".join(res["legacy_skills"]))
         else:
-            log("  = skill không có trong repo (để nguyên; --migrate để gỡ): "
+            log("  = skill chép từ đời cũ còn ở trạm (để nguyên; --migrate để gỡ): "
                 + ", ".join(res["legacy_skills"]))
     for n in res["notes"]:
         log(f"  ! {n}")
@@ -1173,8 +1171,8 @@ def init_main(argv=None):
                          "--yes/--mode/--station thì dừng với mã 2")
     ap.add_argument("--migrate", action="store_true",
                     help="di trú bố cục cũ: news/, topstory/ → projects/, ghim HyperFrames, "
-                         "chép filler, thay skill cũ khác repo và GỠ skill đời cũ không có trong "
-                         "repo (bản cũ đều lưu lại, --undo trả về)")
+                         "chép filler, GỠ skill đời cũ đã chép vào trạm cùng skills-lock.json "
+                         "(bản cũ đều lưu lại, --undo trả về)")
     ap.add_argument("--undo", action="store_true", help="đảo lần init gần nhất theo nhật ký")
     ap.add_argument("--dry-run", action="store_true", help="chỉ in kế hoạch, không ghi")
     ap.add_argument("--json", action="store_true")

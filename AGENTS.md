@@ -17,9 +17,12 @@ vào phần mã được Git theo dõi — `tests/test_no_identity_leak.py` bắ
 **Agent chỉ ghi vào phần mã được Git theo dõi khi sửa code / tài liệu / test của chính repo.**
 Mọi thứ khác đi vào trạm: project đang dựng, spec và `brand.json` thật, footage, nháp, file render.
 
-Skill: nguồn DUY NHẤT để sửa là `skills/` trong repo. `video-studio init` hiện chép một bản vào
-`<trạm>/.claude/skills` và `<trạm>/.agents/skills` (khoá bằng `skills-lock.json`); bản chép đó
-không phải chỗ để sửa — sửa ở repo rồi chạy lại `init`.
+Skill: nguồn DUY NHẤT là `skills/` trong repo, và skill **không** được chép vào trạm. Host thấy
+skill qua adapter `.claude/skills/<tên>/SKILL.md` và `.agents/skills/<tên>/SKILL.md` ở gốc repo —
+mỗi adapter chỉ mang `name` + `description` và trỏ về skill gốc. Thêm, xoá hay đổi mô tả skill thì
+chạy `python scripts/build_host_adapters.py` rồi commit cả adapter; `tests/test_host_adapters.py`
+đỏ khi adapter lệch nguồn. Trạm đời cũ còn bản chép thì `video-studio init --station DIR --migrate`
+gỡ chúng (có nhật ký, `--undo` trả về).
 
 ## 1. Repo này là gì
 
@@ -36,7 +39,8 @@ agent-video-studio/
 ├─ templates/             seed project HyperFrames + cây mẫu của một trạm mới
 ├─ samples/news-mini/     bài mẫu + kết quả kỳ vọng (EXPECTED.md)
 ├─ hosts/                 hướng dẫn riêng từng ứng dụng AI
-├─ scripts/               vỏ tiện ích (.ps1 cho Windows, .sh cho macOS)
+├─ .claude/skills/ · .agents/skills/   adapter host trỏ về skills/ (sinh, không sửa tay)
+├─ scripts/               vỏ tiện ích (.ps1 cho Windows, .sh cho macOS), build_host_adapters.py
 ├─ tests/ · .github/      pytest, CI Windows + macOS
 ├─ docs/                  tài liệu + trang giới thiệu (GitHub Pages)
 ├─ .claude-plugin/ · .codex-plugin/   manifest plugin
@@ -87,7 +91,7 @@ mẫu `samples/news-mini/` nếu máy có đủ công cụ render.
 
 | Host | File hướng dẫn | Skill | Ghi chú |
 |---|---|---|---|
-| Claude Code | `CLAUDE.md` → trỏ về đây | `<trạm>/.claude/skills/` (do `init` chép) hoặc đọc thẳng `skills/` | [hosts/claude](hosts/claude/README.md) |
-| Codex CLI / desktop | `AGENTS.md` (file này) | `<trạm>/.agents/skills/` hoặc đọc thẳng `skills/` | [hosts/codex](hosts/codex/README.md) |
-| Antigravity | `GEMINI.md` → trỏ về đây | `<trạm>/.agents/skills/` hoặc đọc thẳng `skills/` | [hosts/antigravity](hosts/antigravity/README.md) |
+| Claude Code | `CLAUDE.md` → trỏ về đây | adapter `.claude/skills/` ở gốc repo → `skills/` | [hosts/claude](hosts/claude/README.md) |
+| Codex CLI / desktop | `AGENTS.md` (file này) | adapter `.agents/skills/` ở gốc repo → `skills/` | [hosts/codex](hosts/codex/README.md) |
+| Antigravity | `GEMINI.md` → trỏ về đây | adapter `.agents/skills/` ở gốc repo → `skills/` | [hosts/antigravity](hosts/antigravity/README.md) |
 | Claude Desktop (tab chat) | — | — | Không chạy được lệnh; [hosts/claude-desktop](hosts/claude-desktop/README.md) |
