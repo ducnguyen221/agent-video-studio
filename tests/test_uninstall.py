@@ -171,3 +171,26 @@ def test_init_undo_is_not_fooled_by_an_uninstall(repo, capsys):
 
 def test_the_hook_mark_matches_what_init_writes():
     assert uninstall.HOOK_MARK in station._hook_text()
+
+
+def test_a_failure_half_way_puts_everything_back(repo, monkeypatch, capsys):
+    """Windows giữ file, hay đường dẫn vượt 260 ký tự (đã gặp thật khi thử trên máy): bước thứ
+    N hỏng thì N-1 bước trước phải được trả về — trạm không bao giờ ở trạng thái nửa gỡ."""
+    run(["init", "--yes", "--json"], capsys)
+    ws = repo / "workspace"
+    before = {str(p.relative_to(ws)) for p in ws.rglob("*") if ".video-studio" not in p.parts}
+    real_backup = station._Run.backup
+    calls = {"n": 0}
+
+    def flaky(self, rel):
+        calls["n"] += 1
+        if calls["n"] == 5:
+            raise OSError(206, "The filename or extension is too long")
+        return real_backup(self, rel)
+
+    monkeypatch.setattr(station._Run, "backup", flaky)
+    rc, res, err = run(["uninstall", "--json"], capsys)
+    assert rc == 1 and res["ok"] is False and "trả mọi thứ về chỗ cũ" in res["error"]
+    after = {str(p.relative_to(ws)) for p in ws.rglob("*") if ".video-studio" not in p.parts}
+    assert after == before, "hỏng giữa chừng mà trạm không về như cũ"
+    assert (repo / "studio.local.json").is_file(), "phần repo chỉ được chạy khi phần trạm đã xong"

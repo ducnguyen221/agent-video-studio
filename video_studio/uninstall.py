@@ -117,25 +117,53 @@ def _rmdir_empty(st, rel):
     return False
 
 
+def _station_steps(run, pl, removed):
+    st = run.st
+    for op in pl["station_ops"]:
+        b = run.backup(op["path"])
+        run.record({"op": "move", "src": op["path"], "dst": b})
+        removed.append(op["path"])
+    for tool in st_mod.SKILL_TOOLS:                # `.claude/skills` rồi `.claude`, nếu đã rỗng
+        parts = tool.split("/")
+        for i in range(len(parts), 0, -1):
+            rel = "/".join(parts[:i])
+            if _rmdir_empty(st, rel):
+                run.record({"op": "rmdir", "path": rel})     # `_rollback` dựng lại nếu cần
+
+
+def _rollback(run):
+    """Hỏng giữa chừng ⇒ trả mọi thứ đã dời về chỗ cũ, theo đúng nhật ký. -> danh sách giữ lại."""
+    for op in run.ops:                             # thư mục đã gỡ phải có lại trước khi trả file
+        if op["op"] == "rmdir":
+            os.makedirs(st_mod._p(run.st, op["path"]), exist_ok=True)
+    _done, kept = st_mod._undo_ops(run.st, [o for o in run.ops if o["op"] == "move"])
+    st_mod._clean_prev(run.dir)
+    run.finish("rolled-back")
+    return kept
+
+
 def _execute(pl):
-    """Thi hành kế hoạch. Mọi thứ bị gỡ được DỜI vào nhật ký, không xoá thẳng."""
+    """Thi hành kế hoạch. Mọi thứ bị gỡ được DỜI vào nhật ký, không xoá thẳng.
+
+    Phần trạm là giao dịch: một bước hỏng (file đang bị giữ, đường dẫn quá dài trên Windows)
+    thì mọi thứ đã dời được trả về chỗ cũ và lệnh báo lỗi — không bao giờ để trạm ở nửa chừng,
+    nửa skill còn nửa đã gỡ. Phần repo chỉ chạy sau khi phần trạm đã xong trọn.
+    """
     st, repo = pl["station"], pl["repo"]
     removed = []
     run = None
     if pl["station_ops"] or pl["repo_ops"]:
         if st and os.path.isdir(st):
             run = st_mod._Run(st)
-    for op in pl["station_ops"]:
-        b = run.backup(op["path"])
-        run.record({"op": "move", "src": op["path"], "dst": b})
-        removed.append(op["path"])
     if run:
-        for tool in st_mod.SKILL_TOOLS:            # `.claude/skills` rồi `.claude`, nếu đã rỗng
-            parts = tool.split("/")
-            for i in range(len(parts), 0, -1):
-                rel = "/".join(parts[:i])
-                if _rmdir_empty(st, rel):
-                    run.record({"op": "rmdir", "path": rel})
+        try:
+            _station_steps(run, pl, removed)
+        except Exception as exc:
+            kept = _rollback(run)
+            msg = f"gỡ hỏng giữa chừng ({exc.__class__.__name__}: {exc}) — đã trả mọi thứ về chỗ cũ"
+            if kept:
+                msg += "; còn lệch: " + ", ".join(kept)
+            raise contract.EngineError(msg) from exc
     for op in pl["repo_ops"]:
         src = os.path.join(repo, *op["path"].split("/"))
         if run:
