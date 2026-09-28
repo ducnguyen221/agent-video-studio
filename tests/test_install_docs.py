@@ -200,3 +200,27 @@ def test_host_files_only_point_to_agents_md(rel):
 def test_every_host_has_a_page_and_is_listed(host):
     assert (ROOT / "hosts" / host / "README.md").is_file()
     assert f"({host}/README.md)" in read("hosts/README.md")
+
+
+# ── trang /install/ của website ────────────────────────────────────────────────────────
+
+def test_install_page_exists_and_is_linked_from_the_home_page():
+    assert (ROOT / PAGE).is_file(), "website phải có trang /install/"
+    assert 'href="install/"' in read("docs/index.html"), "trang chính phải dẫn sang /install/"
+
+
+def test_install_page_is_host_neutral_and_honest_about_claude_desktop():
+    page = read(PAGE)
+    for host in ("Claude Code", "Codex", "Antigravity", "Claude Desktop"):
+        assert host in page, f"trang cài thiếu host {host}"
+    assert "NOT_CHECKED" in page and "uninstall" in page
+
+
+def test_install_page_links_only_to_real_repo_files():
+    """Pages chỉ phục vụ `docs/`, nên trang trỏ file ở gốc repo qua URL GitHub — file đó phải có."""
+    missing = []
+    for path in re.findall(r"github\.com/ducnguyen221/agent-video-studio/(?:blob|tree)/main/([^\"#]+)",
+                           read(PAGE)):
+        if not (ROOT / path).exists():
+            missing.append(path)
+    assert not missing, f"trang /install/ trỏ file không có: {missing}"

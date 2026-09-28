@@ -31,6 +31,7 @@ kiểm).
 - `AGENTS.md` (hướng dẫn chung cho mọi agent) với `CLAUDE.md` / `GEMINI.md` là con trỏ, và
   `hosts/` cho Claude Code, Codex, Antigravity, Claude Desktop — nói rõ đường nạp skill nào đã
   chạy, đường nào chưa kiểm.
+- Trang web `/install/`: chọn ứng dụng AI, dán prompt (chép nguyên văn từ `INSTALL.md`), đọc nhãn kiểm tra.
 - `START-HERE.md` và nhật ký thay đổi này.
 
 ## 0.1.0 — 2026-09-22

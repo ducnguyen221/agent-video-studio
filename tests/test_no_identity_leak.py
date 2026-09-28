@@ -82,7 +82,10 @@ ALLOW = {
     ("START-HERE.md", "tac-gia"): 4,
     ("INSTALL.md", "tac-gia"): 8,
     # Cổng tài liệu cài đặt khai đúng hai URL chính thức mà prompt được phép trỏ tới.
-    ("tests/test_install_docs.py", "tac-gia"): 2,
+    # + mẫu URL GitHub để đối chiếu link của trang /install/ với file thật trong repo.
+    ("tests/test_install_docs.py", "tac-gia"): 3,
+    # Trang /install/: hai prompt chép từ INSTALL.md (4 URL) + 4 liên kết tới file của repo.
+    ("docs/install/index.html", "tac-gia"): 8,
 }
 
 
