@@ -229,6 +229,11 @@ video-studio init --station <thư mục trạm ngoài repo>
   public của chính họ. Trạm có sẵn từ bản cũ thì thêm `--migrate --dry-run`, đọc kế hoạch, rồi
   mới chạy thật; kế hoạch đó gồm cả việc gỡ bản skill mà bản cũ đã chép vào trạm.
 
+**Máy đã có trạm video từ trước** (`~/.video` mang dấu trạm): kể cả với `--yes`, `init` tự nhận
+trạm đó (chế độ `separate`) và in lý do — mọi render sau đó ghi vào trạm ấy. Đọc dòng `station`
+của `doctor`; nó không phải `<repo>/workspace/` mà người dùng không chủ ý chọn trạm cũ thì dừng và
+hỏi, đừng render thử vào trạm đang chạy lịch của họ.
+
 `init` không chép skill vào trạm: host đọc skill từ repo qua adapter `.claude/skills` /
 `.agents/skills` ở gốc repo, nên mở **thư mục repo** là đủ ([hosts/README.md](hosts/README.md)).
 
