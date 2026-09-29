@@ -46,7 +46,7 @@ hash mp4. Trên **cùng một máy**, chạy lại cùng spec cho cùng thời l
 | Máy | Ngày | Bản engine | Thời gian dựng | Thời lượng dài / ngắn | Người đo |
 |---|---|---|---|---|---|
 | Windows 11 x64 | 2026-09-29 | HyperFrames 0.8.54 · voice-studio 0.3.0 · torch 2.14.0+cu126 (RTX 4070) | 113 s (`timings.total` 112,6) | 51,05 s / 24,93 s | agent Claude, cài mới theo INSTALL.md mục 5b |
-| macOS arm64 | chưa đo | HyperFrames 0.8.54 | — | — | — |
+| macOS arm64 (Mac mini M1, 16 GB, macOS 26.6.2) | 2026-09-30 | HyperFrames 0.8.54 · voice-studio 0.3.0 · torch 2.14.0 (MPS, fp16) | 311 s (`timings.total` 310,7) | 51,33 s / 24,97 s | agent Claude, cài mới theo INSTALL.md mục 5b |
 
 Điền một dòng sau mỗi lần chạy thật; để ô "chưa đo" khi chưa chạy, không ước lượng.
 
@@ -54,3 +54,10 @@ Ghi chú lượt Windows: bản clone mới, `.venv` mới, giọng mặc địn
 (19 s), weights lấy từ cache Hugging Face đã có trên máy (máy mới phải tải thêm ~4 GB). Cùng spec
 dựng bằng HyperFrames 0.7.94 cho **đúng cùng** thời lượng 51,05 s / 24,93 s (lượt đó mất 209 s). Bản ngắn tải hai ảnh b-roll CC lúc dựng; thiếu `faster-whisper` thì chỉ bỏ phụ đề từng chữ
 (log `[asr] word-caption skip`), không làm hỏng lệnh.
+
+Ghi chú lượt macOS: lần render đầu trên arm64. Bản clone mới ở tag `v0.2.1`, `.venv` mới (Python
+3.12.14), torch bản PyPI mặc định (wheel arm64 127 MB), giọng mặc định tạo bằng `make-profile
+--instruct` (16 s), weights lấy từ cache Hugging Face đã có trên máy. Chromium của HyperFrames
+(`chrome-headless-shell` 152.0.7977.30, tải 93 MB) cài trước bằng `npx --yes hyperframes@0.8.54
+browser ensure`; font Inter cài qua `brew install --cask font-inter`. Không cài `faster-whisper`
+nên cũng bỏ phụ đề từng chữ như lượt Windows.
