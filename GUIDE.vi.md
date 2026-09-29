@@ -54,8 +54,9 @@ Bản dùng để render luôn là một bản cụ thể (`HYPERFRAMES_VERSION`
 
 Muốn soi trước khi render: `video-studio preview --project <tên>` (Ctrl+C để dừng).
 
-Lồng tiếng cần **trạm giọng cài trong cùng venv** — xem `docs/INSTALL.md` mục "cài vào venv nào",
-đó là chỗ hay sai nhất.
+Lồng tiếng cần **repo giọng (`agent-voice-studio`, clone cạnh repo này) cài `[engine]` vào chính
+`.venv` của repo này**, cộng một giọng mặc định — xem `INSTALL.md` mục 5b và `docs/INSTALL.md` mục
+"cài vào venv nào", đó là chỗ hay sai nhất.
 
 ## 7. Giữ đồ của bạn an toàn
 

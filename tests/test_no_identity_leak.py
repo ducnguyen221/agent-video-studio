@@ -80,7 +80,8 @@ ALLOW = {
     # Hai lệnh clone + hai URL trong prompt cài đặt (bản gốc của prompt ở INSTALL.md, các nơi
     # khác chép nguyên văn — tests/test_install_docs.py giữ chúng khớp nhau).
     ("START-HERE.md", "tac-gia"): 4,
-    ("INSTALL.md", "tac-gia"): 8,
+    # INSTALL.md thêm hai lệnh clone repo giọng `agent-voice-studio` cạnh repo này (mục 5b).
+    ("INSTALL.md", "tac-gia"): 10,
     # Cổng tài liệu cài đặt khai đúng hai URL chính thức mà prompt được phép trỏ tới.
     # + mẫu URL GitHub để đối chiếu link của trang /install/ với file thật trong repo.
     ("tests/test_install_docs.py", "tac-gia"): 3,

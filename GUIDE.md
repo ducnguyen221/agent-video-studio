@@ -56,8 +56,10 @@ deliberate step — render a test, compare, then switch.
 
 To inspect before rendering: `video-studio preview --project <name>` (Ctrl+C to stop).
 
-Narration needs the **voice studio installed into the same venv** — see the "which venv" section
-of `docs/INSTALL.md`. That is the single most common mistake.
+Narration needs the **voice repo (`agent-voice-studio`, cloned next to this one) installed with
+its `[engine]` extra into this repo's own `.venv`**, plus a default voice — see `INSTALL.md`
+section 5b and the "which venv" section of `docs/INSTALL.md`. That is the single most common
+mistake.
 
 ## 7. Keeping your work safe
 

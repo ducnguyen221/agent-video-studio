@@ -5,6 +5,25 @@ chính nhưng chưa có tag; khi phát hành, mục đó đổi tên thành số
 `pyproject.toml`, `video_studio/__init__.py` cùng ba manifest plugin (`tests/test_version_sync.py`
 kiểm).
 
+## 0.2.1 — 2026-09-29
+
+Bản vá tài liệu để một agent trên Mac Apple Silicon mới tinh tự cài được theo `INSTALL.md`, không
+biến môi trường nào (chế độ embedded).
+
+- **macOS trong `INSTALL.md`, `START-HERE.md`, `docs/INSTALL.md`:** tạo venv bằng `python3.12`
+  (`python3` của Mac mới là 3.9, dưới mức tối thiểu); điều kiện trước cho Mac mới — Xcode Command
+  Line Tools, Homebrew do người dùng tự cài (agent không chạy lệnh tải-rồi-chạy), `/opt/homebrew/bin`
+  trên `PATH`, `brew install python@3.12 node ffmpeg git`; kiểm biến và `PATH` bằng
+  `zsh -lic 'echo $…'` vì shell của agent không nạp `~/.zshrc`. Lần render đầu cần mạng (HyperFrames,
+  Chromium, CDN), và bản HyperFrames đang ghim (0.8.54) chưa render gì trên arm64.
+- **Một đường cài lồng tiếng duy nhất** (mục 5b mới của `INSTALL.md`): clone `agent-voice-studio`
+  cạnh repo này, `pip install -e "../agent-voice-studio[engine]"` vào chính `.venv` của repo video,
+  `voice-studio init --yes`, rồi tạo giọng mặc định bằng `make-profile --instruct … --set-default`.
+  Bỏ câu "cài vào venv của trạm giọng" ở `docs/INSTALL.md` và trang web, vốn mâu thuẫn với
+  `INSTALL.md`. Thiếu bước giọng mặc định thì bài mẫu dừng vì chưa có profile — trước đây tài liệu
+  không nói.
+- **Bài mẫu `news-mini`:** dòng Windows trong `EXPECTED.md` có số đo thật.
+
 ## 0.2.0 — 2026-09-29
 
 Chuẩn hóa để chạy như nhau trên Windows và macOS, cài được bằng một lời nhờ agent.

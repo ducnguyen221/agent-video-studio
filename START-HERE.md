@@ -40,12 +40,14 @@ py -3 -m venv .venv
 .\.venv\Scripts\video-studio doctor
 ```
 
-macOS (Terminal):
+macOS (Terminal) — cần trước Xcode Command Line Tools (`xcode-select --install`) và Homebrew
+(bạn tự cài theo brew.sh), rồi `brew install python@3.12 node ffmpeg git`. Gọi đích danh
+`python3.12`: `python3` của Mac mới là 3.9, dưới mức tối thiểu.
 
 ```sh
 git clone https://github.com/ducnguyen221/agent-video-studio ~/agent-video-studio
 cd ~/agent-video-studio
-python3 -m venv .venv
+python3.12 -m venv .venv
 .venv/bin/python -m pip install -e .
 .venv/bin/video-studio init --yes
 .venv/bin/video-studio doctor
@@ -75,8 +77,10 @@ Chromium của HyperFrames tải về lần đầu render; máy không có mạn
 
 ## Bài mẫu đầu tiên
 
-Lồng tiếng cần repo giọng cài **cùng venv** ([docs/INSTALL.md](docs/INSTALL.md#2-cài-package)).
-Có rồi thì dựng bản tin mẫu hai cảnh:
+Lồng tiếng cần repo giọng `agent-voice-studio` clone **cạnh** repo này, cài `[engine]` vào
+**chính `.venv` của repo này**, cộng một giọng mặc định — lệnh cho từng hệ điều hành ở
+[INSTALL.md mục 5b](INSTALL.md#5b-lồng-tiếng-tuỳ-chọn-nặng--hỏi-trước). Có rồi thì dựng bản tin
+mẫu hai cảnh:
 
 ```text
 video-studio render --project news --input samples/news-mini/spec.json --brand samples/news-mini/brand.json --out out/news-mini --json

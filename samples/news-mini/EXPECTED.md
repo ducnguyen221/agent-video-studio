@@ -17,9 +17,11 @@ Từ gốc repo, sau `video-studio init` và `video-studio doctor` báo mã 0:
 video-studio render --project news --input samples/news-mini/spec.json --brand samples/news-mini/brand.json --out out/news-mini --json
 ```
 
-Cần: Node ≥ 22, ffmpeg, Chromium của HyperFrames (`video-studio doctor` chỉ cách cài), và repo
-giọng cài **cùng venv** (`pip install -e ".[voice]"` + bản clone `agent-voice-studio`). Không có
-repo giọng thì lệnh dừng với **mã 3** kèm lệnh cài — đó là kết quả đúng, không phải lỗi mẫu.
+Cần: Node ≥ 22, ffmpeg, Chromium của HyperFrames (`video-studio doctor` chỉ cách cài), repo
+giọng `agent-voice-studio` clone cạnh repo này và cài `[engine]` vào **chính `.venv` của repo
+này**, cùng một giọng mặc định — lệnh ở [INSTALL.md mục 5b](../../INSTALL.md#5b-lồng-tiếng-tuỳ-chọn-nặng--hỏi-trước).
+Không có repo giọng thì lệnh dừng với **mã 3** kèm lệnh cài — đó là kết quả đúng, không phải lỗi
+mẫu. Có repo giọng mà chưa có giọng mặc định thì lệnh dừng vì chưa có profile: làm nốt mục 5b.
 
 ## Kết quả kỳ vọng
 
