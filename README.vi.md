@@ -6,7 +6,7 @@ Engine dựng video cho agent: composition HTML/CSS/GSAP được
 [HyperFrames](https://github.com/heygen-com/hyperframes) render ra MP4, bọc trong một package
 Python cài được với một lệnh duy nhất, `video-studio`.
 
-> **Trạng thái: v0.2.0.** Bản này có bố cục trạm, lệnh kiểm máy, công cụ di trú,
+> **Trạng thái: v0.2.1.** Bản này có bố cục trạm, lệnh kiểm máy, công cụ di trú,
 > họ template bản tin, lồng tiếng, xem trước, chỉnh footage, và `export` / `import` để mang dữ
 > liệu trạm sang máy khác. Mọi lệnh trong bảng dưới đều đã có mã thật.
 
@@ -61,7 +61,7 @@ Hoặc tự cài ([START-HERE.md](START-HERE.md) có lệnh đúng cho Windows v
 ```bash
 git clone https://github.com/ducnguyen221/agent-video-studio
 cd agent-video-studio
-python -m venv .venv && . .venv/bin/activate     # Windows: .venv\Scripts\activate
+python3.12 -m venv .venv && . .venv/bin/activate   # Windows: py -3 -m venv .venv; .venv\Scripts\activate
 pip install -e ".[test]"
 video-studio init            # trình bảng hai lựa chọn rồi chờ bạn chọn; --station DIR = separate
 video-studio doctor          # sau init: chưa có trạm thì doctor mã 3, đúng thiết kế

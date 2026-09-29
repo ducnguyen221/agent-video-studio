@@ -417,7 +417,7 @@
         <li class="m"><b class="num" data-to="24">24</b> skill cho agent</li>
         <li><b class="num" data-to="4">4</b> template bản tin</li>
         <li><b class="num" data-to="670">670</b> test</li>
-        <li>phiên bản <b>v0.2.0</b></li>
+        <li>phiên bản <b>v0.2.1</b></li>
         <li>lõi <b>0</b> phụ thuộc Python</li>
       </ul>
     </div>
@@ -641,7 +641,7 @@
       </div>
       <div class="code-scroll"><pre><code><span class="pr">git</span> clone https://github.com/ducnguyen221/agent-video-studio
 <span class="pr">cd</span> agent-video-studio
-<span class="pr">python</span> -m venv .venv <span class="cm"># hoặc dùng venv của trạm giọng — xem bảng dưới</span>
+<span class="pr">python</span> -m venv .venv <span class="cm"># macOS: python3.12 -m venv .venv</span>
 <span class="pr">pip</span> install -e .
 <span class="pr">video-studio</span> init     <span class="cm"># trình bảng embedded | separate rồi chờ bạn chọn</span>
 <span class="pr">video-studio</span> doctor   <span class="cm"># trước khi có trạm, doctor trả mã 3 — đúng thiết kế</span></code></pre></div>
@@ -673,8 +673,8 @@
       <table class="tbl">
         <thead><tr><th>Bạn định làm gì</th><th>Cài vào đâu</th></tr></thead>
         <tbody>
-          <tr><td class="rule">Render <b>có lồng tiếng</b></td><td><b>venv của trạm giọng</b> — cùng chỗ đã cài <code>agent-voice-studio</code></td></tr>
-          <tr><td class="rule">Chỉ render <b>câm</b>, hoặc chỉ <code>init</code>/<code>doctor</code>/<code>edit</code></td><td>venv riêng nào cũng được</td></tr>
+          <tr><td class="rule">Render <b>có lồng tiếng</b></td><td><b><code>.venv</code> của repo này</b> — clone <code>agent-voice-studio</code> cạnh repo rồi cài <code>[engine]</code> của nó vào chính <code>.venv</code> đó</td></tr>
+          <tr><td class="rule">Chỉ render <b>câm</b>, hoặc chỉ <code>init</code>/<code>doctor</code>/<code>edit</code></td><td><code>.venv</code> của repo này, không cần repo giọng</td></tr>
         </tbody>
       </table>
     </div>
@@ -715,7 +715,7 @@
   <div class="wrap">
     <div class="sec-head reveal">
       <span class="eyebrow"><span class="dot"></span>Bảng lệnh</span>
-      <h2>Toàn bộ lệnh của bản v0.2.0</h2>
+      <h2>Toàn bộ lệnh của bản v0.2.1</h2>
       <p>Chính là bảng mà <code>video-studio --help</code> in ra — một cổng trong bộ test giữ cho hai
         bên không trôi khỏi nhau.</p>
     </div>

@@ -15,8 +15,14 @@ thì `video-studio doctor` phải xanh.
 |---|---|---|---|
 | **Node ≥ 22** | HyperFrames chạy trên Node; mọi bản đang dùng đều khai `engines.node >= 22` | `winget install OpenJS.NodeJS.LTS` | `brew install node` |
 | **ffmpeg + ffprobe** | ghép tiếng, chuẩn âm lượng, cắt đoạn — thiếu `ffprobe` là hỏng ở giữa chừng chứ không hỏng lúc bắt đầu | `winget install Gyan.FFmpeg` | `brew install ffmpeg` |
-| **Python ≥ 3.10** | chính package này | `winget install Python.Python.3.12` | `brew install python@3.12` |
+| **Python ≥ 3.10** | chính package này | `winget install Python.Python.3.12` | `brew install python@3.12` — rồi gọi đích danh `python3.12` |
 | **Font Inter** | stack chữ mặc định của template | tải từ rsms.me/inter → Install | `brew install --cask font-inter` |
+
+**Mac mới tinh** cần hai thứ trước cả bảng trên: Xcode Command Line Tools
+(`xcode-select --install`, người dùng bấm Install trong hộp thoại) và Homebrew (người dùng tự cài
+theo brew.sh — agent không chạy lệnh cài đó thay họ). Homebrew trên Apple Silicon nằm ở
+`/opt/homebrew/bin`, thư mục này phải có trên `PATH`. `python3` sẵn có của Mac là 3.9 (đi kèm
+Command Line Tools), không đủ.
 
 `doctor` nhận font Inter ở **font hệ thống hoặc kho font của HyperFrames**
 (`~/.cache/hyperframes/fonts/`) — máy đã render bằng HyperFrames một lần thì thường có sẵn,
@@ -34,20 +40,25 @@ Chromium headless của HyperFrames **tự tải về cache người dùng** ở
 ```
 git clone <repo> agent-video-studio
 cd agent-video-studio
-pip install -e .
-video-studio --version
+python3.12 -m venv .venv           # Windows: py -3 -m venv .venv
+.venv/bin/python -m pip install -e .   # Windows: .\.venv\Scripts\python -m pip install -e .
+.venv/bin/video-studio --version
 ```
 
 ### Cài vào venv nào — câu hỏi quan trọng nhất của phần này
 
 | Bạn định làm gì | Cài vào đâu |
 |---|---|
-| Render **có lồng tiếng** (mọi template bản tin đều đọc lời dẫn) | **venv của trạm giọng** — cùng chỗ đã cài `agent-voice-studio` |
-| Chỉ render **câm**, hoặc chỉ dùng `init`/`doctor`/`edit` | venv riêng nào cũng được |
+| Render **có lồng tiếng** (mọi template bản tin đều đọc lời dẫn) | **`.venv` của repo này** — clone `agent-voice-studio` cạnh repo này rồi `pip install -e "../agent-voice-studio[engine]"` vào chính `.venv` đó |
+| Chỉ render **câm**, hoặc chỉ dùng `init`/`doctor`/`edit` | `.venv` của repo này, không cần repo giọng |
 
 Lồng tiếng đi qua `import voice_studio` **trong cùng tiến trình**: model giọng nặng hàng GB, nạp
 một lần cho cả bài. Hai venv khác nhau thì không có đường nào để import, và lỗi sẽ hiện ra ở
-giữa lượt render chứ không phải lúc cài.
+giữa lượt render chứ không phải lúc cài. Đây là đường **duy nhất** tài liệu này hướng dẫn cho
+người dùng thường (chế độ embedded, không biến môi trường); lệnh đầy đủ cho từng hệ điều hành —
+torch đúng phần cứng, `voice-studio init --yes`, tạo giọng mặc định — ở
+[INSTALL.md mục 5b](../INSTALL.md#5b-lồng-tiếng-tuỳ-chọn-nặng--hỏi-trước). Cần **`-e`**: repo
+giọng tìm trạm của nó (`../agent-voice-studio/workspace/`) qua bản clone.
 
 > **Ngoại lệ có chủ đích:** luật đẻ repo của hệ này nói "không dùng `pip install -e`". Ở đây
 > dùng, vì trạm giọng và trạm video là **hai bản clone sống động** phải cùng venv và còn được
@@ -63,7 +74,8 @@ pip install -e ".[test]"    # chạy test
 ```
 
 `[voice]` khai phụ thuộc `agent-voice-studio` **chưa có trên PyPI**: cài bản clone của repo giọng
-trước (`pip install -e <clone agent-voice-studio>`), rồi extras chỉ còn kiểm hộ bạn.
+trước (`pip install -e "../agent-voice-studio[engine]"`, như bảng trên), rồi extras chỉ còn kiểm
+hộ bạn.
 
 ## 3. Dựng trạm
 
@@ -137,12 +149,17 @@ video-studio init --station <trạm>              # ghi lại vào station.json
 video-studio edit --footage <dir> --out <dir> --backend vendored
 ```
 
-## 6. macOS: ba chỗ khác Windows
+## 6. macOS: những chỗ khác Windows
 
-1. **Không có PowerShell mặc định** — ba file `scripts/*.ps1` là vỏ tiện cho Windows; trên
+1. **`python3` là 3.9** trên Mac mới — tạo venv bằng `python3.12`, không bằng `python3`.
+2. **Shell của agent không nạp `~/.zshrc`/`~/.zprofile`.** Biến môi trường hay `PATH` người dùng
+   đặt ở đó có thể vô hình với agent; kiểm bằng `zsh -lic 'echo $TÊN_BIẾN'` (hoặc `$PATH`) thay vì
+   `echo` trong shell của agent. Người dùng embedded không cần biến nào — `workspace/` tự phân giải.
+3. **Không có PowerShell mặc định** — ba file `scripts/*.ps1` là vỏ tiện cho Windows; trên
    macOS gọi thẳng `video-studio …` (bản cài video-use dùng `scripts/install-video-use.sh`).
-2. **Chromium ghim theo bản engine** chưa có sẵn trong cache ⇒ chạy `browser ensure` một lần.
-3. **Bóc lời tại máy chạy CPU** (không có CUDA): chậm hơn nhiều. Dùng model nhỏ hơn bằng biến
+4. **Chromium ghim theo bản engine** chưa có sẵn trong cache ⇒ chạy `browser ensure` một lần
+   (cần mạng).
+5. **Bóc lời tại máy chạy CPU** (không có CUDA): chậm hơn nhiều. Dùng model nhỏ hơn bằng biến
    `VIDEO_WHISPER_MODEL=medium` nếu chỉ cần mốc thời gian để cắt.
 
 ## 7. Nền tảng: cái gì đã chạy thật, cái gì chưa
@@ -150,11 +167,11 @@ video-studio edit --footage <dir> --out <dir> --backend vendored
 | Nền tảng | Bộ khung (CLI, trạm, test) | Render thật |
 |---|---|---|
 | Windows | đã chạy thật | đã chạy thật |
-| macOS (Apple Silicon) | CI chạy mỗi lần đẩy mã: cài gói + toàn bộ test | **chưa kiểm** — CI **cố ý** không cài Node, HyperFrames, ffmpeg hay model (test phải xanh trên máy trần), nên cả chuỗi Node → Chromium → render trên arm64 chưa ai chạy |
+| macOS (Apple Silicon) | CI chạy mỗi lần đẩy mã: cài gói + toàn bộ test | **chưa kiểm** — CI **cố ý** không cài Node, HyperFrames, ffmpeg hay model (test phải xanh trên máy trần), nên cả chuỗi Node → Chromium → render trên arm64 chưa ai chạy. Bản HyperFrames đang ghim (0.8.54) cũng chưa dựng bài `topstory` thật nào: lần render thật đầu tiên trên arm64 sẽ diễn ra trên Mac |
 | Linux | CI chạy cổng đối chiếu skill với `upstream.json` | **chưa kiểm** |
 
 Thứ đã được chứng minh trên mọi nền tảng là **bộ khung**: lệnh chạy, trạm dựng đúng, hợp đồng gọi
-và mã thoát giữ nguyên. Phần render thật mới chỉ có số đo trên Windows. Trên Mac, ba chỗ ở mục 6
+và mã thoát giữ nguyên. Phần render thật mới chỉ có số đo trên Windows. Trên Mac, các chỗ ở mục 6
 là chỗ dễ vấp nhất — chạy `browser ensure` một lần rồi `doctor --json` trước khi tin vào bất cứ
 lịch chạy nào.
 

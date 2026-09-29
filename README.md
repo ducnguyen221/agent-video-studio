@@ -6,7 +6,7 @@ A video-production engine an AI agent can drive: HTML/CSS/GSAP compositions rend
 [HyperFrames](https://github.com/heygen-com/hyperframes), wrapped in an installable Python package
 with one CLI, `video-studio`.
 
-> **Status: v0.2.0.** This build ships the station layout, the machine check,
+> **Status: v0.2.1.** This build ships the station layout, the machine check,
 > the migration tool, the news template family, narration, preview, footage editing, and
 > `export` / `import` for moving station data between machines. Every command in the table
 > below is backed by real code.
@@ -66,7 +66,7 @@ Or by hand ([START-HERE.md](START-HERE.md) has the exact Windows and macOS comma
 ```bash
 git clone https://github.com/ducnguyen221/agent-video-studio
 cd agent-video-studio
-python -m venv .venv && . .venv/bin/activate     # Windows: .venv\Scripts\activate
+python3.12 -m venv .venv && . .venv/bin/activate   # Windows: py -3 -m venv .venv; .venv\Scripts\activate
 pip install -e ".[test]"
 video-studio init            # presents the two-option table and waits; --station DIR = separate
 video-studio doctor          # after init: before there is a station, doctor exits 3 by design

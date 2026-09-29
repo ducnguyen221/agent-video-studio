@@ -54,11 +54,13 @@ winget --version
 macOS:
 
 ```sh
-git --version
-python3 --version
+xcode-select -p
+brew --version
+python3.12 --version
 node --version
 ffmpeg -version
-brew --version
+git --version
+zsh -lic 'echo $PATH'
 ```
 
 | Thành phần | Khi nào cần | Windows (`winget`) | macOS (`brew`) |
@@ -72,6 +74,21 @@ brew --version
 Trên Windows, `py -0p` trống mà `python --version` mở Microsoft Store nghĩa là máy chỉ có "Python
 giả" của Store — coi như chưa có Python. **Tối thiểu để cài và chạy `doctor`: Git và Python**;
 Node, ffmpeg và font chỉ cần khi render, `doctor` sẽ chỉ ra phần còn thiếu.
+
+**Mac mới tinh (Apple Silicon) — bốn chỗ hay vấp:**
+
+- **`python3` của Mac mới là 3.9** (đi kèm Command Line Tools), dưới mức tối thiểu 3.10. Trên
+  macOS luôn gọi đích danh **`python3.12`**, không gọi `python3`.
+- **Xcode Command Line Tools** phải có trước (`xcode-select -p` báo lỗi là chưa có). Cài bằng
+  `xcode-select --install`: lệnh mở một hộp thoại, **người dùng** bấm Install và chờ xong.
+- **Homebrew** chưa có (`brew` không tìm thấy): **người dùng tự cài** theo hướng dẫn chính thức ở
+  brew.sh. Agent **không** chạy lệnh cài Homebrew thay họ — đó là lệnh tải-rồi-chạy mà mục 0 cấm.
+  Cài xong, `/opt/homebrew/bin` phải nằm trên `PATH`.
+- **Shell của agent không nạp `~/.zshrc`/`~/.zprofile`**, nên `brew`, `python3.12` hay một biến
+  môi trường có thể "không có" với agent dù người dùng thấy có. Kiểm bằng shell đăng nhập:
+  `zsh -lic 'echo $PATH'` (biến bất kỳ: `zsh -lic 'echo $TÊN_BIẾN'`). Thấy `/opt/homebrew/bin`
+  trong đó mà shell của agent vẫn không thấy thì gọi bằng đường đầy đủ
+  (`/opt/homebrew/bin/python3.12`, `/opt/homebrew/bin/brew`).
 
 ## 3. Trình kế hoạch và chờ đồng ý
 
@@ -88,9 +105,14 @@ winget install --id Gyan.FFmpeg -e
 ```
 
 ```sh
-brew install git python@3.12 node ffmpeg
+xcode-select --install
+brew install python@3.12 node ffmpeg git
 brew install --cask font-inter
 ```
+
+Trên Mac, `xcode-select --install` chỉ chạy khi `xcode-select -p` báo chưa có; `brew` chỉ chạy
+sau khi người dùng đã tự cài Homebrew (mục 2). Font Inter không chặn render: thiếu thì `doctor`
+báo `[WARN] font` và template lùi về font hệ thống, chữ trông khác bản Windows.
 
 Cài xong, mở cửa sổ terminal mới (hoặc nhờ người dùng khởi động lại host) để `PATH` nhận chương
 trình mới, rồi chạy lại mục 2. Host chặn `winget`/`brew` (ví dụ sandbox) thì **không** tìm cách
@@ -129,19 +151,66 @@ py -3 -m venv .venv
 ```
 
 ```sh
-python3 -m venv .venv
+python3.12 -m venv .venv
 .venv/bin/python -m pip install --upgrade pip
 .venv/bin/python -m pip install -e .
 .venv/bin/video-studio --version
 ```
 
-Lõi chỉ dùng thư viện chuẩn của Python — không tải model hay engine nặng nào ở bước này.
-HyperFrames không cài bằng pip: nó chạy qua `npx` đúng bản đã ghim khi render.
+Trên macOS dùng `python3.12` như trên — `python3` của Mac mới là 3.9 và `pip install` sẽ báo
+"requires a different Python". Lõi chỉ dùng thư viện chuẩn của Python — không tải model hay
+engine nặng nào ở bước này. HyperFrames không cài bằng pip: nó chạy qua `npx` đúng bản đã ghim
+khi render.
 
-**Lồng tiếng là tuỳ chọn và nặng** (repo giọng `agent-voice-studio`, kéo theo torch và model cỡ
-GB). Chỉ hỏi người dùng có cần không; cần thì làm theo
-[docs/INSTALL.md](docs/INSTALL.md#cài-vào-venv-nào--câu-hỏi-quan-trọng-nhất-của-phần-này) — repo
-giọng phải nằm **cùng venv**. Không cần thì bỏ qua: `doctor` chỉ báo `WARN` ở dòng `voice-studio`.
+### 5b. Lồng tiếng (tuỳ chọn, nặng — hỏi trước)
+
+Mọi template bản tin đều đọc lời dẫn, nên bài mẫu ở mục 8 cần phần này. Nó kéo torch (~2,5 GB) và
+weights giọng (~4 GB, giấy phép **CC-BY-NC**, không thương mại). Nói rõ cỡ và giấy phép, chờ người
+dùng đồng ý; không cần thì bỏ qua — `doctor` chỉ báo `WARN` ở dòng `voice-studio`.
+
+Đường **duy nhất** repo này hướng dẫn: clone repo giọng **cạnh** repo này rồi cài engine giọng
+**vào chính `.venv` của repo video** (lồng tiếng chạy trong cùng tiến trình, hai venv khác nhau là
+hỏng giữa lượt render). Chạy từ gốc repo video:
+
+```powershell
+git clone https://github.com/ducnguyen221/agent-voice-studio ..\agent-voice-studio
+.\.venv\Scripts\python -m pip install torch --index-url https://download.pytorch.org/whl/cu126
+.\.venv\Scripts\python -m pip install -e "..\agent-voice-studio[engine]"
+.\.venv\Scripts\video-studio doctor
+```
+
+```sh
+git clone https://github.com/ducnguyen221/agent-voice-studio ../agent-voice-studio
+.venv/bin/python -m pip install torch
+.venv/bin/python -m pip install -e "../agent-voice-studio[engine]"
+.venv/bin/video-studio doctor
+```
+
+- Dòng torch trên Windows là bản cho card **NVIDIA**; máy không có NVIDIA thì thay
+  `cu126` bằng `cpu` (chậm). Trên Mac Apple Silicon, `pip install torch` mặc định là đúng (MPS).
+- Phải có **`-e`**: repo giọng tìm trạm của nó (`../agent-voice-studio/workspace/`) qua bản
+  clone; cài bản sao thì nó không biết trạm ở đâu và render dừng mã 3.
+- Dòng `voice-studio` của doctor phải thành `[PASS]`. **Không** tạo thêm venv engine riêng như
+  hướng dẫn của repo giọng gợi ý cho người dùng giọng độc lập — với video, engine nằm ở `.venv` này.
+
+Rồi dựng trạm giọng và **một giọng mặc định** — không có giọng mặc
+định thì render dừng, engine không bao giờ đọc bằng giọng ngẫu nhiên. Lệnh thứ hai tải weights
+lần đầu (cần mạng, lâu), nên chỉ **riêng lệnh đó** được phép tải:
+
+```powershell
+.\.venv\Scripts\voice-studio init --yes
+$env:OMNIVOICE_ONLINE = "1"
+.\.venv\Scripts\voice-studio make-profile --name giong-mau --instruct "female, young adult, moderate pitch" --set-default
+Remove-Item Env:OMNIVOICE_ONLINE
+```
+
+```sh
+.venv/bin/voice-studio init --yes
+OMNIVOICE_ONLINE=1 .venv/bin/voice-studio make-profile --name giong-mau --instruct "female, young adult, moderate pitch" --set-default
+```
+
+Giọng này là giọng **thiết kế**, không phải giọng người thật. Giọng của chính người dùng
+(`make-profile --audio`) là việc sau cài đặt, chỉ với bản ghi của họ hoặc người đã đồng ý.
 
 ## 6. Dựng trạm
 
@@ -152,10 +221,18 @@ video-studio init --yes
 video-studio init --station <thư mục trạm ngoài repo>
 ```
 
-- `--yes` (khuyến nghị cho người mới): trạm ở `workspace/` ngay trong repo, Git bỏ qua cả thư mục.
+- `--yes` (khuyến nghị cho người mới, và là đường chính trên Mac): trạm ở `workspace/` ngay trong
+  repo, Git bỏ qua cả thư mục. **Không** đặt biến môi trường nào (`VIDEO_STATION`,
+  `VOICE_STATION`…): trạm video là `<repo>/workspace/`, trạm giọng là
+  `../agent-voice-studio/workspace/`, cả hai tự phân giải từ bản clone.
 - `--station`: trạm ở thư mục riêng — khi người dùng đã có trạm, dùng nhiều máy, hoặc repo là bản
   public của chính họ. Trạm có sẵn từ bản cũ thì thêm `--migrate --dry-run`, đọc kế hoạch, rồi
   mới chạy thật; kế hoạch đó gồm cả việc gỡ bản skill mà bản cũ đã chép vào trạm.
+
+**Máy đã có trạm video từ trước** (`~/.video` mang dấu trạm): kể cả với `--yes`, `init` tự nhận
+trạm đó (chế độ `separate`) và in lý do — mọi render sau đó ghi vào trạm ấy. Đọc dòng `station`
+của `doctor`; nó không phải `<repo>/workspace/` mà người dùng không chủ ý chọn trạm cũ thì dừng và
+hỏi, đừng render thử vào trạm đang chạy lịch của họ.
 
 `init` không chép skill vào trạm: host đọc skill từ repo qua adapter `.claude/skills` /
 `.agents/skills` ở gốc repo, nên mở **thư mục repo** là đủ ([hosts/README.md](hosts/README.md)).
@@ -188,7 +265,10 @@ Mã thoát: `0` dùng được · `2` phải sửa cấu hình · `3` còn thi�
 
 ## 8. Xác minh bằng bài mẫu
 
-Chỉ khi đã có Node, ffmpeg **và** repo giọng cùng venv (mục 5). Chạy từ gốc repo:
+Chỉ khi đã có Node, ffmpeg, repo giọng cùng venv **và** giọng mặc định (mục 5b). Lần render đầu
+cần mạng: `npx` tải HyperFrames đúng bản ghim, Chromium của nó tải về `~/.cache/hyperframes`
+(hoặc chạy trước lệnh `browser ensure` mà `doctor` in ra), trang HTML nạp thư viện hoạt ảnh từ
+CDN. Chạy từ gốc repo:
 
 ```text
 video-studio render --project news --input samples/news-mini/spec.json --brand samples/news-mini/brand.json --out out/news-mini --json
@@ -197,6 +277,11 @@ video-studio render --project news --input samples/news-mini/spec.json --brand s
 Kết quả phải khớp [samples/news-mini/EXPECTED.md](samples/news-mini/EXPECTED.md): mã `0`, hai file
 `2026-01-02.mp4` và `2026-01-02-short.mp4` trong `out/news-mini/`. Chưa có repo giọng thì lệnh dừng
 **mã 3** kèm lệnh cài — ghi render là `NOT_CHECKED` trong báo cáo, không coi là lỗi cài.
+
+**Trên Mac, đây là lần render thật đầu tiên trên arm64.** Bản HyperFrames repo đang ghim (0.8.54)
+chưa dựng bài `topstory` thật nào và chưa render gì trên macOS. Hỏng thì chép nguyên văn 15 dòng
+log cuối, đừng tự đổi bản engine; chạy được thì ghi thời gian dựng và thời lượng hai file vào báo
+cáo để điền dòng macOS của EXPECTED.md.
 
 ## 9. Báo cáo cuối cho người dùng
 
@@ -208,6 +293,7 @@ Dùng đúng khung này, lời thường, không rút gọn dòng doctor:
 - Hệ điều hành / Python của .venv: <Windows|macOS> / <phiên bản>
 - Trạm: <đường dẫn> (<workspace trong repo | trạm ngoài>)
 - Phần mềm đã cài thêm: <danh sách, hoặc "không">
+- Lồng tiếng: <repo giọng + giọng mặc định đã có | bỏ qua theo lựa chọn của bạn>
 - Doctor (mã <n>):
   <dán nguyên văn từng dòng>
 - Bài mẫu: <mã thoát + hai file, hoặc NOT_CHECKED và lý do>
@@ -219,7 +305,11 @@ Dùng đúng khung này, lời thường, không rút gọn dòng doctor:
 
 - **`video-studio` không tìm thấy:** gọi qua `.venv` như mục 5, hoặc kích hoạt venv trước.
 - **Python dưới 3.10** hoặc chỉ có Python giả của Store: cài Python 3.12 (mục 3), mở terminal mới,
-  tạo lại `.venv`.
+  tạo lại `.venv`. Trên Mac, `pip` báo "requires a different Python" nghĩa là `.venv` được tạo bằng
+  `python3` (3.9): xoá `.venv`, tạo lại bằng `python3.12`.
+- **`brew`/`python3.12` không tìm thấy trên Mac dù người dùng đã cài:** shell của agent không nạp
+  `~/.zprofile`; kiểm bằng `zsh -lic 'echo $PATH'` và gọi bằng đường đầy đủ dưới `/opt/homebrew/bin`.
+- **Render dừng vì chưa có profile giọng:** làm phần giọng mặc định ở mục 5b.
 - **Repo nằm trong thư mục đồng bộ đám mây:** `video-studio uninstall`, clone lại vào thư mục mặc
   định ở mục 4, cài lại.
 - **`init` báo mã 2 "hai nguồn sự thật":** máy đã có trạm ngoài (biến `VIDEO_STATION` hoặc trạm cũ)
