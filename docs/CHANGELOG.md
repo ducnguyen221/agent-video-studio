@@ -22,7 +22,10 @@ biến môi trường nào (chế độ embedded).
   Bỏ câu "cài vào venv của trạm giọng" ở `docs/INSTALL.md` và trang web, vốn mâu thuẫn với
   `INSTALL.md`. Thiếu bước giọng mặc định thì bài mẫu dừng vì chưa có profile — trước đây tài liệu
   không nói.
-- **Bài mẫu `news-mini`:** dòng Windows trong `EXPECTED.md` có số đo thật.
+- **Bài mẫu `news-mini`:** dòng Windows trong `EXPECTED.md` có số đo thật (HyperFrames 0.8.54,
+  113 s, 51,05 s / 24,93 s), đo bằng một bản cài mới theo đúng mục 5b.
+- **`INSTALL.md` mục 6:** máy đã có trạm `~/.video` thì `init --yes` tự nhận trạm đó — agent phải
+  đọc dòng `station` của `doctor` và hỏi trước khi render thử vào trạm đang chạy lịch.
 
 ## 0.2.0 — 2026-09-29
 
