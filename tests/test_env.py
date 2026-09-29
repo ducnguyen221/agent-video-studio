@@ -19,10 +19,43 @@ def _repo(tmp_path, monkeypatch):
 
 # ── trạm ────────────────────────────────────────────────────────────────────────────────
 
-def test_default_station_is_home_dot_video(tmp_path):
-    st, src = _env.resolve_station()
-    assert src == "default"
-    assert st == os.path.join(str(tmp_path / "home"), ".video")
+def test_no_variable_means_the_repo_workspace_even_before_init(tmp_path, monkeypatch):
+    """Đ4: người dùng không đặt gì ⇒ trạm là `<repo>/workspace/` — kể cả khi `init` chưa tạo nó.
+
+    Trước đây tầng cuối là `~/.video`: một thư mục ẩn ở home mà người dùng public không hề biết
+    là có, và máy nào tình cờ có nó thì mọi bản clone đều dùng chung mà không ai chọn.
+    """
+    repo = _repo(tmp_path, monkeypatch)
+    assert not (repo / "workspace").exists()
+    assert _env.resolve_station() == (str(repo / "workspace"), "workspace")
+
+
+def test_home_dot_video_is_never_guessed(tmp_path, monkeypatch):
+    """`~/.video` có đủ dấu trạm vẫn KHÔNG được chọn khi không ai chọn nó (biến / init)."""
+    repo = _repo(tmp_path, monkeypatch)
+    legacy = tmp_path / "home" / ".video"
+    legacy.mkdir()
+    (legacy / "station.json").write_text("{}", encoding="utf-8")
+    assert _env.resolve_station() == (str(repo / "workspace"), "workspace")
+
+
+def test_without_a_repo_there_is_no_default_station(tmp_path):
+    """Bản cài wheel (không repo, không biến): không có gì để đoán ⇒ đòi chọn trạm, mã 3."""
+    from video_studio.contract import STATION_MISSING, StationMissing
+    assert _env.resolve_station() == (None, "unset")
+    with pytest.raises(StationMissing) as e:
+        _env.station_dir()
+    assert e.value.code == STATION_MISSING
+    assert "VIDEO_STATION" in str(e.value) and "--station" in str(e.value)
+    assert _env.station_info() == {}              # đọc cấu hình trạm không được sập theo
+    assert _env.hyperframes_version() == _env.DEFAULT_HYPERFRAMES_VERSION
+
+
+def test_init_command_matches_the_station_kind(tmp_path, monkeypatch):
+    repo = _repo(tmp_path, monkeypatch)
+    assert _env.init_command(str(repo / "workspace")) == "video-studio init"
+    ext = str(tmp_path / "ext")
+    assert _env.init_command(ext) == f'video-studio init --station "{ext}"'
 
 
 def test_video_station_wins(tmp_path, monkeypatch):
@@ -43,7 +76,7 @@ def test_video_root_is_legacy_alias_with_warning(tmp_path, monkeypatch):
 
 def test_blank_env_counts_as_unset(monkeypatch):
     monkeypatch.setenv("VIDEO_STATION", "   ")
-    assert _env.resolve_station()[1] == "default"
+    assert _env.resolve_station()[1] == "unset"
 
 
 def test_local_config_then_workspace(tmp_path, monkeypatch):
@@ -214,3 +247,50 @@ def test_filler_sources_order(tmp_path, monkeypatch):
     c = _env.filler_source_candidates()
     assert c[0] == str(tmp_path / "voice" / "omnivoice" / "assets" / "news_short" / "fillers")
     assert str(tmp_path / "voice" / "assets" / "news_short" / "fillers") in c
+
+
+def _fake_voice_repo(monkeypatch, resolve):
+    """Repo giọng GIẢ trong sys.modules, chỉ đủ `voice_studio._env.resolve_station()`."""
+    import importlib.machinery
+    import sys
+    import types
+    pkg = types.ModuleType("voice_studio")
+    pkg.__path__ = []
+    # `find_spec` trả `__spec__` của module đã nạp — không có spec thì nó ném ValueError.
+    pkg.__spec__ = importlib.machinery.ModuleSpec("voice_studio", None, is_package=True)
+    mod = types.ModuleType("voice_studio._env")
+    mod.resolve_station = resolve
+    pkg._env = mod
+    monkeypatch.setitem(sys.modules, "voice_studio", pkg)
+    monkeypatch.setitem(sys.modules, "voice_studio._env", mod)
+
+
+def test_voice_station_takes_what_the_voice_repo_was_told(tmp_path, monkeypatch):
+    """Không biến ⇒ hỏi repo giọng; nhận trạm nó ĐÃ ĐƯỢC CHỌN (workspace/, studio.local.json)."""
+    ws = tmp_path / "voice-repo" / "workspace"
+    ws.mkdir(parents=True)
+    _fake_voice_repo(monkeypatch, lambda: (str(ws), "workspace"))
+    assert _env.voice_station() == str(ws)
+
+
+@pytest.mark.parametrize("answer", [
+    ("~/.voice", "default"),                 # nó tự đoán ở home — không phải lựa chọn của ai
+    ("/nowhere/workspace", "workspace"),     # repo giọng chưa init
+    (None, "unset"),
+])
+def test_voice_station_never_takes_a_guess(tmp_path, monkeypatch, answer):
+    _fake_voice_repo(monkeypatch, lambda: answer)
+    assert _env.voice_station() is None
+
+
+def test_voice_station_survives_a_voice_repo_that_changed_shape(monkeypatch):
+    def boom():
+        raise AttributeError("bề mặt khác")
+    _fake_voice_repo(monkeypatch, boom)
+    assert _env.voice_station() is None
+
+
+def test_voice_variable_beats_the_voice_repo(tmp_path, monkeypatch):
+    _fake_voice_repo(monkeypatch, lambda: (str(tmp_path), "workspace"))
+    monkeypatch.setenv("VOICE_STATION", str(tmp_path / "chosen"))
+    assert _env.voice_station() == str(tmp_path / "chosen")

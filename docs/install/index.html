@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cài Agent Video Studio</title>
+<meta name="description" content="Cài Agent Video Studio trên Windows hoặc macOS bằng một lời nhờ agent: dán prompt vào Claude Code, Codex hoặc Antigravity; agent hỏi trước khi cài, rồi báo lại từng dòng kiểm tra.">
+<meta name="theme-color" content="#2f6df6" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0e0f13" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%232f6df6'/%3E%3Cpath d='M12.5 10.5 22 16l-9.5 5.5z' fill='%23fff'/%3E%3Crect x='6' y='9' width='3' height='14' rx='1.3' fill='%230d9488'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#ffffff; --surface:#f7f9fc; --border:#e4e8ef; --text:#14161b; --muted:#565d69;
+    --accent:#2f6df6; --accent-weak:#e9f0fe; --ok:#0f9d58; --warn:#c9820a; --bad:#c2372b;
+    --code-bg:#0f1116; --code-text:#e8ebf1; --code-border:#20242e;
+    --mono:"JetBrains Mono",ui-monospace,"Cascadia Code",Consolas,monospace;
+    --font:"Be Vietnam Pro",-apple-system,"Segoe UI",Roboto,"Noto Sans",sans-serif;
+  }
+  @media (prefers-color-scheme:dark){
+    :root:not([data-theme="light"]){
+      --bg:#0e0f13; --surface:#15171d; --border:#262a33; --text:#eceef3; --muted:#a3aab6;
+      --accent:#6b9bff; --accent-weak:#18223a; --ok:#35c07a; --warn:#e3a53a; --bad:#ef6a5e;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#0e0f13; --surface:#15171d; --border:#262a33; --text:#eceef3; --muted:#a3aab6;
+    --accent:#6b9bff; --accent-weak:#18223a; --ok:#35c07a; --warn:#e3a53a; --bad:#ef6a5e;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font:16px/1.65 var(--font)}
+  .wrap{max-width:860px;margin:0 auto;padding:0 16px}
+  header{padding:40px 0 8px}
+  header a.back{color:var(--muted);text-decoration:none;font-size:14px}
+  h1{font-size:clamp(28px,5vw,40px);line-height:1.2;margin:12px 0 8px}
+  h2{font-size:22px;margin:40px 0 10px}
+  p,li{color:var(--text)}
+  .lead{color:var(--muted);font-size:18px;margin:0 0 8px}
+  a{color:var(--accent)}
+  code{font-family:var(--mono);font-size:.9em;background:var(--surface);border:1px solid var(--border);
+       border-radius:6px;padding:1px 5px}
+  .steps{counter-reset:s;list-style:none;padding:0;margin:16px 0}
+  .steps li{counter-increment:s;position:relative;padding:0 0 14px 44px}
+  .steps li::before{content:counter(s);position:absolute;left:0;top:0;width:30px;height:30px;
+       border-radius:50%;background:var(--accent-weak);color:var(--accent);font-weight:700;
+       display:flex;align-items:center;justify-content:center;font-size:14px}
+  .code-card{background:var(--code-bg);border:1px solid var(--code-border);border-radius:14px;margin:14px 0 22px;overflow:hidden}
+  .code-top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 14px;
+       border-bottom:1px solid var(--code-border);color:#9aa3b2;font-size:13px}
+  .copy-btn{font:inherit;font-size:13px;color:#e8ebf1;background:#1c2029;border:1px solid #2b3140;
+       border-radius:8px;padding:5px 12px;cursor:pointer}
+  .copy-btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  pre{margin:0;padding:14px 16px;color:var(--code-text);font:13.5px/1.6 var(--mono);
+       white-space:pre-wrap;overflow-wrap:anywhere}
+  table{width:100%;border-collapse:collapse;margin:12px 0 20px;font-size:15px}
+  th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--border);vertical-align:top}
+  th{color:var(--muted);font-weight:600;font-size:13px}
+  .tag{font-family:var(--mono);font-size:12.5px;font-weight:600;white-space:nowrap}
+  .pass{color:var(--ok)} .warn{color:var(--warn)} .fail{color:var(--bad)} .nc{color:var(--muted)}
+  .note{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 16px}
+  footer{margin:48px 0 40px;color:var(--muted);font-size:14px}
+  @media (max-width:560px){th:nth-child(3),td:nth-child(3){display:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <a class="back" href="../">← Agent Video Studio</a>
+  <h1>Cài bằng một lời nhờ agent</h1>
+  <p class="lead">Windows hoặc macOS. Dán một đoạn yêu cầu vào ứng dụng AI bạn đang dùng; agent kiểm
+    máy, <b>hỏi bạn trước</b> khi cài thêm phần mềm, rồi báo lại từng dòng kiểm tra.</p>
+</header>
+
+<main>
+<h2>1. Chọn ứng dụng AI</h2>
+<table>
+  <tr><th>Ứng dụng</th><th>Dùng được</th><th>Ghi chú</th></tr>
+  <tr><td>Claude Code</td><td>Có</td><td>terminal, IDE, hoặc tab Code của ứng dụng Claude</td></tr>
+  <tr><td>Codex</td><td>Có</td><td>CLI hoặc desktop; sandbox chặn cài thì agent đưa lệnh để bạn tự chạy</td></tr>
+  <tr><td>Antigravity</td><td>Có</td><td>chưa có lượt cài nào được ghi lại trên host này</td></tr>
+  <tr><td>Claude Desktop</td><td>Không</td><td>tab chat không chạy được lệnh — dùng tab Code</td></tr>
+</table>
+
+<h2>2. Dán yêu cầu này</h2>
+<div class="code-card">
+  <div class="code-top"><span>Tiếng Việt</span><button class="copy-btn" type="button" data-copy="prompt-vi">Sao chép</button></div>
+<pre id="prompt-vi">Hãy cài Agent Video Studio lên máy này (Windows hoặc macOS) cho chính ứng dụng AI bạn đang chạy.
+Nguồn duy nhất: https://github.com/ducnguyen221/agent-video-studio
+Đọc trước hướng dẫn dành cho agent tại
+https://raw.githubusercontent.com/ducnguyen221/agent-video-studio/main/INSTALL.md
+(không mở được link thì clone repo rồi đọc INSTALL.md trong đó) và làm đúng, đủ các bước:
+kiểm máy, hỏi tôi trước khi cài phần mềm hoặc cần quyền admin, clone vào thư mục an toàn
+(không OneDrive/iCloud/Desktop), cài vào .venv của repo, dựng trạm, chạy doctor, thử bài mẫu.
+Quy tắc: chỉ chạy lệnh có trong repo hoặc INSTALL.md; không đổi chính sách hệ thống; không đọc
+hay ghi mật khẩu/khóa; gặp lỗi thì dừng và giải thích bằng lời thường.
+Kết thúc bằng bản tóm tắt: đường dẫn repo, trạm, từng dòng doctor, phần mềm đã cài thêm, việc tôi
+cần làm tiếp.</pre>
+</div>
+<div class="code-card">
+  <div class="code-top"><span>English</span><button class="copy-btn" type="button" data-copy="prompt-en">Copy</button></div>
+<pre id="prompt-en">Install Agent Video Studio on this machine (Windows or macOS) for the AI app you are running in.
+Single source: https://github.com/ducnguyen221/agent-video-studio
+First read the agent guide at
+https://raw.githubusercontent.com/ducnguyen221/agent-video-studio/main/INSTALL.md
+(if the link cannot be opened, clone the repo and read its INSTALL.md), then follow every step:
+check the machine, ask me before installing software or anything needing admin rights, clone to a
+safe folder (not OneDrive/iCloud/Desktop), install into the repo's .venv, set up the station, run
+doctor, try the sample.
+Rules: only run commands from that repo or INSTALL.md; do not change system policy; never read or
+write passwords/keys; on any error stop and explain in plain words.
+Finish with a summary: repo path, station, every doctor line, software added, and what I need to
+do next.</pre>
+</div>
+
+<h2>3. Agent sẽ làm gì</h2>
+<ol class="steps">
+  <li>Kiểm máy chỉ đọc: Git, Python ≥ 3.10, Node ≥ 22, ffmpeg.</li>
+  <li>Trình kế hoạch: thiếu gì, lệnh cài nào (<code>winget</code> trên Windows, <code>brew</code> trên
+    macOS), clone vào đâu — rồi <b>chờ bạn đồng ý</b>.</li>
+  <li>Clone repo vào thư mục người dùng (không thư mục đồng bộ đám mây), cài vào <code>.venv</code> của repo.</li>
+  <li>Dựng trạm: mặc định <code>workspace/</code> ngay trong repo, Git bỏ qua cả thư mục. Đã có trạm
+    riêng thì chỉ thẳng thư mục đó.</li>
+  <li>Chạy <code>video-studio doctor</code> và chép nguyên từng dòng cho bạn.</li>
+  <li>Nếu máy đủ công cụ render và có repo giọng: dựng bài mẫu hai cảnh để chứng minh cả chuỗi.</li>
+</ol>
+
+<h2>4. Đọc kết quả kiểm tra</h2>
+<table>
+  <tr><th>Nhãn</th><th>Nghĩa</th><th>Việc tiếp</th></tr>
+  <tr><td class="tag pass">PASS</td><td>Đã kiểm, đạt</td><td>—</td></tr>
+  <tr><td class="tag warn">WARN</td><td>Thiếu phần tuỳ chọn (font, lồng tiếng…)</td><td>Không chặn việc dùng</td></tr>
+  <tr><td class="tag fail">FAIL</td><td>Hỏng hoặc thiếu công cụ bắt buộc</td><td>Làm theo dòng → ngay dưới</td></tr>
+  <tr><td class="tag nc">NOT_CHECKED</td><td>Chưa kiểm được — không phải lỗi, cũng chưa phải xác nhận</td><td>Dòng <code>render</code> luôn ở mức này tới khi dựng bài mẫu</td></tr>
+</table>
+<p class="note">Bộ khung (lệnh, trạm, bộ test) đã chạy trên cả Windows và macOS. Render thật mới có
+  số đo trên Windows; trên Mac, bài mẫu là phép thử đầu tiên — kết quả kỳ vọng ghi ở
+  <a href="https://github.com/ducnguyen221/agent-video-studio/blob/main/samples/news-mini/EXPECTED.md">samples/news-mini/EXPECTED.md</a>.</p>
+
+<h2>Tự cài, gỡ, và đọc thêm</h2>
+<ul>
+  <li>Lệnh cài tay cho Windows và macOS: <a href="https://github.com/ducnguyen221/agent-video-studio/blob/main/START-HERE.md">START-HERE.md</a></li>
+  <li>Hướng dẫn đầy đủ agent làm theo: <a href="https://github.com/ducnguyen221/agent-video-studio/blob/main/INSTALL.md">INSTALL.md</a></li>
+  <li>Từng ứng dụng AI: <a href="https://github.com/ducnguyen221/agent-video-studio/tree/main/hosts">hosts/</a></li>
+  <li>Gỡ: <code>video-studio uninstall --dry-run</code> để xem trước, rồi <code>video-studio uninstall</code>
+    — chỉ gỡ phần bộ cài đã đặt, <b>giữ</b> trạm và mọi project.</li>
+</ul>
+</main>
+
+<footer>Agent Video Studio · mã nguồn mở, MIT · <a href="../">trang chính</a></footer>
+</div>
+<script>
+  document.querySelectorAll(".copy-btn").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var pre = document.getElementById(btn.getAttribute("data-copy"));
+      var label = btn.textContent;
+      try {
+        navigator.clipboard.writeText(pre.textContent).then(function () {
+          btn.textContent = label === "Copy" ? "Copied" : "Đã chép";
+          setTimeout(function () { btn.textContent = label; }, 1600);
+        });
+      } catch (e) { /* trình duyệt chặn clipboard: người dùng tự bôi đen */ }
+    });
+  });
+</script>
+</body>
+</html>

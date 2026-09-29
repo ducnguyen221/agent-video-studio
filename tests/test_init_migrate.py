@@ -1,7 +1,7 @@
 """`video-studio init [--station] [--migrate] [--dry-run] [--undo]` trên cây trạm GIẢ.
 
 Cây giả mô phỏng một trạm video đời cũ (trước station.json): project scratch `news/`,
-`topstory/` ở gốc, seed `demo/`, skill cài bằng công cụ ngoài, và nhiều thư mục KHÔNG thuộc
+`topstory/` ở gốc, seed `demo/`, skill đã chép vào trạm, và nhiều thư mục KHÔNG thuộc
 quyền của engine (bài giảng, dự án riêng, khách hàng, bản vendored có git, nhạc nền, log cũ).
 Luật: di trú chỉ được chạm đúng danh sách cho phép; mọi thứ khác phải y nguyên từng byte.
 """
@@ -143,10 +143,12 @@ def test_migrate_moves_projects_and_leaves_others_byte_identical(tmp_path, monke
     # không đụng
     for top in OTHER_DIRS + ("AGENT_VIDEO_GUIDE.md", "preview.ps1"):
         assert sub(after, top) == sub(before, top), top
-    # skill đời cũ (không có trong repo) bị GỠ khi --migrate — nhưng chỉ đúng chúng
+    # skill đã chép vào trạm (trùng tên repo, hoặc có trong skills-lock.json) bị GỠ khi --migrate;
+    # host đọc skill từ repo qua adapter, trạm không giữ bản chép nào
     for tool in (".claude", ".agents"):
-        assert sub(before, os.path.join(tool, "skills", "legacy-skill")), "cây thử phải có skill cũ"
-        assert sub(after, os.path.join(tool, "skills", "legacy-skill")) == {}
+        for name in ("legacy-skill", "video-routing"):
+            assert sub(before, os.path.join(tool, "skills", name)), "cây thử phải có skill cũ"
+        assert sub(after, tool) == {}, "thư mục skill rỗng phải được dọn"
     # đã dời, giữ cấu hình project
     assert not (st / "news").exists() and not (st / "topstory").exists()
     assert (st / "projects" / "news" / "hyperframes.json").is_file()
@@ -167,21 +169,16 @@ def test_migrate_moves_projects_and_leaves_others_byte_identical(tmp_path, monke
     assert info["hyperframes_version"] == "0.8.51" and info["projects_dir"] == "projects"
     assert info["video_use"]["dir"] == "video-use"
     assert info["voice_station"] == str(tmp_path / "voice")
-    # skill chép từ repo; bản cũ khác nội dung được thay (có lưu bản cũ để --undo)
-    for tool in (".claude", ".agents"):
-        assert "mới" in (st / tool / "skills" / "video-routing" / "SKILL.md").read_text(encoding="utf-8")
-        assert (st / tool / "skills" / "hf-core" / "references" / "a.md").is_file()
-    lock = json.loads((st / "skills-lock.json").read_text(encoding="utf-8"))
-    assert lock["source"] == "agent-video-studio"
-    assert set(lock["skills"]) == {"video-routing", "hf-core"}
+    # không chép skill nào vào trạm, không còn skills-lock.json
+    assert not (st / "skills-lock.json").exists()
     res = last_json(out)
-    assert "legacy-skill" in res["legacy_skills"]
-    assert sorted(res["pruned_skills"]) == [".agents/skills/legacy-skill",
-                                            ".claude/skills/legacy-skill"]
+    assert res["legacy_skills"] == ["legacy-skill", "video-routing"]
+    assert res["pruned_skills"] == [".agents/skills/legacy-skill", ".agents/skills/video-routing",
+                                    ".claude/skills/legacy-skill", ".claude/skills/video-routing"]
 
 
 def test_migrate_works_when_skills_and_repo_are_on_different_drives(tmp_path, monkeypatch, capsys):
-    """`skills/` của repo và gốc repo KHÁC ổ đĩa ⇒ vẫn chạy, `skills-lock.json` ghi đường tuyệt đối.
+    """`skills/` của repo và gốc repo KHÁC ổ đĩa ⇒ vẫn chạy, và không ghi khoá nào vào trạm.
 
     Runner Windows của GitHub checkout ở `D:\\a\\…` còn `TEMP` ở `C:\\`, nên `_skills_root()`
     (thư mục tạm của test) và `_env.package_repo()` (bản checkout) nằm trên hai ổ khác nhau —
@@ -205,12 +202,8 @@ def test_migrate_works_when_skills_and_repo_are_on_different_drives(tmp_path, mo
     src = make_repo_assets(tmp_path, monkeypatch)
     rc, out, err = run(["init", "--station", str(st), "--migrate", "--json"], capsys)
     assert rc == 0, err
-    lock = json.loads((st / "skills-lock.json").read_text(encoding="utf-8"))
-    assert set(lock["skills"]) == {"video-routing", "hf-core"}
-    want = str(src / "skills" / "video-routing").replace(os.sep, "/")
-    assert lock["skills"]["video-routing"]["path"] == want
-    for info in lock["skills"].values():
-        assert not info["path"].startswith(".."), "khác ổ đĩa thì không có đường tương đối nào đúng"
+    assert src.is_dir()
+    assert not (st / "skills-lock.json").exists() and not (st / ".claude").exists()
 
 
 # ── dọn skill đời cũ ở trạm ─────────────────────────────────────────────────────────────
@@ -224,8 +217,10 @@ def test_plain_init_reports_legacy_skills_but_never_removes_them(tmp_path, monke
     res = last_json(out)
     assert "legacy-skill" in res["legacy_skills"]
     assert res["pruned_skills"] == []
+    assert any("--migrate" in n and "skill" in n for n in res["notes"])
     for tool in (".claude", ".agents"):
         assert (st / tool / "skills" / "legacy-skill" / "SKILL.md").is_file()
+    assert (st / "skills-lock.json").is_file()
 
 
 def test_migrate_prune_keeps_a_restorable_copy(tmp_path, monkeypatch, capsys):
@@ -243,16 +238,37 @@ def test_migrate_prune_keeps_a_restorable_copy(tmp_path, monkeypatch, capsys):
     assert (st / ".claude" / "skills" / "legacy-skill" / "SKILL.md").read_text(encoding="utf-8") == old
 
 
-def test_migrate_never_prunes_a_skill_the_repo_provides(tmp_path, monkeypatch, capsys):
-    """Skill trùng tên với repo được THAY (có lưu bản cũ), không bị tính là đời cũ."""
+def test_migrate_keeps_a_skill_that_is_the_users_own(tmp_path, monkeypatch, capsys):
+    """Skill không có trong repo và không được khoá nào kê là của người dùng: giữ, báo tên.
+    Thư mục chứa nó vì thế còn nguyên; chỉ bản chép của repo bị gỡ."""
     st = make_legacy_station(tmp_path)
     make_repo_assets(tmp_path, monkeypatch)
+    _w(st / ".claude" / "skills" / "my-own" / "SKILL.md", "---\nname: my-own\n---\nriêng")
     rc, out, err = run(["init", "--station", str(st), "--migrate", "--json"], capsys)
     assert rc == 0, err
     res = last_json(out)
-    assert "video-routing" not in res["legacy_skills"]
-    assert not any("video-routing" in rel for rel in res["pruned_skills"])
-    assert (st / ".claude" / "skills" / "video-routing" / "SKILL.md").is_file()
+    assert "my-own" not in res["legacy_skills"]
+    assert any(".claude/skills/my-own" in k for k in res["kept"])
+    own = st / ".claude" / "skills" / "my-own" / "SKILL.md"
+    assert own.read_text(encoding="utf-8").endswith("riêng")
+    assert not (st / ".claude" / "skills" / "video-routing").exists()
+    assert not (st / ".agents").exists()
+
+
+def test_migrate_removes_a_lock_written_by_an_earlier_version(tmp_path, monkeypatch, capsys):
+    """Trạm do bản trước 0.2.0 dựng: khoá của chính video-studio + bản chép → gỡ, --undo trả về."""
+    make_repo_assets(tmp_path, monkeypatch)
+    st = tmp_path / "old"
+    _w(st / "station.json", json.dumps({"projects_dir": "projects"}))
+    _w(st / ".agents" / "skills" / "hf-core" / "SKILL.md", "---\nname: hf-core\n---\nlõi")
+    _w(st / "skills-lock.json", json.dumps({"version": 1, "source": station.LOCK_SOURCE,
+                                            "skills": {"hf-core": {}}}))
+    before = snapshot(st)
+    rc, out, err = run(["init", "--station", str(st), "--migrate", "--json"], capsys)
+    assert rc == 0, err
+    assert not (st / "skills-lock.json").exists() and not (st / ".agents").exists()
+    assert run(["init", "--station", str(st), "--undo"], capsys)[0] == 0
+    assert snapshot(st) == before
 
 
 def test_dry_run_prints_prune_but_writes_nothing(tmp_path, monkeypatch, capsys):
@@ -380,8 +396,10 @@ def test_fresh_station_from_seed_and_undo(tmp_path, monkeypatch, capsys):
     assert (st / "demo" / "compositions" / "intro.html").is_file()
     pkg = (st / "demo" / "package.json").read_text(encoding="utf-8")
     assert f"hyperframes@{_env.DEFAULT_HYPERFRAMES_VERSION}" in pkg and "0.0.0" not in pkg
-    for d in ("projects", "scratch", "cache", ".claude/skills/hf-core", ".agents/skills/video-routing"):
+    for d in ("projects", "scratch", "cache"):
         assert (st / d).is_dir(), d
+    for d in (".claude", ".agents", "skills-lock.json"):
+        assert not (st / d).exists(), f"trạm mới không được chứa {d} — host đọc skill từ repo"
     assert run(["init", "--station", str(st), "--undo"], capsys)[0] == 0
     assert snapshot(st) == {}
 

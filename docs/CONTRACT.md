@@ -43,7 +43,7 @@ Thành công:
  "outputs": [{"kind": "long",  "path": "…/2026-01-02-top.mp4",       "duration": 372.4},
              {"kind": "short", "path": "…/2026-01-02-top-short.mp4", "duration": 78.1}],
  "timings": {"total": 812.5},
- "engine": {"hyperframes": "0.8.54", "voice_studio": "0.2.0", "video_studio": "0.1.0",
+ "engine": {"hyperframes": "0.8.54", "voice_studio": "0.2.0", "video_studio": "0.2.0",
             "contract": "1.0.0"}}
 ```
 
@@ -59,7 +59,7 @@ Hỏng:
 
 | Biến | Vai trò |
 |---|---|
-| `VIDEO_STATION` | gốc trạm video (mặc định `~/.video`). Tên cũ `VIDEO_ROOT` còn đọc được, kèm cảnh báo |
+| `VIDEO_STATION` | gốc trạm video (không đặt ⇒ `<repo>/workspace/`; bản cài wheel thì bắt buộc). Tên cũ `VIDEO_ROOT` còn đọc được, kèm cảnh báo |
 | `HYPERFRAMES_VERSION` | bản HyperFrames gọi qua npx — **phải là `x.y.z`**; một dải bản không xác định bị từ chối với mã 2 |
 | `HYPERFRAMES_WORKDIR` | thư mục chứa project render (mặc định `<trạm>/projects`) |
 | `NODE_DIR`, `FFMPEG_DIR` | thư mục chứa `node`/`npx`, `ffmpeg`/`ffprobe` (rỗng = tìm trên PATH) |

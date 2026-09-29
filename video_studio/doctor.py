@@ -14,6 +14,16 @@ cho narrate) · video-use (tuỳ chọn, cho edit).
 Mã thoát: 0 dùng được (có thể kèm cảnh báo) · 2 phải SỬA CẤU HÌNH (bản HyperFrames không hợp
 lệ, `two-sources`, `gitignore` thủng) · 3 phải CÀI TIẾP (node, npx, ffmpeg, trạm) — kèm hướng
 dẫn phần còn thiếu. Mỗi check tự khai mã của mình; đỏ nhiều check thì lấy mã NẶNG NHẤT.
+
+Bốn mức của một dòng (`level` trong JSON · nhãn cho người đọc):
+
+    ok           PASS         đã kiểm, đạt
+    warn         WARN         đã kiểm, thiếu phần tuỳ chọn hoặc nên sửa — không chặn
+    error        FAIL         đã kiểm, hỏng — mã thoát ≠ 0
+    not_checked  NOT_CHECKED  CHƯA kiểm được (không mạng, thiếu thứ đứng trước, hoặc doctor
+                              không bao giờ tự làm việc đó — như render thật). KHÔNG phải lỗi,
+                              nhưng cũng KHÔNG phải xác nhận: đừng đọc nó thành PASS.
+    skip         SKIP         không áp dụng cho máy/chế độ này (chưa `git init`, bản cài wheel)
 """
 import argparse
 import datetime
@@ -67,7 +77,15 @@ def _check(name, ok, detail="", level="error", hint="", code=None):
 
 
 def _skip(name, detail):
+    """Không áp dụng ở đây (không có gì để kiểm) — khác với `_not_checked`."""
     return {"name": name, "ok": True, "level": "skip", "detail": detail, "hint": "",
+            "code": contract.OK}
+
+
+def _not_checked(name, detail, hint=""):
+    """Có thứ để kiểm nhưng lượt này KHÔNG kiểm được. `ok` = True vì nó không chặn mã thoát —
+    bên gọi muốn biết "đã chứng minh chưa" thì đọc `level`/danh sách `not_checked`."""
+    return {"name": name, "ok": True, "level": "not_checked", "detail": detail, "hint": hint,
             "code": contract.OK}
 
 
@@ -106,9 +124,10 @@ def node_checks(version, offline):
     out.append(_check("npx", bool(npx), npx or "không thấy npx", hint=HINT_NODE))
     spec = _env.hyperframes_spec(version)
     if offline:
-        out.append(_skip("hyperframes-doctor", "--offline: không gọi npx"))
+        out.append(_not_checked("hyperframes-doctor", "--offline: không gọi npx",
+                                hint=f"có mạng thì chạy lại không --offline (gọi `npx --yes {spec} doctor`)"))
     elif not npx:
-        out.append(_skip("hyperframes-doctor", "thiếu npx"))
+        out.append(_not_checked("hyperframes-doctor", "thiếu npx — cài Node trước"))
     else:
         try:
             r = _run([npx, "--yes", spec, "doctor"], timeout=300)
@@ -172,8 +191,12 @@ def tool_checks():
 
 
 def station_checks(st, src):
-    out = [_check("station", os.path.isdir(st), f"{st} ({src})",
-                  hint="chưa có trạm video — `video-studio init` (hoặc đặt VIDEO_STATION)")]
+    if not st:
+        # Bản cài wheel, không biến: không có tầng mặc định nào để đoán.
+        return [_check("station", False, f"(chưa chọn — {src})", hint=_env.UNSET_HINT)]
+    hint = ("chưa có trạm video — `video-studio init` (mặc định tạo workspace/ trong repo; "
+            "trạm ngoài: đặt VIDEO_STATION hoặc `init --station DIR`)")
+    out = [_check("station", os.path.isdir(st), f"{st} ({src})", hint=hint)]
     if _env.env("VIDEO_ROOT") and not _env.env("VIDEO_STATION"):
         out.append(_check("env-name", False, "VIDEO_ROOT", level="warn",
                           hint="tên biến cũ — đặt VIDEO_STATION=<gốc trạm> (VIDEO_ROOT vẫn đọc được)"))
@@ -188,7 +211,7 @@ def station_checks(st, src):
             out.append(_check("station-json", False, sj, level="warn", hint=(
                 f"trạm đời cũ chưa có station.json — xem kế hoạch: `video-studio init --station \"{st}\" "
                 "--migrate --dry-run`, đọc kỹ rồi bỏ --dry-run" if legacy else
-                f"`video-studio init --station \"{st}\"`")))
+                f"`{_env.init_command(st)}`")))
         elif _major(info.get("contract")) != _major(API_VERSION):
             out.append(_check("station-json", False, f"contract {info.get('contract')} ≠ {API_VERSION}",
                               level="warn", hint="trạm dựng bởi bản hợp đồng khác — kiểm lại rồi chạy init"))
@@ -345,7 +368,7 @@ def update_check(version, offline):
     """
     blank = {"pinned": version, "latest": None, "behind": None, "pinned_age_days": None}
     if offline:
-        return _skip("hyperframes-update", "--offline: không hỏi npm"), blank
+        return _not_checked("hyperframes-update", "--offline: không hỏi npm"), blank
     npm = _env.npm_exe()
     if not npm:
         return _check("hyperframes-update", False, "không thấy npm", level="warn",
@@ -385,6 +408,18 @@ def update_check(version, offline):
 
 # ── ráp lại ────────────────────────────────────────────────────────────────────────────
 
+RENDER_HINT = ("doctor không tự render — dựng bài mẫu để chứng minh cả chuỗi: `video-studio render "
+               "--project news --input samples/news-mini/spec.json --brand "
+               "samples/news-mini/brand.json --out out/news-mini --json`")
+
+
+def render_check():
+    """Chuỗi Node → Chromium → render chỉ được CHỨNG MINH bằng một lần render thật, và doctor
+    cố ý không làm việc đó (tốn phút, cần mạng, ghi file). Nói thẳng là chưa kiểm, thay vì để
+    một bảng toàn PASS khiến người đọc tưởng render đã chạy."""
+    return _not_checked("render", "chưa render thử trong lượt kiểm này", hint=RENDER_HINT)
+
+
 def run_checks(hf=None, offline=False, check_updates=False):
     st, src = _env.resolve_station()
     version = _env.check_version(hf, "--hf") if hf else _env.hyperframes_version()
@@ -399,11 +434,18 @@ def run_checks(hf=None, offline=False, check_updates=False):
     checks += embedded_guard_checks()
     checks.append(voice_check())
     checks.append(skills_check())
+    checks.append(render_check())
     updates = None
     if check_updates:
         c, updates = update_check(version, offline)
         checks.append(c)
     return st, version, checks, updates
+
+
+# Nhãn người đọc — cùng bộ chữ với các studio anh em, để một người đọc quen một bảng là đọc
+# được mọi bảng. `level` trong JSON giữ nguyên chữ thường (hợp đồng cho bên gọi).
+MARKS = {"ok": "PASS", "warn": "WARN", "error": "FAIL", "not_checked": "NOT_CHECKED",
+         "skip": "SKIP"}
 
 
 class _DoctorFailed(contract.StationMissing):
@@ -423,14 +465,14 @@ class _DoctorFailed(contract.StationMissing):
 def doctor(args):
     st, version, checks, updates = run_checks(args.hf, args.offline, args.check_updates)
     for c in checks:
-        mark = {"ok": "OK  ", "warn": "WARN", "error": "LỖI ", "skip": "BỎ  "}[c["level"]]
-        line = f"[{mark}] {c['name']:<18} {c['detail']}"
+        line = f"[{MARKS[c['level']]}] {c['name']:<18} {c['detail']}"
         if c["hint"]:
             line += f"\n         → {c['hint']}"
         contract.log(line)
     result = {"video_studio": API_VERSION, "station": st, "hyperframes": version, "checks": checks,
               "errors": [c["name"] for c in checks if c["level"] == "error"],
-              "warnings": [c["name"] for c in checks if c["level"] == "warn"]}
+              "warnings": [c["name"] for c in checks if c["level"] == "warn"],
+              "not_checked": [c["name"] for c in checks if c["level"] == "not_checked"]}
     if updates is not None:
         result["updates"] = updates
     if result["errors"]:

@@ -417,7 +417,7 @@
         <li class="m"><b class="num" data-to="24">24</b> skill cho agent</li>
         <li><b class="num" data-to="4">4</b> template bản tin</li>
         <li><b class="num" data-to="670">670</b> test</li>
-        <li>phiên bản <b>v0.1.0</b></li>
+        <li>phiên bản <b>v0.2.0</b></li>
         <li>lõi <b>0</b> phụ thuộc Python</li>
       </ul>
     </div>
@@ -614,11 +614,12 @@
         với cây trên đĩa — sai lệch là báo đỏ, không phải im lặng.</p>
     </div>
 
-    <p class="prose reveal"><code class="inline">video-studio init</code> chép cả 24 skill vào trạm
-      (cho cả Claude Code lẫn các harness đọc <code class="inline">.agents/skills</code>) và ghi
-      <code class="inline">skills-lock.json</code>. Trạm còn skill đời cũ do công cụ khác cài thì
-      <code class="inline">init --migrate</code> gỡ chúng đi — bản cũ được lưu vào nhật ký, nên
-      <code class="inline">init --undo</code> trả lại được.</p>
+    <p class="prose reveal">Skill <b>không</b> được chép vào trạm. Gốc repo có một adapter nhỏ cho
+      mỗi skill ở <code class="inline">.claude/skills</code> (Claude Code) và
+      <code class="inline">.agents/skills</code> (Codex, Antigravity), trỏ agent về bản gốc trong
+      <code class="inline">skills/</code> — mở thư mục repo là thấy đủ 24 skill, <code>git pull</code>
+      là có bản mới. Trạm dựng bằng bản cũ còn bản chép thì <code class="inline">init --migrate</code>
+      gỡ chúng — bản cũ được lưu vào nhật ký, nên <code class="inline">init --undo</code> trả lại được.</p>
   </div>
 </section>
 
@@ -630,6 +631,8 @@
       <h2>Hai chế độ, và lệnh <code>init</code> trình bảng trước khi làm</h2>
       <p>Không có câu hỏi trống. <code>init</code> đưa ra bảng hai lựa chọn rồi chờ bạn chọn; không
         có ai trả lời (CI, lịch chạy) thì nó in bảng đó ra và <b>thoát mã 2 mà chưa ghi byte nào</b>.</p>
+      <p>Muốn agent cài giúp trên Windows hoặc macOS: <a href="install/" style="color:var(--accent)">dán
+        một lời nhờ</a> — agent hỏi trước khi cài thêm gì và báo lại từng dòng kiểm tra.</p>
     </div>
 
     <div class="code-card reveal">
@@ -712,7 +715,7 @@
   <div class="wrap">
     <div class="sec-head reveal">
       <span class="eyebrow"><span class="dot"></span>Bảng lệnh</span>
-      <h2>Toàn bộ lệnh của bản v0.1.0</h2>
+      <h2>Toàn bộ lệnh của bản v0.2.0</h2>
       <p>Chính là bảng mà <code>video-studio --help</code> in ra — một cổng trong bộ test giữ cho hai
         bên không trôi khỏi nhau.</p>
     </div>
@@ -731,6 +734,7 @@
           <tr><td class="lbl">backup</td><td>zip cả trạm (không nháp, không cache)</td></tr>
           <tr><td class="lbl">migrate</td><td>chuyển trạm embedded ra ngoài repo</td></tr>
           <tr><td class="lbl">update</td><td>cập nhật repo (<code>git pull --ff-only</code>)</td></tr>
+          <tr><td class="lbl">uninstall</td><td>gỡ phần bộ cài đã đặt (liên kết repo → trạm, skill bản cũ đã chép); <b>giữ</b> trạm và project</td></tr>
         </tbody>
       </table>
     </div>
@@ -813,7 +817,7 @@
         <h3>agent-marketing-studio</h3>
         <p>Quy trình sản xuất nội dung. Gọi được repo này khi nó có mặt; chưa cài thì pipeline vẫn
           chạy bình thường và <b>nói rõ là đang thiếu năng lực video</b>.</p>
-        <div class="cmd"><a href="https://ducnguyen.vn/marketing-agent/" style="color:var(--accent)">ducnguyen.vn/marketing-agent</a></div>
+        <div class="cmd"><a href="https://ducnguyen.vn/agent-marketing-studio/" style="color:var(--accent)">ducnguyen.vn/agent-marketing-studio</a></div>
       </div>
       <div class="card lift reveal" style="--d:140ms">
         <h3>Dùng một mình</h3>
@@ -865,7 +869,7 @@
       <h2>Sáu từ đọc tài liệu sẽ gặp</h2>
     </div>
     <dl class="glossary reveal">
-      <div><dt><span class="t">trạm</span></dt><dd>Thư mục dữ liệu của bạn: project, footage, nháp, cache, skill đã chép. Không bao giờ đi vào git.</dd></div>
+      <div><dt><span class="t">trạm</span></dt><dd>Thư mục dữ liệu của bạn: project, footage, nháp, cache. Không bao giờ đi vào git.</dd></div>
       <div><dt><span class="t">spec</span></dt><dd>File JSON mô tả video sẽ dựng: template, thương hiệu, nội dung từng cảnh.</dd></div>
       <div><dt><span class="t">composition</span></dt><dd>Một trang HTML/CSS/GSAP là nguồn của khung hình — bố cục và chuyển động đều viết bằng web.</dd></div>
       <div><dt><span class="t">EDL</span></dt><dd>Danh sách quyết định dựng: đoạn nào giữ, đoạn nào bỏ, chồng gì lên trên.</dd></div>

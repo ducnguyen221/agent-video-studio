@@ -4,9 +4,11 @@ name: tests
 # HyperFrames, ffmpeg hay model nào: bộ test phải xanh trên một máy trần — lệnh ngoài đều
 # được thay bằng hàm giả. Cần engine thật mới chạy được test nghĩa là test đang đo môi
 # trường chứ không đo mã.
+#
+# `push` KHÔNG lọc nhánh: nhánh làm việc cũng phải được đo trước khi mở pull request —
+# lọc `[main]` nghĩa là lỗi của nhánh chỉ lộ ra khi đã đứng trước cửa merge.
 on:
   push:
-    branches: [main]
   pull_request:
   workflow_dispatch:
 
@@ -15,18 +17,25 @@ permissions:
 
 jobs:
   test:
-    name: pytest (${{ matrix.os }})
+    name: pytest (${{ matrix.os }}, py${{ matrix.python-version }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         os: [windows-latest, macos-latest]
+        # Đủ dải `requires-python = ">=3.10"`: đầu dưới (3.10 — chưa có `tomllib`), bản máy
+        # dựng đang chạy (3.12) và bản mới nhất có sẵn trên runner (3.13).
+        python-version: ['3.10', '3.12', '3.13']
     steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-python@v5
+      # Action ghim theo SHA commit, không theo tag: tag là con trỏ di động, chủ repo action
+      # dời nó đi đâu thì CI chạy mã ở đó. Chú thích cuối dòng là tag tương ứng để người đọc.
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
-          python-version: '3.12'
+          persist-credentials: false
+
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: ${{ matrix.python-version }}
 
       - name: Cài package (lõi + extras test)
         run: python -m pip install --upgrade pip && python -m pip install -e ".[test]"
@@ -44,8 +53,10 @@ jobs:
     name: hash skill khớp upstream
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
         with:
           python-version: '3.12'
       - run: python -m pip install --upgrade pip && python -m pip install -e ".[test]"

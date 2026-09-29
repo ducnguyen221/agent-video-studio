@@ -63,8 +63,9 @@ ALLOW = {
     (".codex-plugin/plugin.json", "mien"): 1,
     ("LICENSE", "tac-gia"): 1,
     ("NOTICE", "tac-gia"): 1,
-    ("README.md", "tac-gia"): 3,
-    ("README.vi.md", "tac-gia"): 3,
+    # +2: URL repo và URL INSTALL.md trong prompt cài đặt chép từ INSTALL.md.
+    ("README.md", "tac-gia"): 5,
+    ("README.vi.md", "tac-gia"): 5,
     # Liên kết tới trang giới thiệu công khai của chính repo này, ở đầu README và
     # trong danh sách tài liệu — cùng loại với `author.url` của manifest.
     ("README.md", "mien"): 2,
@@ -74,6 +75,17 @@ ALLOW = {
     # nên không ai nhét được đường dẫn máy hay tên thật vào đây mà không bị nhìn thấy.
     ("docs/index.html", "tac-gia"): 22,
     ("docs/index.html", "mien"): 9,
+    # Địa chỉ kho mã công khai trong lệnh `git clone` (Windows + macOS) — người mới chép
+    # nguyên lệnh, nên nó phải là URL thật của repo, không phải chỗ trống để tự điền.
+    # Hai lệnh clone + hai URL trong prompt cài đặt (bản gốc của prompt ở INSTALL.md, các nơi
+    # khác chép nguyên văn — tests/test_install_docs.py giữ chúng khớp nhau).
+    ("START-HERE.md", "tac-gia"): 4,
+    ("INSTALL.md", "tac-gia"): 8,
+    # Cổng tài liệu cài đặt khai đúng hai URL chính thức mà prompt được phép trỏ tới.
+    # + mẫu URL GitHub để đối chiếu link của trang /install/ với file thật trong repo.
+    ("tests/test_install_docs.py", "tac-gia"): 3,
+    # Trang /install/: hai prompt chép từ INSTALL.md (4 URL) + 4 liên kết tới file của repo.
+    ("docs/install/index.html", "tac-gia"): 8,
 }
 
 

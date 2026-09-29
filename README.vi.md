@@ -6,7 +6,7 @@ Engine dựng video cho agent: composition HTML/CSS/GSAP được
 [HyperFrames](https://github.com/heygen-com/hyperframes) render ra MP4, bọc trong một package
 Python cài được với một lệnh duy nhất, `video-studio`.
 
-> **Trạng thái: bản phát hành đầu tiên, v0.1.0.** Bản này có bố cục trạm, lệnh kiểm máy, công cụ di trú,
+> **Trạng thái: v0.2.0.** Bản này có bố cục trạm, lệnh kiểm máy, công cụ di trú,
 > họ template bản tin, lồng tiếng, xem trước, chỉnh footage, và `export` / `import` để mang dữ
 > liệu trạm sang máy khác. Mọi lệnh trong bảng dưới đều đã có mã thật.
 
@@ -22,13 +22,14 @@ câm vẫn chạy, chỉ là không lồng tiếng được. Không có thứ t�
 | Lệnh | Làm gì |
 |---|---|
 | `video-studio doctor` | Kiểm Node ≥ 22, npx, bản HyperFrames đang ghim, Chromium headless của nó, ffmpeg/ffprobe, font Inter, trạm và `station.json`. `--check-updates` chỉ *báo* bản HyperFrames mới. |
-| `video-studio init` | Dựng trạm (`embedded` trong repo, hoặc `separate` ngoài repo), ghi `station.json`, chép skill cho agent. `--migrate` nhận một trạm bố cục cũ, `--dry-run` in kế hoạch không ghi gì, `--undo` đảo lần chạy gần nhất theo nhật ký. |
+| `video-studio init` | Dựng trạm (`embedded` trong repo, hoặc `separate` ngoài repo), ghi `station.json`. `--migrate` nhận một trạm bố cục cũ (và gỡ bản skill bản cũ đã chép vào đó), `--dry-run` in kế hoạch không ghi gì, `--undo` đảo lần chạy gần nhất theo nhật ký. |
 | `video-studio render` | spec JSON (`schema_version: 1`) → MP4 theo template: `news`, `news-weekly`, `topstory`, `repo-today`. Cần phần phụ `[voice]`. |
 | `video-studio narrate` | video câm (hoặc cả một project, render trước) + lời dẫn → một MP4 hoàn chỉnh có giọng và nhạc nền tuỳ chọn, qua trạm giọng. |
 | `video-studio preview` | Mở studio xem trước của HyperFrames cho một project — bằng **đúng bản đã ghim**, nên thứ bạn soi chính là thứ sẽ render. |
 | `video-studio edit` | Cắt footage quay thật: bóc lời tại máy, gom cụm thành markdown đọc được, rồi dựng theo EDL kèm chỉnh màu, overlay, phụ đề và chuẩn âm lượng. Helper chưng cất từ `video-use` (MIT); cũng gọi được bản upstream đã cài ở trạm. |
 | `video-studio export` / `import` | Đóng gói trạm thành zip và bung vào máy khác. `--personal` chỉ lấy tài sản của project (`projects/*/assets`) cộng đúng những thư mục bạn kể tên bằng `--include`; nháp, cache, venv và cây git không bao giờ vào gói. `import` mặc định **không đè**, có `--dry-run` và `--overwrite`. |
 | `video-studio backup` / `migrate` / `update` | Zip cả trạm; chuyển trạm `embedded` ra ngoài repo; cập nhật bản clone (không bao giờ xoá gì). |
+| `video-studio uninstall` | Chỉ gỡ thứ bộ cài đã đặt — liên kết repo → trạm, skill bản cũ đã chép (nếu chưa sửa), `.env` chưa điền, hook pre-commit của chính nó — và dời chúng vào nhật ký của trạm thay vì xoá. Trạm và mọi project giữ nguyên. `--dry-run` in kế hoạch. |
 
 Mọi lệnh theo một hợp đồng: mã `0` ok · `1` lỗi render/engine (chạy lại được) · `2` gọi hoặc
 cấu hình sai · `3` thiếu trạm/công cụ; có `--json` thì dòng cuối stdout là một object JSON, log
@@ -38,6 +39,24 @@ người đọc ra stderr. Hợp đồng đầy đủ cho bên gọi: [docs/CONT
 thiếu là mã 2. Một mặc định im lặng ở chỗ này nghĩa là video của bạn mang tên người khác.
 
 ## Cài
+
+**Nhờ agent cài giúp.** Dán nguyên văn yêu cầu dưới đây vào Claude Code, Codex hoặc Antigravity trên Windows hay macOS; agent làm theo [INSTALL.md](INSTALL.md) (hướng dẫn dành cho agent), hỏi bạn trước khi cài thêm gì, và báo lại từng dòng `doctor`:
+
+```text
+Hãy cài Agent Video Studio lên máy này (Windows hoặc macOS) cho chính ứng dụng AI bạn đang chạy.
+Nguồn duy nhất: https://github.com/ducnguyen221/agent-video-studio
+Đọc trước hướng dẫn dành cho agent tại
+https://raw.githubusercontent.com/ducnguyen221/agent-video-studio/main/INSTALL.md
+(không mở được link thì clone repo rồi đọc INSTALL.md trong đó) và làm đúng, đủ các bước:
+kiểm máy, hỏi tôi trước khi cài phần mềm hoặc cần quyền admin, clone vào thư mục an toàn
+(không OneDrive/iCloud/Desktop), cài vào .venv của repo, dựng trạm, chạy doctor, thử bài mẫu.
+Quy tắc: chỉ chạy lệnh có trong repo hoặc INSTALL.md; không đổi chính sách hệ thống; không đọc
+hay ghi mật khẩu/khóa; gặp lỗi thì dừng và giải thích bằng lời thường.
+Kết thúc bằng bản tóm tắt: đường dẫn repo, trạm, từng dòng doctor, phần mềm đã cài thêm, việc tôi
+cần làm tiếp.
+```
+
+Hoặc tự cài ([START-HERE.md](START-HERE.md) có lệnh đúng cho Windows và macOS):
 
 ```bash
 git clone https://github.com/ducnguyen221/agent-video-studio
@@ -63,11 +82,13 @@ Hướng dẫn từng bước cho người dùng: [GUIDE.vi.md](GUIDE.vi.md).
 ## Tài liệu
 
 - [Trang giới thiệu](https://ducnguyen.vn/agent-video-studio/) — nó làm gì, cài thế nào, quy tắc.
+- [START-HERE.md](START-HERE.md) — bước đầu trên Windows hoặc macOS, và bài mẫu nên dựng trước.
 - [docs/INSTALL.md](docs/INSTALL.md) — Node, ffmpeg, font, và **cài vào venv nào**.
 - [docs/WORKSPACE.md](docs/WORKSPACE.md) — trạm, hai chế độ cài, thứ gì xoá được.
 - [docs/AGENT_VIDEO_GUIDE.md](docs/AGENT_VIDEO_GUIDE.md) — agent lái trọn quy trình thế nào.
 - [docs/CONTRACT.md](docs/CONTRACT.md) — khuôn spec và hợp đồng gọi.
 - [docs/THEME-LIBRARY.md](docs/THEME-LIBRARY.md) — thư viện layout + luật cứng khi render.
+- [docs/CHANGELOG.md](docs/CHANGELOG.md) — mỗi bản phát hành đổi gì.
 
 ## Skill cho agent
 
@@ -79,9 +100,13 @@ harness đọc để định tuyến. Không file nhị phân nào của upstrea
 đây, và thư mục `references/` của upstream cũng không. Bản nguồn đã ghim của từng skill nằm ở
 [`upstream.json`](upstream.json); `video-studio doctor` đối chiếu sổ đó với cây trên đĩa.
 
-`video-studio init` chép cả 24 skill vào `<trạm>/.claude/skills` và `<trạm>/.agents/skills`, và
-ghi `skills-lock.json`. Trạm còn skill đời cũ do công cụ khác cài thì `init --migrate` **gỡ**
-chúng đi — bản cũ được lưu vào nhật ký của lần init nên `init --undo` trả lại được.
+Skill **không** được chép vào trạm. Gốc repo có một adapter nhỏ cho mỗi skill ở `.claude/skills/`
+(Claude Code) và `.agents/skills/` (Codex, Antigravity): adapter chỉ mang `name` + `description`
+của skill và trỏ agent về bản gốc trong `skills/`. Mở thư mục repo trong host là thấy đủ 24 skill;
+`git pull` là có nội dung skill mới. Thêm, xoá hay đổi mô tả skill thì chạy
+`python scripts/build_host_adapters.py`; `tests/test_host_adapters.py` đỏ khi adapter lệch nguồn.
+Trạm dựng bằng bản cũ còn bản chép cùng `skills-lock.json`: `init --station DIR --migrate` **gỡ**
+chúng — bản cũ được lưu vào nhật ký của lần init nên `init --undo` trả lại được.
 
 ## Quy tắc
 

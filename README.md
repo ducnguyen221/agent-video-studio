@@ -6,7 +6,7 @@ A video-production engine an AI agent can drive: HTML/CSS/GSAP compositions rend
 [HyperFrames](https://github.com/heygen-com/hyperframes), wrapped in an installable Python package
 with one CLI, `video-studio`.
 
-> **Status: first release, v0.1.0.** This build ships the station layout, the machine check,
+> **Status: v0.2.0.** This build ships the station layout, the machine check,
 > the migration tool, the news template family, narration, preview, footage editing, and
 > `export` / `import` for moving station data between machines. Every command in the table
 > below is backed by real code.
@@ -24,13 +24,14 @@ work, you just cannot add narration. There is no required install order and no b
 | Command | Does |
 |---|---|
 | `video-studio doctor` | Checks Node ≥ 22, npx, the pinned HyperFrames build, its headless Chromium, ffmpeg/ffprobe, the Inter font, the station and `station.json`. `--check-updates` only *reports* a newer HyperFrames. |
-| `video-studio init` | Lays out a station (`embedded` inside the repo, or `separate` outside it), writes `station.json`, copies the agent skills. `--migrate` adopts an older station layout, `--dry-run` prints the plan without writing, `--undo` reverses the last run from its journal. |
+| `video-studio init` | Lays out a station (`embedded` inside the repo, or `separate` outside it), writes `station.json`. `--migrate` adopts an older station layout (and removes skill copies an older version left there), `--dry-run` prints the plan without writing, `--undo` reverses the last run from its journal. |
 | `video-studio render` | A JSON spec (`schema_version: 1`) → MP4s from a template: `news`, `news-weekly`, `topstory`, `repo-today`. Needs the `[voice]` extra. |
 | `video-studio narrate` | A silent MP4 (or a whole project, rendered first) + narration text → one finished MP4 with voice and optional background music, through the voice studio. |
 | `video-studio preview` | Opens the HyperFrames preview studio for a project — with the *pinned* build, so what you inspect is what will render. |
 | `video-studio edit` | Cuts real footage: transcribe locally, pack the transcript into phrase-level markdown, then render an EDL with grade, overlays, subtitles and loudness normalisation. Helpers distilled from `video-use` (MIT); can also drive a vendored upstream copy. |
 | `video-studio export` / `import` | Zip a station and unpack it on another machine. `--personal` takes only project assets (`projects/*/assets`) plus the top-level folders you name with `--include`; scratch, cache, virtualenvs and git trees never enter the pack. `import` never overwrites unless you ask, and has `--dry-run`. |
 | `video-studio backup` / `migrate` / `update` | Zip the station; move an `embedded` station out of the repo; fast-forward the clone (never cleans). |
+| `video-studio uninstall` | Removes only what the installer put in place — the repo → station link, skills an older version copied (if unmodified), an unfilled `.env`, its own pre-commit hook — and moves them into the station journal instead of deleting. The station and every project stay. `--dry-run` shows the plan. |
 
 Every command follows one contract: exit `0` ok · `1` render/engine error (retryable) ·
 `2` bad call or config · `3` station or tool missing; with `--json` the last stdout line is a
@@ -42,6 +43,25 @@ single JSON object and human logs go to stderr. Full calling contract:
 means your video carries somebody else's name.
 
 ## Install
+
+**Let an agent install it.** Paste this into Claude Code, Codex or Antigravity on Windows or macOS; the agent follows [INSTALL.md](INSTALL.md) (the agent-facing runbook), asks before installing anything, and reports every `doctor` line back:
+
+```text
+Install Agent Video Studio on this machine (Windows or macOS) for the AI app you are running in.
+Single source: https://github.com/ducnguyen221/agent-video-studio
+First read the agent guide at
+https://raw.githubusercontent.com/ducnguyen221/agent-video-studio/main/INSTALL.md
+(if the link cannot be opened, clone the repo and read its INSTALL.md), then follow every step:
+check the machine, ask me before installing software or anything needing admin rights, clone to a
+safe folder (not OneDrive/iCloud/Desktop), install into the repo's .venv, set up the station, run
+doctor, try the sample.
+Rules: only run commands from that repo or INSTALL.md; do not change system policy; never read or
+write passwords/keys; on any error stop and explain in plain words.
+Finish with a summary: repo path, station, every doctor line, software added, and what I need to
+do next.
+```
+
+Or by hand ([START-HERE.md](START-HERE.md) has the exact Windows and macOS commands):
 
 ```bash
 git clone https://github.com/ducnguyen221/agent-video-studio
@@ -67,11 +87,13 @@ always an exact version (never `latest`).
 ## Documentation
 
 - [Website](https://ducnguyen.vn/agent-video-studio/) — what it does, how to install, the rules.
+- [START-HERE.md](START-HERE.md) — first steps on Windows or macOS, and the sample to render first (Vietnamese).
 - [docs/INSTALL.md](docs/INSTALL.md) — Node, ffmpeg, fonts, and *which venv to install into*.
 - [docs/WORKSPACE.md](docs/WORKSPACE.md) — the station, the two install modes, what is safe to delete.
 - [docs/AGENT_VIDEO_GUIDE.md](docs/AGENT_VIDEO_GUIDE.md) — how an agent drives the whole thing.
 - [docs/CONTRACT.md](docs/CONTRACT.md) — the spec schema and the calling contract.
 - [docs/THEME-LIBRARY.md](docs/THEME-LIBRARY.md) — layout patterns and the hard rendering rules.
+- [docs/CHANGELOG.md](docs/CHANGELOG.md) — what changed in each release (Vietnamese).
 
 ## Agent skills
 
@@ -83,10 +105,14 @@ that is what a harness reads to route. No upstream binary (font, audio, image) a
 `references/` tree was copied. The pinned source of each skill lives in
 [`upstream.json`](upstream.json), and `video-studio doctor` checks that ledger against the tree.
 
-`video-studio init` copies all 24 into `<station>/.claude/skills` and `<station>/.agents/skills`
-and writes `skills-lock.json`. If the station still carries an older skill set installed by
-another tool, `init --migrate` removes it — the old copy is kept in the run journal, so
-`init --undo` puts it back.
+Skills are **not** copied into the station. The repo root carries one small adapter per skill in
+`.claude/skills/` (Claude Code) and `.agents/skills/` (Codex, Antigravity): it holds only the
+skill's `name` and `description` and points the agent at the original under `skills/`. Open the
+repository folder in your host and it sees all 24; `git pull` is enough to get new skill content.
+After adding, removing or re-describing a skill, run `python scripts/build_host_adapters.py`;
+`tests/test_host_adapters.py` fails when an adapter drifts from its source. A station set up by
+an older version still holds copies plus `skills-lock.json`: `init --station DIR --migrate`
+removes them, keeping the old copies in the run journal so `init --undo` puts them back.
 
 ## Rules
 

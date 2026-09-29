@@ -72,11 +72,21 @@ cách người dùng `embedded` nối hai năng lực lại mà không phải đ
 
 ```
 --station  →  VIDEO_STATION  →  VIDEO_ROOT (tên cũ)  →
-<repo>/studio.local.json  →  <repo>/workspace/ nếu có  →  ~/.video
+<repo>/studio.local.json  →  <repo>/workspace/
 ```
 
+Không đặt gì thì trạm là `<repo>/workspace/` — **kể cả trước khi `init` tạo nó** (lệnh cần trạm
+sẽ báo mã 3 và chỉ `video-studio init`). Không có tầng đoán thư mục ở home: máy dùng trạm ngoài
+thì chọn nó tường minh bằng `VIDEO_STATION` hoặc `video-studio init --station DIR` (ghi vào
+`studio.local.json`). `~/.video` chỉ còn là chỗ gợi ý khi bạn chọn `separate` mà không nói đường,
+và là nơi `init` nhận ra trạm đời cũ để không dựng thêm trạm thứ hai.
+
 `<repo>` là bản clone đã `pip install -e` (hoặc đặt `VIDEO_STUDIO_REPO`). Bản cài wheel không có
-repo — chỉ dùng được `separate`.
+repo — chỉ dùng được `separate`, và không đặt `VIDEO_STATION` thì mọi lệnh cần trạm dừng mã 3.
+
+Trạm **giọng** theo cùng tinh thần: `VOICE_STATION` → `OMNIVOICE_DIR` (tên cũ) → trạm mà repo giọng
+cài cùng venv **đã được chọn** (`studio.local.json` hoặc `workspace/` của nó). Không có gì thì là
+"chưa có trạm giọng" — không đoán một thư mục ở home.
 
 ## Cây trạm
 
@@ -87,9 +97,6 @@ repo — chỉ dùng được `separate`.
 ├── projects/               CONTENT  mỗi thư mục con là một project render
 │   └── <tên>/assets/       CONTENT  ảnh, clip, filler của project đó
 ├── templates/              CONTENT  brand.json, spec mẫu của riêng bạn
-├── .claude/skills/         QUẢN LÝ  skill cho agent, chép từ repo
-├── .agents/skills/         QUẢN LÝ  bản song sinh cho harness khác
-├── skills-lock.json        QUẢN LÝ  hash từng skill đã chép (để biết bản trong trạm còn khớp repo không)
 ├── .video-studio/runs/     QUẢN LÝ  nhật ký từng lần `init` + bản cũ của thứ bị thay (cho `--undo`)
 ├── scratch/                NHÁP     bản render câm trung gian, dữ liệu tạm
 ├── cache/                  NHÁP     cache công cụ
@@ -99,13 +106,19 @@ repo — chỉ dùng được `separate`.
 Thư mục KHÁC ở gốc trạm (dự án riêng, bản vendored, nhạc, log cũ) **engine không bao giờ chạm
 tới** — `init` có một danh sách cho phép và một rào chắn trong mã để chặn cả lỗi lập trình.
 
+**Skill không nằm ở trạm.** Host đọc skill từ repo qua adapter `.claude/skills/` và
+`.agents/skills/` ở gốc repo (mỗi adapter trỏ về `skills/…/SKILL.md`). Trạm dựng bằng bản trước
+0.2.0 còn bản chép ở `<trạm>/.claude/skills`, `<trạm>/.agents/skills` cùng `skills-lock.json`:
+`video-studio init --station <trạm> --migrate` gỡ chúng — chỉ skill trùng tên repo hoặc có trong
+`skills-lock.json`, skill riêng của bạn giữ nguyên — và dời bản cũ vào `.video-studio/runs/<id>/prev/`
+nên `--undo` trả lại được.
+
 | Thư mục | Xoá được? | Vào backup? | Nhạy cảm? |
 |---|---|---|---|
 | `station.json` | dựng lại bằng `init` | có | không |
 | `demo/` | dựng lại bằng `init` | có | không |
 | `projects/` | **KHÔNG** — việc của bạn | có | có thể (footage, ảnh chưa công bố) |
 | `templates/` | **KHÔNG** | có | có (brand là danh tính của bạn) |
-| `.claude/skills`, `.agents/skills`, `skills-lock.json` | dựng lại bằng `init` | có | không |
 | `.video-studio/` | xoá được, mất khả năng `--undo` | không | không |
 | `scratch/`, `cache/` | xoá thoải mái | không | không |
 | `video-use/` | cài lại bằng script | không (có venv riêng, nặng) | không |

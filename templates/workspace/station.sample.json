@@ -9,6 +9,6 @@
     "python": "video-use/.venv/bin/python"
   },
   "voice_station": null,
-  "created_by": "video-studio 0.1.0",
+  "created_by": "video-studio 0.2.0",
   "created": "2026-01-01"
 }
