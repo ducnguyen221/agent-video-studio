@@ -18,10 +18,6 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 
-if (-not $Station) { $Station = $env:VIDEO_STATION }
-if (-not $Station) { $Station = $env:VIDEO_ROOT }
-if (-not $Station) { $Station = Join-Path $HOME '.video' }
-$Dest = Join-Path $Station 'video-use'
 
 function Find-Python {
     # Prove each candidate by running it: on Windows `python3` is often the Microsoft Store
@@ -42,6 +38,23 @@ foreach ($tool in 'git', 'ffmpeg') {
     }
 }
 $py = Find-Python
+
+# The station is resolved by the package itself (VIDEO_STATION -> VIDEO_ROOT ->
+# studio.local.json -> <repo>/workspace), never guessed as a folder under $HOME: an embedded
+# install keeps its station inside the repo. The core is stdlib-only, so any Python 3.10+ can
+# import it straight from this clone.
+$RepoRoot = Split-Path -Parent $PSScriptRoot
+$code = 'import sys; sys.path.insert(0, sys.argv[1]); from video_studio import _env; ' +
+        'st = sys.argv[2] if len(sys.argv) > 2 else _env.resolve_station()[0]; ' +
+        'print(st or str()); print(_env.init_command(st) if st else str())'
+if ($Station) { $resolved = @(& $py -c $code $RepoRoot $Station) }
+else { $resolved = @(& $py -c $code $RepoRoot) }
+if ($LASTEXITCODE -ne 0 -or $resolved.Count -lt 1 -or -not $resolved[0]) {
+    throw 'No video station chosen yet - run `video-studio init` first, or pass -Station <dir>.'
+}
+$Station = $resolved[0]
+$InitCmd = if ($resolved.Count -gt 1) { $resolved[1] } else { 'video-studio init' }
+$Dest = Join-Path $Station 'video-use'
 
 if (Test-Path (Join-Path $Dest '.git')) {
     Write-Host "[git] fast-forward $Dest"
@@ -70,5 +83,5 @@ if ($LASTEXITCODE -ne 0) { throw 'pip install failed.' }
 
 Write-Host ''
 Write-Host "video-use installed at $Dest"
-Write-Host "Next: video-studio init --station `"$Station`"   # records it in station.json"
+Write-Host "Next: $InitCmd   # records it in station.json"
 Write-Host '      video-studio edit --footage <dir> --out <dir> --backend vendored'

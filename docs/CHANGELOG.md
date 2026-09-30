@@ -5,6 +5,34 @@ chính nhưng chưa có tag; khi phát hành, mục đó đổi tên thành số
 `pyproject.toml`, `video_studio/__init__.py` cùng ba manifest plugin (`tests/test_version_sync.py`
 kiểm).
 
+## 0.2.2 — 2026-09-30
+
+Bản vá sau lượt kiểm trên Mac mini (báo cáo MAC-REVIEW-FOR-WINDOWS). Máy Windows đã đặt
+`VIDEO_STATION` không đổi hành vi.
+
+- **`init` không còn tự nhận `~/.video` có sẵn** (sự cố lượt Mac 29/09). `~/.video` chỉ tình cờ
+  mang dấu trạm thì `init` hỏi người dùng; với `--yes` hay khi không có người trả lời, nó in đường
+  trạm cũ rồi thoát mã 2 và không ghi gì. Nhận trạm đó phải bằng `--mode separate`,
+  `--station <thư mục>` hoặc `--migrate`. `--yes` giữ đúng nghĩa: embedded, `<repo>/workspace/`.
+  Trạm đã chọn (biến `VIDEO_STATION`/`VIDEO_ROOT`, hoặc `studio.local.json` ghi `separate`) vẫn
+  dùng luôn không hỏi; `studio.local.json` ghi `separate` nay thắng một `~/.video` tình cờ có mặt.
+- **Khối `engine` của JSON kết quả (P2-17):** `engine.voice_studio` nay là bản **hợp đồng** của
+  repo giọng (`API_VERSION`) ở cả `render` lẫn `narrate`, đúng nghĩa repo giọng tự trả; bản phát
+  hành của gói giọng đi khoá mới `engine.voice_studio_version`. Trước đây `render` trả bản phát hành
+  dưới cùng khoá. Bảng nghĩa từng khoá ở `docs/CONTRACT.md` §2.
+- **`scripts/install-video-use.{ps1,sh}`** không còn đoán trạm là `$HOME/.video`: trạm do package
+  phân giải (biến → `studio.local.json` → `<repo>/workspace/`), và lệnh gợi ý cuối cùng khớp chế độ
+  cài. Cổng `tests/test_ps1_portable.py` thêm luật chặn mọi script đoán trạm ở home.
+- **`doctor`:** chưa cài repo giọng mà bản clone của nó nằm cạnh repo này (cùng thư mục cha, tên gì
+  cũng được, nhận bằng nội dung) thì dòng `voice-studio` in sẵn lệnh `pip install -e "<đường>[engine]"`.
+- **Tài liệu:** clone vào `<thư mục cha>` người dùng chọn thay cho đường cứng; repo giọng là anh em
+  cùng thư mục cha (`INSTALL.md` mục 4, 5b); bước tắt telemetry của HyperFrames
+  `npx --yes hyperframes@<bản ghim> telemetry disable` (mục 7b, P2-18); mọi chỗ nói `browser ensure`
+  ghi rõ dạng `npx --yes hyperframes@<bản ghim> browser ensure` — đó là lệnh của HyperFrames, CLI
+  repo này không có lệnh con `browser` (P2-2); `package.json` của project không quyết bản render,
+  `station.json` mới quyết (P3-2); bảng nền tảng ghi macOS arm64 đã render thật bài mẫu (dòng macOS
+  của `samples/news-mini/EXPECTED.md`, PR #3).
+
 ## 0.2.1 — 2026-09-29
 
 Bản vá tài liệu để một agent trên Mac Apple Silicon mới tinh tự cài được theo `INSTALL.md`, không

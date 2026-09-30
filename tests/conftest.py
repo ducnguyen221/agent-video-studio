@@ -79,18 +79,21 @@ def news(monkeypatch):
     return importlib.import_module("video_studio.templates.news.news_video")
 
 
-def fake_voice_studio(monkeypatch, narrate=None, mix_bgm=None, version="9.9.9"):
+def fake_voice_studio(monkeypatch, narrate=None, mix_bgm=None, version="9.9.9",
+                      api_version="1.0.0"):
     """Cài một `voice_studio` GIẢ vào sys.modules. -> module gốc (có `.calls`).
 
     Repo giọng là phụ thuộc tuỳ chọn và nặng (torch); test của repo này không bao giờ nạp nó.
     Bản giả chỉ cần đủ bề mặt mà `video_studio.voice` chạm tới: `narrate.build_parser()`,
-    `narrate.narrate(args)` và `av.mix_bgm(path, bgm=…, volume=…)`.
+    `narrate.narrate(args)` và `av.mix_bgm(path, bgm=…, volume=…)`. Như repo giọng thật,
+    `narrate` trả `engine.voice_studio` = `API_VERSION` (hợp đồng), không phải `__version__`.
     """
     import argparse
     import types
 
     pkg = types.ModuleType("voice_studio")
     pkg.__version__ = version
+    pkg.API_VERSION = api_version
     pkg.__path__ = []
     pkg.calls = []
 
@@ -123,7 +126,7 @@ def fake_voice_studio(monkeypatch, narrate=None, mix_bgm=None, version="9.9.9"):
             f.write("mp4")
         return {"outputs": [{"kind": "video", "path": args.out, "duration": 12.5}],
                 "profile": args.profile, "timings": {"synth": 1.0},
-                "engine": {"voice_studio": version}}
+                "engine": {"voice_studio": api_version}}
 
     nar.build_parser = build_parser
     nar.narrate = _narrate

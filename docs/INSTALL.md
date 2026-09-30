@@ -83,7 +83,7 @@ hộ bạn.
 video-studio init                            # trình bảng hai lựa chọn rồi chờ bạn chọn
 video-studio init --yes                      # nhận khuyến nghị (embedded), không hỏi
 video-studio init --mode separate            # chọn thẳng chế độ, không hỏi
-video-studio init --station ~/.video         # hoặc chỉ thẳng một trạm (= separate, không hỏi)
+video-studio init --station <thư mục trạm>  # hoặc chỉ thẳng một trạm (= separate, không hỏi)
 video-studio init --non-interactive --yes    # CI / lịch chạy: không hỏi và không đoán
 ```
 
@@ -92,10 +92,13 @@ video-studio init --non-interactive --yes    # CI / lịch chạy: không hỏi 
 dùng nhiều máy, rành kỹ thuật, hoặc repo này là bản public của chính bạn. Agent cài nên **phân
 tích rồi khuyến nghị**, không hỏi trống.
 
-`init` **chỉ hỏi khi không tự nhận ra được**. Máy đã có trạm (biến `VIDEO_STATION`/`VIDEO_ROOT`,
-hoặc `~/.video` mang dấu trạm) thì bản trần tự chọn `separate` và nói rõ lý do; xin `embedded`
-trong tình huống đó là **lỗi mã 2** ("hai nguồn sự thật") chứ không phải một cảnh báo — muốn
-dựng trạm trong repo thì gỡ biến/trạm cũ trước.
+`init` **chỉ bỏ qua câu hỏi khi trạm đã được chọn**. Máy đã đặt biến `VIDEO_STATION`/`VIDEO_ROOT`
+(hoặc `studio.local.json` đã ghi `separate`) thì bản trần dùng trạm đó và nói rõ lý do. `~/.video`
+chỉ tình cờ mang dấu trạm thì **không** tự nhận: `init` hỏi; với `--yes` hay khi không có người trả
+lời, nó in đường trạm cũ rồi thoát **mã 2** — nhận trạm đó phải bằng `--mode separate`,
+`--station <thư mục>` hoặc `--migrate`. Xin `embedded` khi máy đã có trạm ngoài là **lỗi mã 2**
+("hai nguồn sự thật") chứ không phải một cảnh báo — muốn dựng trạm trong repo thì gỡ biến hoặc
+dời trạm cũ trước.
 
 Không có ai trả lời (CI, scheduled task) mà chưa chọn ⇒ `init` in bảng lựa chọn rồi thoát
 **mã 2, chưa ghi byte nào**. Cờ `--non-interactive` tự khai "không có ai ngồi đây"; nó **không**
@@ -157,8 +160,9 @@ video-studio edit --footage <dir> --out <dir> --backend vendored
    `echo` trong shell của agent. Người dùng embedded không cần biến nào — `workspace/` tự phân giải.
 3. **Không có PowerShell mặc định** — ba file `scripts/*.ps1` là vỏ tiện cho Windows; trên
    macOS gọi thẳng `video-studio …` (bản cài video-use dùng `scripts/install-video-use.sh`).
-4. **Chromium ghim theo bản engine** chưa có sẵn trong cache ⇒ chạy `browser ensure` một lần
-   (cần mạng).
+4. **Chromium ghim theo bản engine** chưa có sẵn trong cache ⇒ chạy
+   `npx --yes hyperframes@<bản ghim> browser ensure` một lần (cần mạng). Repo không có lệnh
+   con `browser` nào; `doctor` in đúng lệnh `npx` với bản đang ghim.
 5. **Bóc lời tại máy chạy CPU** (không có CUDA): chậm hơn nhiều. Dùng model nhỏ hơn bằng biến
    `VIDEO_WHISPER_MODEL=medium` nếu chỉ cần mốc thời gian để cắt.
 
@@ -167,13 +171,13 @@ video-studio edit --footage <dir> --out <dir> --backend vendored
 | Nền tảng | Bộ khung (CLI, trạm, test) | Render thật |
 |---|---|---|
 | Windows | đã chạy thật | đã chạy thật |
-| macOS (Apple Silicon) | CI chạy mỗi lần đẩy mã: cài gói + toàn bộ test | **chưa kiểm** — CI **cố ý** không cài Node, HyperFrames, ffmpeg hay model (test phải xanh trên máy trần), nên cả chuỗi Node → Chromium → render trên arm64 chưa ai chạy. Bản HyperFrames đang ghim (0.8.54) cũng chưa dựng bài `topstory` thật nào: lần render thật đầu tiên trên arm64 sẽ diễn ra trên Mac |
+| macOS (Apple Silicon) | CI chạy mỗi lần đẩy mã: cài gói + toàn bộ test | **bài mẫu `news-mini` đã chạy thật** (Mac mini M1, 30/09/2026, số đo ở `samples/news-mini/EXPECTED.md`). CI **cố ý** không cài Node, HyperFrames, ffmpeg hay model. Bản HyperFrames đang ghim (0.8.54) chưa dựng bài `topstory` thật nào |
 | Linux | CI chạy cổng đối chiếu skill với `upstream.json` | **chưa kiểm** |
 
 Thứ đã được chứng minh trên mọi nền tảng là **bộ khung**: lệnh chạy, trạm dựng đúng, hợp đồng gọi
-và mã thoát giữ nguyên. Phần render thật mới chỉ có số đo trên Windows. Trên Mac, các chỗ ở mục 6
-là chỗ dễ vấp nhất — chạy `browser ensure` một lần rồi `doctor --json` trước khi tin vào bất cứ
-lịch chạy nào.
+và mã thoát giữ nguyên. Render thật có số đo trên Windows và macOS arm64 (bài mẫu). Trên Mac, các
+chỗ ở mục 6 là chỗ dễ vấp nhất — chạy `browser ensure` (dạng `npx` ở trên) một lần rồi
+`doctor --json` trước khi tin vào bất cứ lịch chạy nào.
 
 ## 8. Gỡ
 

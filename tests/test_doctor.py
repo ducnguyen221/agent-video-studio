@@ -468,3 +468,22 @@ def test_not_checked_never_changes_the_exit_code(machine, good_station, capsys):
     rc_online, _, _ = run(["--json"], capsys)
     rc_offline, out, _ = run(["--offline", "--json"], capsys)
     assert rc_online == rc_offline == 0 and last_json(out)["ok"] is True
+
+
+def test_voice_hint_names_the_sibling_clone(tmp_path, monkeypatch):
+    """Chưa cài repo giọng mà bản clone của nó nằm cạnh repo này (thư mục cha tên gì cũng được)
+    ⇒ lời khuyên in đúng đường của máy này, kèm `[engine]` như INSTALL.md mục 5b."""
+    import sys
+    from video_studio import _env
+    parent = tmp_path / "bat-ky"
+    video, voice = parent / "video", parent / "giong"
+    for d, pkg in ((video, "video_studio"), (voice, "voice_studio")):
+        (d / pkg).mkdir(parents=True)
+        (d / pkg / "__init__.py").write_text("", encoding="utf-8")
+        (d / "pyproject.toml").write_text("", encoding="utf-8")
+    monkeypatch.setenv("VIDEO_STUDIO_REPO", str(video))
+    monkeypatch.setitem(sys.modules, "voice_studio", None)
+    monkeypatch.setattr(doctor.importlib.util, "find_spec", lambda name: None)
+    c = doctor.voice_check()
+    assert c["level"] == "warn" and f"{voice}[engine]" in c["hint"]
+    assert _env.sibling_repo("voice_studio") == str(voice)

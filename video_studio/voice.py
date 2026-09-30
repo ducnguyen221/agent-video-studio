@@ -24,7 +24,7 @@ INSTALL_HINT = (
     "cài repo giọng vào CÙNG venv: `pip install -e <bản clone agent-voice-studio>` "
     "(rồi `pip install -e \".[voice]\"` ở repo này). Kiểm bằng `video-studio doctor`.")
 
-__all__ = ["available", "module", "narrate", "mix_bgm", "version"]
+__all__ = ["available", "api_version", "module", "narrate", "mix_bgm", "version"]
 
 
 def _mod(name="voice_studio"):
@@ -51,8 +51,20 @@ def available():
 
 
 def version():
+    """Bản PHÁT HÀNH của gói giọng (`voice_studio.__version__`, vd "0.3.0") — None nếu chưa cài."""
     try:
         return getattr(importlib.import_module("voice_studio"), "__version__", None)
+    except ImportError:
+        return None
+
+
+def api_version():
+    """Bản HỢP ĐỒNG của repo giọng (`voice_studio.API_VERSION`, vd "1.0.0") — None nếu chưa cài
+    hoặc bản quá cũ chưa khai. Đây là nghĩa của khoá `engine.voice_studio` ở MỌI JSON kết quả
+    (repo giọng tự trả đúng nghĩa đó ở `speak`/`narrate`); bản phát hành đi khoá riêng
+    `engine.voice_studio_version` — xem docs/CONTRACT.md §2."""
+    try:
+        return getattr(importlib.import_module("voice_studio"), "API_VERSION", None)
     except ImportError:
         return None
 

@@ -32,8 +32,9 @@ hệ điều hành ở [docs/INSTALL.md](docs/INSTALL.md#1-thứ-phải-có-trư
 Windows (PowerShell):
 
 ```powershell
-git clone https://github.com/ducnguyen221/agent-video-studio "$env:USERPROFILE\agent-video-studio"
-cd "$env:USERPROFILE\agent-video-studio"
+$Parent = $HOME          # thư mục cha bạn chọn cho các repo studio (tên gì cũng được)
+git clone https://github.com/ducnguyen221/agent-video-studio (Join-Path $Parent 'agent-video-studio')
+cd (Join-Path $Parent 'agent-video-studio')
 py -3 -m venv .venv
 .\.venv\Scripts\python -m pip install -e .
 .\.venv\Scripts\video-studio init --yes
@@ -45,8 +46,9 @@ macOS (Terminal) — cần trước Xcode Command Line Tools (`xcode-select --in
 `python3.12`: `python3` của Mac mới là 3.9, dưới mức tối thiểu.
 
 ```sh
-git clone https://github.com/ducnguyen221/agent-video-studio ~/agent-video-studio
-cd ~/agent-video-studio
+PARENT="$HOME"           # thư mục cha bạn chọn cho các repo studio (tên gì cũng được)
+git clone https://github.com/ducnguyen221/agent-video-studio "$PARENT/agent-video-studio"
+cd "$PARENT/agent-video-studio"
 python3.12 -m venv .venv
 .venv/bin/python -m pip install -e .
 .venv/bin/video-studio init --yes
@@ -72,8 +74,10 @@ Mỗi dòng là một thứ đã kiểm. Mã thoát nói việc cần làm tiế
 | `2` | Cấu hình sai | Đọc dòng lỗi, sửa cấu hình — cài thêm không chữa được |
 | `3` | Còn thiếu công cụ hoặc trạm | Làm theo dòng `→` dưới mỗi lỗi |
 
-Chromium của HyperFrames tải về lần đầu render; máy không có mạng lúc render thì chạy trước lệnh
-`browser ensure` mà `doctor` in ra.
+Chromium của HyperFrames tải về lần đầu render; máy không có mạng lúc render thì chạy trước
+`npx --yes hyperframes@<bản ghim> browser ensure` — đúng lệnh `doctor` in ra. Muốn tắt telemetry
+của HyperFrames (mặc định bật): `npx --yes hyperframes@<bản ghim> telemetry disable`, một lần mỗi
+máy (INSTALL.md mục 7b).
 
 ## Bài mẫu đầu tiên
 

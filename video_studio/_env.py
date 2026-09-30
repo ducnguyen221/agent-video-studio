@@ -407,6 +407,34 @@ def _voice_repo_station():
     return _expand(st)
 
 
+def sibling_repo(package):
+    """Bản clone repo khác nằm CẠNH repo này (cùng thư mục cha — tên thư mục cha là gì cũng
+    được) -> đường repo đó | None.
+
+    Nhận bằng NỘI DUNG, không bằng tên thư mục: có `pyproject.toml` và `<package>/__init__.py`.
+    Hai bản clone trở lên cùng khớp ⇒ None (không đoán hộ). Chỉ để GỢI Ý lệnh cài (doctor);
+    không phải một tầng phân giải trạm — trạm giọng vẫn do chính repo giọng quyết.
+    """
+    repo = existing_repo()
+    if not repo:
+        return None
+    me = os.path.normcase(os.path.abspath(repo))
+    parent = os.path.dirname(os.path.abspath(repo))
+    try:
+        names = sorted(os.listdir(parent))
+    except OSError:
+        return None
+    hits = []
+    for n in names:
+        d = os.path.join(parent, n)
+        if os.path.normcase(d) == me:
+            continue
+        if (os.path.isfile(os.path.join(d, "pyproject.toml"))
+                and os.path.isfile(os.path.join(d, package, "__init__.py"))):
+            hits.append(d)
+    return hits[0] if len(hits) == 1 else None
+
+
 def voice_station():
     """Gốc trạm giọng: VOICE_STATION → cha của OMNIVOICE_DIR (tên cũ) → trạm mà repo giọng đã
     được chọn (studio.local.json / workspace/) → None. Không bao giờ đoán `~/.tts`/`~/.voice`."""

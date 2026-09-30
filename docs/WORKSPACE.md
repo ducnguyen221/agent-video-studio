@@ -25,10 +25,12 @@ chạy. Không có "bộ" nào phải cài đủ.
 `<repo>/studio.local.json`. **Không hỏi** trong ba trường hợp:
 
 - `--station DIR` — bạn chỉ thẳng trạm ⇒ `separate`.
-- Máy **đã có trạm ngoài**: biến `VIDEO_STATION` (hoặc tên cũ `VIDEO_ROOT`) đã đặt, hoặc
-  `~/.video` đã có `station.json`, `projects/`, hay seed `demo/` đời cũ ⇒ tự `separate`, và
-  **không bao giờ** tạo `workspace/`. Hai trạm cho một repo là hai nguồn sự thật, và cái sai chỉ
-  lộ ra khi bạn "mất" một project.
+- Máy **đã chọn trạm ngoài**: biến `VIDEO_STATION` (hoặc tên cũ `VIDEO_ROOT`) đã đặt, hoặc
+  `studio.local.json` đã ghi `separate` ⇒ dùng trạm đó, và **không bao giờ** tạo `workspace/`.
+  Hai trạm cho một repo là hai nguồn sự thật, và cái sai chỉ lộ ra khi bạn "mất" một project.
+  (`~/.video` chỉ tình cờ có `station.json`, `projects/` hay seed `demo/` đời cũ thì **không**
+  thuộc trường hợp này: `init` hỏi bạn có dùng nó không; `--yes` hay chạy không người thì dừng
+  mã 2 — nhận nó bằng `--mode separate`, `--station <thư mục>` hoặc `--migrate`.)
 - `--mode embedded|separate`, hoặc `--yes` (= nhận khuyến nghị `embedded`).
 
 Chạy không có người trả lời (agent, script, lịch) mà chưa chọn ⇒ `init` in bảng lựa chọn rồi

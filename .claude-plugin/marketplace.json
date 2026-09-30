@@ -9,7 +9,7 @@
     {
       "name": "agent-video-studio",
       "description": "Set up a video station, check the machine (Node, HyperFrames, Chromium, ffmpeg, fonts), and drive HyperFrames renders through a CLI with fixed exit codes and a JSON result line.",
-      "version": "0.2.1",
+      "version": "0.2.2",
       "source": "./",
       "license": "MIT",
       "author": {
