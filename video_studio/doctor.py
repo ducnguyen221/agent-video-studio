@@ -6,7 +6,8 @@
     video-studio doctor --check-updates    # hỏi npm bản mới nhất + tuổi bản ghim — CHỈ BÁO
     video-studio doctor --offline          # không gọi npx/npm (không mạng, không tải)
 
-Kiểm: python · node ≥ 22 · npx · `npx hyperframes@<bản> doctor` · Chromium của HyperFrames
+Kiểm: python · node ≥ 22 · npx · `npx hyperframes@<bản> doctor` · telemetry (chỉ in lệnh tắt,
+NOT_CHECKED) · Chromium của HyperFrames
 (`~/.cache/hyperframes`) · ffmpeg + ffprobe · font Inter · trạm (`VIDEO_STATION`, tên cũ
 `VIDEO_ROOT` bị nhắc đổi) · `station.json` · hai nguồn sự thật (F17) · repo giọng (tuỳ chọn,
 cho narrate) · video-use (tuỳ chọn, cho edit).
@@ -428,12 +429,23 @@ def render_check():
     return _not_checked("render", "chưa render thử trong lượt kiểm này", hint=RENDER_HINT)
 
 
+def telemetry_check(version):
+    """HyperFrames CLI bật telemetry theo mặc định, và chính dòng `hyperframes-doctor` ở trên đã
+    gọi `npx hyperframes`. Doctor không đọc trạng thái telemetry (không gọi thêm lệnh nào) —
+    chỉ nói thẳng là chưa kiểm và in đúng lệnh tắt, để người cài quyết định."""
+    spec = _env.hyperframes_spec(version)
+    return _not_checked("telemetry", "doctor không đọc trạng thái telemetry của HyperFrames",
+                        hint=f"muốn tắt (một lần mỗi máy): `npx --yes {spec} telemetry disable` "
+                             "(INSTALL.md mục 7)")
+
+
 def run_checks(hf=None, offline=False, check_updates=False):
     st, src = _env.resolve_station()
     version = _env.check_version(hf, "--hf") if hf else _env.hyperframes_version()
     checks = [_check("python", sys.version_info >= (3, 10), sys.version.split()[0],
                      hint="cần Python ≥ 3.10")]
     checks += node_checks(version, offline)
+    checks.append(telemetry_check(version))
     checks.append(chromium_check(version))
     checks += tool_checks()
     checks.append(font_check())

@@ -458,6 +458,23 @@ def test_render_is_always_reported_as_not_checked(machine, good_station, capsys)
     assert "[NOT_CHECKED] render" in err
 
 
+@pytest.mark.parametrize("flags", [[], ["--offline"]])
+def test_telemetry_is_not_checked_and_prints_the_exact_disable_command(machine, good_station,
+                                                                       capsys, flags):
+    """`hyperframes-doctor` đã gọi `npx hyperframes` (telemetry bật mặc định). Doctor không đọc
+    trạng thái telemetry — nó nói thẳng là chưa kiểm và in đúng lệnh tắt với bản đang ghim.
+    Dòng này không bao giờ đổi mã thoát và không gọi thêm lệnh nào."""
+    rc, out, err = run(flags + ["--json"], capsys)
+    res = last_json(out)
+    c = _check(res, "telemetry")
+    assert rc == 0 and res["ok"] is True
+    assert c["level"] == "not_checked" and c["code"] == 0
+    assert "`npx --yes hyperframes@0.7.94 telemetry disable`" in c["hint"]
+    assert "telemetry" in res["not_checked"] and "telemetry" not in res["warnings"]
+    assert "[NOT_CHECKED] telemetry" in err
+    assert not any("telemetry" in argv for argv, _ in machine.calls), "doctor không được tự đổi telemetry"
+
+
 def test_human_lines_use_the_shared_four_labels(machine, good_station, capsys):
     rc, out, err = run(["--offline"], capsys)
     assert "[PASS] node" in err and "[NOT_CHECKED] hyperframes-doctor" in err

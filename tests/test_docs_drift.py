@@ -131,3 +131,32 @@ def test_start_here_runs_the_sample_the_way_expected_md_does():
         return [ln for ln in text.splitlines() if ln.startswith("video-studio render")]
     assert cmd("START-HERE.md") == cmd("samples/news-mini/EXPECTED.md") != []
 
+
+
+# ── câu đã sai, cấm quay lại ────────────────────────────────────────────────────────────
+
+# Tài liệu người dùng và agent đọc để cài/dùng. CHANGELOG cố ý không nằm đây: nó kể lại hành vi
+# CŨ của từng bản, nên có quyền chép câu cũ.
+STALE_DOCS = ("README.md", "README.vi.md", "GUIDE.md", "GUIDE.vi.md", "START-HERE.md",
+              "INSTALL.md", "docs/INSTALL.md", "docs/WORKSPACE.md", "skills/video-routing/SKILL.md",
+              "docs/index.html", "docs/install/index.html")
+# (câu sai, vì sao sai). Từ 0.2.2 `init` KHÔNG tự nhận `~/.video` có sẵn: `--yes` = embedded,
+# trạm cũ chỉ được nhận qua `--mode separate` / `--station` / `--migrate` hoặc câu trả lời [1];
+# không có người thì mã 2 (`station.py::_adopt_or_stop`). Câu cũ dạy agent chờ một lượt nhận
+# trạm im lặng không còn tồn tại — đúng kiểu lỗi của lượt cài Mac 29/09.
+STALE_CLAIMS = (
+    ("detects it and does not ask", "init không tự nhận trạm cũ từ 0.2.2"),
+    ("tự nhận ra và không hỏi", "init không tự nhận trạm cũ từ 0.2.2"),
+    ("`init` tự chọn `separate`, không hỏi", "~/.video tình cờ có mặt không được tự chọn"),
+    ("init --yes` tự nhận", "--yes luôn là embedded"),
+)
+
+
+@pytest.mark.parametrize("rel", STALE_DOCS)
+@pytest.mark.parametrize("claim,why", STALE_CLAIMS)
+def test_docs_do_not_repeat_a_claim_the_code_no_longer_makes(rel, claim, why):
+    path = ROOT / rel
+    if not path.is_file():
+        pytest.skip(f"{rel} không có trong repo")
+    text = " ".join(path.read_text(encoding="utf-8").split())
+    assert claim not in text, f"{rel} còn câu đã sai: {claim!r} — {why}"

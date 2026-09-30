@@ -27,7 +27,12 @@ cài gì: nó chỉ ra thứ còn thiếu và cách cài.
 - **separate** — trạm ở thư mục riêng (mặc định `~/.video`). Hợp khi dùng nhiều máy hoặc repo là
   public của chính bạn. Đặt biến `VIDEO_STATION` trỏ vào trạm để mọi công cụ khác thấy.
 
-Máy đã có trạm từ trước thì `init` tự nhận ra và không hỏi.
+Trạm **đã được chọn** từ trước — biến `VIDEO_STATION`, hoặc lựa chọn `separate` đã ghi trong
+`studio.local.json` — thì `init` dùng tiếp như cũ, không hỏi. Trạm cũ chỉ tình cờ nằm ở `~/.video`
+thì `init` **không** tự nhận: nó trình hai lựa chọn và hỏi. Với `--yes` (luôn nghĩa là embedded)
+hoặc khi không có người trả lời, nó in hai lựa chọn rồi thoát **mã 2**, không ghi gì. Muốn dùng
+trạm cũ đó thì chạy `init --mode separate` (hoặc `--station DIR`, hoặc `--migrate` với bố cục
+cũ); muốn trạm mới trong repo thì dời hoặc đổi tên trạm cũ trước.
 
 ## 4. Nhận một trạm có sẵn
 

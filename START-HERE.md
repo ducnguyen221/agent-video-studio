@@ -38,6 +38,8 @@ cd (Join-Path $Parent 'agent-video-studio')
 py -3 -m venv .venv
 .\.venv\Scripts\python -m pip install -e .
 .\.venv\Scripts\video-studio init --yes
+# Báo "máy đã có trạm video ở …" (mã 2) mà bạn muốn dùng trạm cũ đó? Chạy thay dòng trên:
+#   .\.venv\Scripts\video-studio init --mode separate
 .\.venv\Scripts\video-studio doctor
 ```
 
@@ -52,6 +54,8 @@ cd "$PARENT/agent-video-studio"
 python3.12 -m venv .venv
 .venv/bin/python -m pip install -e .
 .venv/bin/video-studio init --yes
+# Báo "máy đã có trạm video ở …" (mã 2) mà bạn muốn dùng trạm cũ đó? Chạy thay dòng trên:
+#   .venv/bin/video-studio init --mode separate
 .venv/bin/video-studio doctor
 ```
 
@@ -77,7 +81,7 @@ Mỗi dòng là một thứ đã kiểm. Mã thoát nói việc cần làm tiế
 Chromium của HyperFrames tải về lần đầu render; máy không có mạng lúc render thì chạy trước
 `npx --yes hyperframes@<bản ghim> browser ensure` — đúng lệnh `doctor` in ra. Muốn tắt telemetry
 của HyperFrames (mặc định bật): `npx --yes hyperframes@<bản ghim> telemetry disable`, một lần mỗi
-máy (INSTALL.md mục 7b).
+máy, nên làm trước lần `doctor` đầu tiên (INSTALL.md mục 7).
 
 ## Bài mẫu đầu tiên
 

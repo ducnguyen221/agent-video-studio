@@ -203,10 +203,22 @@ def missing_dependency(exc, project=""):
     """
     name = getattr(exc, "name", None) or "một phụ thuộc"
     what = f"template {project!r}" if project else "bước render"
+    # Không khuyên `pip install -e ".[voice]"`: extra đó đòi gói `agent-voice-studio` mà pip
+    # không tìm được khi chưa có bản clone repo giọng, nên lệnh hỏng ngay. Đường duy nhất là
+    # INSTALL.md mục 5b; thấy bản clone anh em thì in đúng đường của máy này (như doctor).
+    try:
+        sib = _env.sibling_repo("voice_studio")
+    except Exception:           # noqa: BLE001 — chỉ là gợi ý; không được đổi mã thoát
+        sib = None
+    if sib:
+        how = (f"thấy repo giọng cạnh repo này: `python -m pip install -e \"{sib}[engine]\"` "
+               "bằng python của CÙNG venv")
+    else:
+        how = ("clone repo giọng agent-voice-studio cạnh repo này rồi cài vào CÙNG venv: "
+               "`pip install -e \"<repo giọng>[engine]\"`")
     return StationMissing(
-        f"{what} cần `{name}`, venv này chưa có. Cài phần phụ cho việc render: "
-        "`pip install -e \".[voice]\"` — và repo giọng (agent-voice-studio) phải nằm trong "
-        "CÙNG venv. Kiểm bằng `video-studio doctor`.")
+        f"{what} cần `{name}`, venv này chưa có. Cài repo giọng (INSTALL.md mục 5b) — {how}. "
+        "Kiểm bằng `video-studio doctor`.")
 
 
 def _template(project):

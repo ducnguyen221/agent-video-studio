@@ -28,7 +28,13 @@ nothing: it names what is missing and how to install it.
 - **separate** — the station has its own folder (default `~/.video`). Suits several machines or a
   repo that is your own public one. Set `VIDEO_STATION` so every other tool finds it.
 
-On a machine that already has a station, `init` detects it and does not ask.
+A station that was already chosen — the `VIDEO_STATION` variable, or an earlier `separate` choice
+saved in `studio.local.json` — is used as before, without asking. An older station that merely
+sits at `~/.video` is **not** adopted on its own: `init` shows two options and asks. With `--yes`
+(which always means embedded) or with nobody to answer, it prints the options and exits with code
+2, writing nothing. To use that old station run `init --mode separate` (or `--station DIR`, or
+`--migrate` for an old layout); to get a fresh station in the repo, move or rename the old one
+first.
 
 ## 4. Adopt an existing station
 

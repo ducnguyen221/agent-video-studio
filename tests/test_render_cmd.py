@@ -204,12 +204,33 @@ def test_missing_render_dependency_is_code_3_not_a_traceback(tmp_path, capsys, m
     def boom(_spec, _out):
         raise ImportError(name="numpy")
     monkeypatch.setattr(render, "_template", lambda p: boom)
+    monkeypatch.setattr(render._env, "sibling_repo", lambda pkg: None)
     rc = render.main(["--project", "topstory", "--input", str(spec_p),
                       "--out", str(tmp_path / "o"), "--json"])
     assert rc == contract.STATION_MISSING
     payload = last_json(capsys.readouterr().out)
     assert payload["code"] == 3 and "numpy" in payload["error"]
-    assert "[voice]" in payload["error"], "phải nói ĐÚNG lệnh cần chạy"
+    # `.[voice]` đòi gói agent-voice-studio mà pip không tìm được khi chưa clone repo giọng ⇒
+    # lời khuyên đó hỏng ngay. Phải nói ĐÚNG đường cài của INSTALL.md mục 5b.
+    assert '[engine]"' in payload["error"] and "mục 5b" in payload["error"]
+    assert ".[voice]" not in payload["error"]
+
+
+def test_missing_dependency_names_the_sibling_voice_clone(monkeypatch):
+    """Có bản clone repo giọng cạnh repo này ⇒ in đúng đường của máy này (như doctor)."""
+    monkeypatch.setattr(render._env, "sibling_repo", lambda pkg: "/x/cha/giong")
+    msg = str(render.missing_dependency(ImportError(name="voice_studio"), "news"))
+    assert '"/x/cha/giong[engine]"' in msg and "voice_studio" in msg
+
+
+def test_missing_dependency_hint_never_changes_the_exit_code(monkeypatch):
+    """Dò repo anh em chỉ để gợi ý: nó hỏng thì lời khuyên lùi về chỗ trống, mã vẫn là 3."""
+    def broken(_pkg):
+        raise OSError("không đọc được thư mục cha")
+    monkeypatch.setattr(render._env, "sibling_repo", broken)
+    err = render.missing_dependency(ImportError(name="numpy"))
+    assert isinstance(err, StationMissing) and err.code == contract.STATION_MISSING
+    assert '<repo giọng>[engine]"' in str(err)
 
 
 def test_unknown_project_is_rejected_by_argparse(tmp_path, capsys):
