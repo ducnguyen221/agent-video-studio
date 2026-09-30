@@ -6,7 +6,7 @@ Engine dựng video cho agent: composition HTML/CSS/GSAP được
 [HyperFrames](https://github.com/heygen-com/hyperframes) render ra MP4, bọc trong một package
 Python cài được với một lệnh duy nhất, `video-studio`.
 
-> **Trạng thái: v0.2.2.** Bản này có bố cục trạm, lệnh kiểm máy, công cụ di trú,
+> **Trạng thái: v0.2.3.** Bản này có bố cục trạm, lệnh kiểm máy, công cụ di trú,
 > họ template bản tin, lồng tiếng, xem trước, chỉnh footage, và `export` / `import` để mang dữ
 > liệu trạm sang máy khác. Mọi lệnh trong bảng dưới đều đã có mã thật.
 

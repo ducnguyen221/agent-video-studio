@@ -2,7 +2,7 @@
 
 File này dành cho **AI agent** (Claude Code, Codex, Google Antigravity) đang cài Agent Video Studio
 giúp người dùng trên **Windows hoặc macOS**. Người dùng chỉ dán [prompt ở cuối file](#prompt-copy-dán);
-agent đọc file này và làm lần lượt từ mục 0 đến mục 9. Người muốn tự gõ lệnh xem
+agent đọc file này và làm lần lượt từ mục 0 đến mục 10. Người muốn tự gõ lệnh xem
 [START-HERE.md](START-HERE.md); chi tiết từng công cụ ở [docs/INSTALL.md](docs/INSTALL.md).
 
 ## 0. Phạm vi và luật an toàn
@@ -18,7 +18,7 @@ agent đọc file này và làm lần lượt từ mục 0 đến mục 9. Ngư�
 - **Không đụng bí mật:** không mở, in hay chép `.env`, token, mật khẩu hoặc file cấu hình host.
 - **Không tải-rồi-chạy:** không dùng `iex`, `Invoke-Expression`, `irm … | iex` hay `curl … | sh`.
 - **Báo đúng sự thật:** chép nguyên các dòng `doctor`; chưa kiểm thì nói chưa kiểm. Gặp lỗi không
-  có trong mục 10 thì dừng và giải thích bằng lời thường.
+  có trong mục 11 thì dừng và giải thích bằng lời thường.
 
 ## 1. Nhận diện host và hệ điều hành
 
@@ -35,7 +35,7 @@ giống nhau cho mọi host; host chỉ khác ở chỗ đọc hướng dẫn v�
 
 **Phiên không có công cụ chạy lệnh** (tab chat của Claude Desktop): nói thẳng với người dùng rằng
 bạn không chạy được lệnh, rồi đưa hai lựa chọn: (a) mở Claude Code, Codex hoặc Antigravity và dán
-lại prompt; (b) tự chạy các khối lệnh ở mục 4–7 và dán kết quả `doctor` lại cho bạn.
+lại prompt; (b) tự chạy các khối lệnh ở mục 4–8 và dán kết quả `doctor` lại cho bạn.
 
 Hệ điều hành: Windows dùng khối `powershell`, macOS dùng khối `sh` ở các mục dưới.
 
@@ -168,7 +168,7 @@ khi render.
 
 ### 5b. Lồng tiếng (tuỳ chọn, nặng — hỏi trước)
 
-Mọi template bản tin đều đọc lời dẫn, nên bài mẫu ở mục 8 cần phần này. Nó kéo torch (~2,5 GB) và
+Mọi template bản tin đều đọc lời dẫn, nên bài mẫu ở mục 9 cần phần này. Nó kéo torch (~2,5 GB) và
 weights giọng (~4 GB, giấy phép **CC-BY-NC**, không thương mại). Nói rõ cỡ và giấy phép, chờ người
 dùng đồng ý; không cần thì bỏ qua — `doctor` chỉ báo `WARN` ở dòng `voice-studio`.
 
@@ -199,6 +199,8 @@ git clone https://github.com/ducnguyen221/agent-voice-studio ../agent-voice-stud
   giọng trong venv video, kể cả máy chạy lịch.
 - Chưa cài mà bản clone repo giọng đã nằm cạnh repo này, dòng `voice-studio` của `doctor` in sẵn
   lệnh `pip install -e` với đường thật của máy (nhận repo giọng bằng nội dung, không bằng tên).
+- Muốn tắt telemetry của HyperFrames (mục 7) thì làm việc đó trước lệnh `doctor` cuối khối trên
+  — lệnh `doctor` gọi `npx hyperframes`.
 - Dòng `voice-studio` của doctor phải thành `[PASS]`. **Không** tạo thêm venv engine riêng như
   hướng dẫn của repo giọng gợi ý cho người dùng giọng độc lập — với video, engine nằm ở `.venv` này.
 
@@ -252,7 +254,23 @@ Gọi lệnh qua `.venv` như mục 5 (`.\.venv\Scripts\video-studio` hoặc `.v
 `init` không bao giờ đoán thay: thiếu lựa chọn khi không có người trả lời thì nó in bảng hai lựa
 chọn rồi thoát **mã 2** — trình bảng đó cho người dùng, đừng tự chọn.
 
-## 7. Doctor — đọc từng dòng
+## 7. Tắt telemetry của HyperFrames (trước `doctor`, một lần mỗi máy)
+
+HyperFrames CLI bật gửi thống kê sử dụng về nhà phát triển theo mặc định, và `doctor` (mục 8) gọi
+`npx hyperframes@<bản ghim> doctor` — nên làm bước này **trước** lần `doctor` có mạng đầu tiên.
+Lấy đúng lệnh mà không gọi `npx`: `video-studio doctor --offline` in dòng
+`[NOT_CHECKED] telemetry` kèm lệnh tắt với bản đang ghim. Có Node rồi thì chạy lệnh đó một lần cho
+user đang dùng máy (cần mạng nếu `npx` chưa tải bản này):
+
+```text
+npx --yes hyperframes@<bản ghim> telemetry disable
+```
+
+Việc này không đổi gì trong repo hay trạm; báo người dùng đã tắt. Người dùng muốn giữ telemetry
+thì bỏ qua bước này. Dòng `[NOT_CHECKED] telemetry` của `doctor` vẫn còn sau khi tắt: doctor không
+đọc trạng thái telemetry, nó chỉ nhắc lệnh.
+
+## 8. Doctor — đọc từng dòng
 
 ```text
 video-studio doctor
@@ -269,8 +287,9 @@ dòng vào báo cáo.
 | `[FAIL] two-sources` / `gitignore` | Cấu hình sai (mã 2) | Dừng, đọc dòng `→`, hỏi người dùng |
 | `[WARN] chromium` | Chưa có Chromium của HyperFrames | Chạy đúng lệnh doctor in ra, dạng `npx --yes hyperframes@<bản ghim> browser ensure` (cần mạng). `browser ensure` là lệnh của HyperFrames, **không** phải lệnh con của CLI repo này |
 | `[WARN] font` / `voice-studio` / `video-use` | Phần tuỳ chọn chưa có | Không chặn; báo người dùng |
-| `[NOT_CHECKED] render` | Doctor không tự render | **Không phải lỗi.** Chứng minh bằng bài mẫu ở mục 8 |
+| `[NOT_CHECKED] render` | Doctor không tự render | **Không phải lỗi.** Chứng minh bằng bài mẫu ở mục 9 |
 | `[NOT_CHECKED] hyperframes-doctor` | Chưa gọi được engine (không mạng / thiếu npx) | Có mạng và Node thì chạy lại doctor |
+| `[NOT_CHECKED] telemetry` | Doctor không đọc trạng thái telemetry của HyperFrames; dòng `→` in đúng lệnh tắt | **Không phải lỗi**, luôn có mặt. Chưa tắt mà người dùng muốn tắt thì làm mục 7 |
 
 Mã thoát: `0` dùng được · `2` phải sửa cấu hình · `3` còn thiếu công cụ hoặc trạm.
 
@@ -280,19 +299,7 @@ Mã thoát: `0` dùng được · `2` phải sửa cấu hình · `3` còn thi�
 `video-studio` **không đọc** file đó — nó chỉ phục vụ lệnh `npm run preview/check/render` gõ tay
 trong project. Hai số lệch nhau thì số trong `station.json` là số render thật dùng.
 
-### 7b. Tắt telemetry của HyperFrames (một lần mỗi máy)
-
-HyperFrames CLI bật gửi thống kê sử dụng về nhà phát triển theo mặc định. Có Node rồi thì chạy
-một lần cho user đang dùng máy (cần mạng nếu `npx` chưa tải bản này):
-
-```text
-npx --yes hyperframes@<bản ghim> telemetry disable
-```
-
-Việc này không đổi gì trong repo hay trạm; báo người dùng đã tắt. Người dùng muốn giữ telemetry
-thì bỏ qua bước này.
-
-## 8. Xác minh bằng bài mẫu
+## 9. Xác minh bằng bài mẫu
 
 Chỉ khi đã có Node, ffmpeg, repo giọng cùng venv **và** giọng mặc định (mục 5b). Lần render đầu
 cần mạng: `npx` tải HyperFrames đúng bản ghim, Chromium của nó tải về `~/.cache/hyperframes`
@@ -312,7 +319,7 @@ HyperFrames repo đang ghim (0.8.54) vẫn chưa dựng bài `topstory` thật n
 văn 15 dòng log cuối, đừng tự đổi bản engine; chạy được thì ghi thời gian dựng và thời lượng hai
 file vào báo cáo.
 
-## 9. Báo cáo cuối cho người dùng
+## 10. Báo cáo cuối cho người dùng
 
 Dùng đúng khung này, lời thường, không rút gọn dòng doctor:
 
@@ -330,7 +337,7 @@ Dùng đúng khung này, lời thường, không rút gọn dòng doctor:
 - Gỡ khi cần: video-studio uninstall --dry-run, rồi video-studio uninstall
 ```
 
-## 10. Gỡ vướng thường gặp
+## 11. Gỡ vướng thường gặp
 
 - **`video-studio` không tìm thấy:** gọi qua `.venv` như mục 5, hoặc kích hoạt venv trước.
 - **Python dưới 3.10** hoặc chỉ có Python giả của Store: cài Python 3.12 (mục 3), mở terminal mới,

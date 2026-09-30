@@ -5,6 +5,28 @@ chính nhưng chưa có tag; khi phát hành, mục đó đổi tên thành số
 `pyproject.toml`, `video_studio/__init__.py` cùng ba manifest plugin (`tests/test_version_sync.py`
 kiểm).
 
+## 0.2.3 — 2026-09-30
+
+Bản dọn theo báo cáo review repo 30/09, chỉ các mục rủi ro không/thấp. **Hành vi render, init và
+trạm không đổi** trên Windows lẫn Mac; mã thoát của mọi lệnh giữ nguyên.
+
+- **Tài liệu `init`:** `GUIDE.md`/`GUIDE.vi.md` và skill `video-routing` còn nói `init` tự nhận
+  trạm có sẵn — sai từ 0.2.2. Viết lại đúng mã: trạm đã chọn (`VIDEO_STATION`,
+  `studio.local.json` ghi `separate`) dùng luôn; `~/.video` chỉ tình cờ có mặt thì `init` hỏi,
+  `--yes`/không người là mã 2, nhận bằng `--mode separate`/`--station`/`--migrate`. Cổng
+  `tests/test_docs_drift.py` thêm danh sách câu đã sai, cấm quay lại. `START-HERE.md` thêm hai
+  dòng dưới `init --yes`: báo "máy đã có trạm video ở …" thì dùng `init --mode separate`.
+- **Telemetry HyperFrames:** bước tắt telemetry dời lên **trước** `doctor` (`INSTALL.md` mục 7,
+  trước là 7b) vì `doctor` gọi `npx hyperframes doctor`; các mục sau đánh lại số (doctor 8, bài
+  mẫu 9, báo cáo 10, gỡ vướng 11). `doctor` thêm một dòng `[NOT_CHECKED] telemetry` in đúng lệnh
+  `npx --yes hyperframes@<bản ghim> telemetry disable` — không gọi thêm lệnh nào, không đổi mã thoát.
+- **Lời khuyên khi thiếu phụ thuộc render** (mã 3, không đổi): bỏ `pip install -e ".[voice]"` (hỏng
+  khi chưa có bản clone repo giọng); nay trỏ `INSTALL.md` mục 5b, `pip install -e "<repo giọng>[engine]"`,
+  và in đường thật khi thấy bản clone repo giọng cạnh repo này (như `doctor`).
+- **CI:** `actions/checkout` v5.1.0 và `actions/setup-python` v6.3.0 (chạy Node 24), vẫn ghim SHA.
+- **`.gitignore`:** thêm `.coverage`, `htmlcov/`, `.mypy_cache/`, `.ruff_cache/`,
+  `templates/_seed/package-lock.json`.
+
 ## 0.2.2 — 2026-09-30
 
 Bản vá sau lượt kiểm trên Mac mini (báo cáo MAC-REVIEW-FOR-WINDOWS). Máy Windows đã đặt

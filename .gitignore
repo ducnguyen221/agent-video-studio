@@ -59,6 +59,13 @@ venv/
 build/
 dist/
 .pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# ── seed HyperFrames: lockfile sinh ra khi chạy npm trong seed, không phải nguồn
+templates/_seed/package-lock.json
 
 # ── OS / editor
 .DS_Store
