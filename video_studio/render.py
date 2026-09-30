@@ -13,7 +13,8 @@ Hai việc:
    `--json`, dòng cuối stdout là:
 
        {"ok": true, "outputs": [{"kind","path","duration"}], "timings": {...},
-        "engine": {"hyperframes","voice_studio","video_studio"}}
+        "engine": {"hyperframes","voice_studio","voice_studio_version","video_studio",
+                   "contract"}}
 
 Retry: HyperFrames chạy nhiều worker Chromium; short render ngay sau long dễ chết vì tranh
 RAM/handle lúc long chưa giải phóng hết — hỏng THOÁNG QUA, chạy lại là qua. Ba lần thử, nghỉ
@@ -140,13 +141,21 @@ def render_project(proj_dir, out_file, timeout=DEFAULT_TIMEOUT, retries=RETRIES,
 # ── phiên bản engine (cho khối "engine" của JSON kết quả) ───────────────────────────────
 
 def engine_versions():
-    out = {"hyperframes": None, "voice_studio": None, "video_studio": __version__,
-           "contract": API_VERSION}
+    """Khối `engine` của JSON kết quả (docs/CONTRACT.md §2).
+
+    `voice_studio` là bản HỢP ĐỒNG của repo giọng (API_VERSION) — đúng nghĩa repo giọng tự
+    trả ở `speak`/`narrate`, để bên gọi đọc một khoá mà không phải biết lệnh nào sinh ra nó.
+    Bản phát hành của gói giọng đi khoá riêng `voice_studio_version`. `video_studio` giữ nghĩa
+    cũ (bản phát hành của repo này); hợp đồng của repo này ở `contract`.
+    """
+    out = {"hyperframes": None, "voice_studio": None, "voice_studio_version": None,
+           "video_studio": __version__, "contract": API_VERSION}
     try:
         out["hyperframes"] = _env.hyperframes_version()
     except ContractError:
         pass
-    out["voice_studio"] = voice.version()
+    out["voice_studio"] = voice.api_version()
+    out["voice_studio_version"] = voice.version()
     return out
 
 

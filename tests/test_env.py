@@ -294,3 +294,45 @@ def test_voice_variable_beats_the_voice_repo(tmp_path, monkeypatch):
     _fake_voice_repo(monkeypatch, lambda: (str(tmp_path), "workspace"))
     monkeypatch.setenv("VOICE_STATION", str(tmp_path / "chosen"))
     assert _env.voice_station() == str(tmp_path / "chosen")
+
+
+# ── repo anh em (thư mục cha tên gì cũng được, nhận bằng nội dung) ───────────────────────
+
+def _clone(root, name, package):
+    d = root / name
+    (d / package).mkdir(parents=True)
+    (d / package / "__init__.py").write_text("", encoding="utf-8")
+    (d / "pyproject.toml").write_text("[project]\nname='x'\n", encoding="utf-8")
+    return d
+
+
+@pytest.mark.parametrize("parent", ["Code", "Repo", "bat ky"])
+def test_sibling_repo_is_found_by_content_under_any_parent(parent, tmp_path, monkeypatch):
+    video = _clone(tmp_path / parent, "agent-video-studio", "video_studio")
+    voice = _clone(tmp_path / parent, "ten-thu-muc-khac", "voice_studio")
+    (tmp_path / parent / "khong-phai-repo").mkdir()
+    monkeypatch.setenv("VIDEO_STUDIO_REPO", str(video))
+    assert _env.sibling_repo("voice_studio") == str(voice)
+
+
+def test_sibling_repo_never_guesses_between_two_clones(tmp_path, monkeypatch):
+    video = _clone(tmp_path, "agent-video-studio", "video_studio")
+    _clone(tmp_path, "voice-a", "voice_studio")
+    _clone(tmp_path, "voice-b", "voice_studio")
+    monkeypatch.setenv("VIDEO_STUDIO_REPO", str(video))
+    assert _env.sibling_repo("voice_studio") is None
+
+
+def test_sibling_repo_needs_a_repo(tmp_path, monkeypatch):
+    monkeypatch.setenv("VIDEO_STUDIO_REPO", str(tmp_path / "khong-co"))
+    assert _env.sibling_repo("voice_studio") is None
+
+
+def test_sibling_repo_is_not_a_voice_station(tmp_path, monkeypatch):
+    """Repo anh em chỉ để gợi ý lệnh cài: trạm giọng vẫn do chính repo giọng quyết."""
+    video = _clone(tmp_path, "agent-video-studio", "video_studio")
+    voice = _clone(tmp_path, "agent-voice-studio", "voice_studio")
+    (voice / "workspace").mkdir()
+    monkeypatch.setenv("VIDEO_STUDIO_REPO", str(video))
+    monkeypatch.setitem(__import__("sys").modules, "voice_studio", None)
+    assert _env.voice_station() is None

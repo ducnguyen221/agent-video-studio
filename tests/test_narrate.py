@@ -59,13 +59,15 @@ def test_narrate_reads_the_text_file_path_through(tmp_path, monkeypatch):
 
 
 def test_json_result_is_one_line_with_engine_versions(tmp_path, monkeypatch, capsys):
-    fake_voice_studio(monkeypatch, version="1.2.3")
+    fake_voice_studio(monkeypatch, version="1.2.3", api_version="4.5.6")
     monkeypatch.setenv("HYPERFRAMES_VERSION", "0.7.94")
     assert nar.main(["--video", _silent(tmp_path), "--text", "a",
                      "--out", str(tmp_path / "o.mp4"), "--json"]) == 0
     data = last_json(capsys.readouterr().out)
     assert data["ok"] is True
-    assert data["engine"]["voice_studio"] == "1.2.3"
+    # P2-17: `voice_studio` = hợp đồng (như repo giọng tự trả), bản phát hành ở khoá riêng.
+    assert data["engine"]["voice_studio"] == "4.5.6"
+    assert data["engine"]["voice_studio_version"] == "1.2.3"
     assert data["engine"]["hyperframes"] == "0.7.94"
     assert data["outputs"][0]["duration"] == 12.5
     assert "total" in data["timings"]
@@ -251,3 +253,4 @@ def test_mix_bgm_delegates_to_the_voice_repo(monkeypatch, tmp_path):
 def test_version_and_available_never_raise(monkeypatch):
     monkeypatch.setitem(__import__("sys").modules, "voice_studio", None)
     assert voice.available() is False and voice.version() is None
+    assert voice.api_version() is None

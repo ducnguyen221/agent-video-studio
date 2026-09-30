@@ -224,3 +224,19 @@ def test_engine_block_reports_the_pinned_version(npx, monkeypatch):
     info = render.engine_versions()
     assert info["hyperframes"] == "0.8.51"
     assert info["video_studio"] and info["contract"]
+
+
+def test_engine_block_voice_key_means_the_voice_contract(monkeypatch):
+    """P2-17: `engine.voice_studio` mang CÙNG nghĩa ở render và ở `voice-studio speak/narrate`
+    (API_VERSION của repo giọng); bản phát hành gói giọng đi khoá riêng `voice_studio_version`."""
+    from conftest import fake_voice_studio
+    fake_voice_studio(monkeypatch, version="0.3.0", api_version="1.0.0")
+    info = render.engine_versions()
+    assert info["voice_studio"] == "1.0.0"
+    assert info["voice_studio_version"] == "0.3.0"
+
+
+def test_engine_block_without_voice_repo(monkeypatch):
+    monkeypatch.setitem(__import__("sys").modules, "voice_studio", None)
+    info = render.engine_versions()
+    assert info["voice_studio"] is None and info["voice_studio_version"] is None

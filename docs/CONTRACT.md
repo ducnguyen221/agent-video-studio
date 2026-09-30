@@ -43,9 +43,24 @@ Thành công:
  "outputs": [{"kind": "long",  "path": "…/2026-01-02-top.mp4",       "duration": 372.4},
              {"kind": "short", "path": "…/2026-01-02-top-short.mp4", "duration": 78.1}],
  "timings": {"total": 812.5},
- "engine": {"hyperframes": "0.8.54", "voice_studio": "0.3.0", "video_studio": "0.2.1",
-            "contract": "1.0.0"}}
+ "engine": {"hyperframes": "0.8.54", "voice_studio": "1.0.0", "voice_studio_version": "0.3.0",
+            "video_studio": "0.2.2", "contract": "1.0.0"}}
 ```
+
+Nghĩa từng khoá của `engine` (giống nhau ở `render` và `narrate`):
+
+| Khoá | Nghĩa | Ví dụ |
+|---|---|---|
+| `hyperframes` | bản HyperFrames đã ghim (biến → `station.json`) | `0.8.54` |
+| `voice_studio` | bản **hợp đồng** của repo giọng (`voice_studio.API_VERSION`) — cùng nghĩa với khoá này trong JSON của `voice-studio speak`/`narrate` | `1.0.0` |
+| `voice_studio_version` | bản **phát hành** của gói giọng (`voice_studio.__version__`) | `0.3.0` |
+| `video_studio` | bản **phát hành** của repo này | `0.2.2` |
+| `contract` | bản **hợp đồng** của repo này (`API_VERSION`) | `1.0.0` |
+
+Chưa cài repo giọng thì hai khoá `voice_studio*` là `null`. Bên gọi muốn ghim tối thiểu thì so
+**số đầu** của khoá hợp đồng (`voice_studio`, `contract`), không so bản phát hành. Trước 0.2.2,
+`render` trả bản phát hành dưới khoá `voice_studio` trong khi `narrate` (và repo giọng) trả bản
+hợp đồng — cùng khoá hai nghĩa; nay thống nhất theo nghĩa của repo giọng.
 
 Hỏng:
 

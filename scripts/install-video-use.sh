@@ -21,8 +21,6 @@ while [ $# -gt 0 ]; do
   esac
 done
 
-[ -n "$STATION" ] || STATION="${VIDEO_STATION:-${VIDEO_ROOT:-$HOME/.video}}"
-DEST="$STATION/video-use"
 
 for tool in git ffmpeg; do
   command -v "$tool" >/dev/null 2>&1 || { echo "Missing '$tool' on PATH - install it first." >&2; exit 3; }
@@ -38,6 +36,19 @@ for cand in "${VIDEO_STUDIO_PY:-}" python3 python; do
   fi
 done
 [ -n "$PY" ] || { echo "No usable Python 3.10+ found (set VIDEO_STUDIO_PY)." >&2; exit 3; }
+
+# The station is resolved by the package itself (VIDEO_STATION -> VIDEO_ROOT ->
+# studio.local.json -> <repo>/workspace), never guessed as a folder under $HOME: an embedded
+# install keeps its station inside the repo. The core is stdlib-only, so any Python 3.10+ can
+# import it straight from this clone.
+REPO_ROOT=$(cd "$(dirname "$0")/.." && pwd)
+CODE='import sys; sys.path.insert(0, sys.argv[1]); from video_studio import _env; st = sys.argv[2] if len(sys.argv) > 2 else _env.resolve_station()[0]; print(st or str()); print(_env.init_command(st) if st else str())'
+if [ -n "$STATION" ]; then RESOLVED=$("$PY" -c "$CODE" "$REPO_ROOT" "$STATION")
+else RESOLVED=$("$PY" -c "$CODE" "$REPO_ROOT"); fi
+STATION=$(echo "$RESOLVED" | sed -n 1p)
+INIT_CMD=$(echo "$RESOLVED" | sed -n 2p)
+[ -n "$STATION" ] || { echo "No video station chosen yet - run 'video-studio init' first, or pass --station DIR." >&2; exit 3; }
+DEST="$STATION/video-use"
 
 if [ -d "$DEST/.git" ]; then
   echo "[git] fast-forward $DEST"
@@ -57,5 +68,5 @@ echo "[pip] installing video-use and local ASR dependencies"
 
 echo
 echo "video-use installed at $DEST"
-echo "Next: video-studio init --station \"$STATION\"   # records it in station.json"
+echo "Next: ${INIT_CMD:-video-studio init}   # records it in station.json"
 echo "      video-studio edit --footage <dir> --out <dir> --backend vendored"

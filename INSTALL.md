@@ -121,17 +121,21 @@ chính thức (git-scm.com, python.org, nodejs.org, ffmpeg.org) để người d
 
 ## 4. Clone về thư mục an toàn
 
-Mặc định: thư mục `agent-video-studio` ngay trong thư mục người dùng (Windows và macOS như nhau).
+Chọn một **thư mục cha** cho các repo studio (gọi là `<thư mục cha>`). Mặc định là chính thư mục
+người dùng; người dùng đã có chỗ riêng cho code (tên gì cũng được) thì dùng chỗ đó. Repo giọng ở
+mục 5b cũng clone vào **cùng thư mục cha** này. Không lệnh nào của repo đoán tên thư mục cha.
 
 ```powershell
-git clone https://github.com/ducnguyen221/agent-video-studio "$env:USERPROFILE\agent-video-studio"
-cd "$env:USERPROFILE\agent-video-studio"
+$Parent = $HOME          # hoặc thư mục cha người dùng chọn
+git clone https://github.com/ducnguyen221/agent-video-studio (Join-Path $Parent 'agent-video-studio')
+cd (Join-Path $Parent 'agent-video-studio')
 git remote -v
 ```
 
 ```sh
-git clone https://github.com/ducnguyen221/agent-video-studio ~/agent-video-studio
-cd ~/agent-video-studio
+PARENT="$HOME"           # hoặc thư mục cha người dùng chọn
+git clone https://github.com/ducnguyen221/agent-video-studio "$PARENT/agent-video-studio"
+cd "$PARENT/agent-video-studio"
 git remote -v
 ```
 
@@ -168,9 +172,11 @@ Mọi template bản tin đều đọc lời dẫn, nên bài mẫu ở mục 8 
 weights giọng (~4 GB, giấy phép **CC-BY-NC**, không thương mại). Nói rõ cỡ và giấy phép, chờ người
 dùng đồng ý; không cần thì bỏ qua — `doctor` chỉ báo `WARN` ở dòng `voice-studio`.
 
-Đường **duy nhất** repo này hướng dẫn: clone repo giọng **cạnh** repo này rồi cài engine giọng
-**vào chính `.venv` của repo video** (lồng tiếng chạy trong cùng tiến trình, hai venv khác nhau là
-hỏng giữa lượt render). Chạy từ gốc repo video:
+Đường **duy nhất** repo này hướng dẫn: clone repo giọng làm **anh em** của repo này — cùng thư
+mục cha đã chọn ở mục 4, tên thư mục cha là gì cũng được (`..` dưới đây chính là nó) — rồi cài
+engine giọng **vào chính `.venv` của repo video** bằng `pip install -e "<repo giọng>[engine]"`
+(lồng tiếng chạy trong cùng tiến trình, hai venv khác nhau là hỏng giữa lượt render). Chạy từ gốc
+repo video:
 
 ```powershell
 git clone https://github.com/ducnguyen221/agent-voice-studio ..\agent-voice-studio
@@ -188,8 +194,11 @@ git clone https://github.com/ducnguyen221/agent-voice-studio ../agent-voice-stud
 
 - Dòng torch trên Windows là bản cho card **NVIDIA**; máy không có NVIDIA thì thay
   `cu126` bằng `cpu` (chậm). Trên Mac Apple Silicon, `pip install torch` mặc định là đúng (MPS).
-- Phải có **`-e`**: repo giọng tìm trạm của nó (`../agent-voice-studio/workspace/`) qua bản
-  clone; cài bản sao thì nó không biết trạm ở đâu và render dừng mã 3.
+- Phải có **`-e`**: repo giọng tìm trạm của nó (`<repo giọng>/workspace/`) qua bản clone; cài
+  bản sao thì nó không biết trạm ở đâu và render dừng mã 3. Luật này áp cho **mọi** máy dùng
+  giọng trong venv video, kể cả máy chạy lịch.
+- Chưa cài mà bản clone repo giọng đã nằm cạnh repo này, dòng `voice-studio` của `doctor` in sẵn
+  lệnh `pip install -e` với đường thật của máy (nhận repo giọng bằng nội dung, không bằng tên).
 - Dòng `voice-studio` của doctor phải thành `[PASS]`. **Không** tạo thêm venv engine riêng như
   hướng dẫn của repo giọng gợi ý cho người dùng giọng độc lập — với video, engine nằm ở `.venv` này.
 
@@ -224,15 +233,17 @@ video-studio init --station <thư mục trạm ngoài repo>
 - `--yes` (khuyến nghị cho người mới, và là đường chính trên Mac): trạm ở `workspace/` ngay trong
   repo, Git bỏ qua cả thư mục. **Không** đặt biến môi trường nào (`VIDEO_STATION`,
   `VOICE_STATION`…): trạm video là `<repo>/workspace/`, trạm giọng là
-  `../agent-voice-studio/workspace/`, cả hai tự phân giải từ bản clone.
+  `<repo giọng>/workspace/`, cả hai tự phân giải từ bản clone.
 - `--station`: trạm ở thư mục riêng — khi người dùng đã có trạm, dùng nhiều máy, hoặc repo là bản
   public của chính họ. Trạm có sẵn từ bản cũ thì thêm `--migrate --dry-run`, đọc kế hoạch, rồi
   mới chạy thật; kế hoạch đó gồm cả việc gỡ bản skill mà bản cũ đã chép vào trạm.
 
-**Máy đã có trạm video từ trước** (`~/.video` mang dấu trạm): kể cả với `--yes`, `init` tự nhận
-trạm đó (chế độ `separate`) và in lý do — mọi render sau đó ghi vào trạm ấy. Đọc dòng `station`
-của `doctor`; nó không phải `<repo>/workspace/` mà người dùng không chủ ý chọn trạm cũ thì dừng và
-hỏi, đừng render thử vào trạm đang chạy lịch của họ.
+**Máy đã có trạm video từ trước** (`~/.video` mang dấu trạm, chưa đặt biến nào): `init` **không**
+tự nhận trạm đó. Với `--yes` hay khi không có người trả lời, nó in đường trạm cũ cùng hai lựa chọn
+rồi thoát **mã 2**, không ghi gì. Trình cho người dùng rồi chạy lại đúng lựa chọn của họ:
+`--mode separate` (dùng trạm cũ — mọi render sau đó ghi vào đó, kể cả khi nó là trạm của lịch chạy
+thật) hoặc `--station <thư mục>`; muốn trạm mới trong repo thì người dùng tự dời hoặc đổi tên trạm
+cũ trước. Máy đã đặt `VIDEO_STATION` (máy chạy lịch) thì `init` dùng trạm đó như trước, không hỏi.
 
 `init` không chép skill vào trạm: host đọc skill từ repo qua adapter `.claude/skills` /
 `.agents/skills` ở gốc repo, nên mở **thư mục repo** là đủ ([hosts/README.md](hosts/README.md)).
@@ -256,19 +267,37 @@ dòng vào báo cáo.
 | `[FAIL] node` / `npx` / `ffmpeg` / `ffprobe` | Thiếu công cụ render | Mục 3 (hỏi trước khi cài), rồi chạy lại doctor |
 | `[FAIL] station` | Chưa có trạm | Mục 6 |
 | `[FAIL] two-sources` / `gitignore` | Cấu hình sai (mã 2) | Dừng, đọc dòng `→`, hỏi người dùng |
-| `[WARN] chromium` | Chưa có Chromium của HyperFrames | Chạy đúng lệnh `browser ensure` doctor in ra (cần mạng) |
+| `[WARN] chromium` | Chưa có Chromium của HyperFrames | Chạy đúng lệnh doctor in ra, dạng `npx --yes hyperframes@<bản ghim> browser ensure` (cần mạng). `browser ensure` là lệnh của HyperFrames, **không** phải lệnh con của CLI repo này |
 | `[WARN] font` / `voice-studio` / `video-use` | Phần tuỳ chọn chưa có | Không chặn; báo người dùng |
 | `[NOT_CHECKED] render` | Doctor không tự render | **Không phải lỗi.** Chứng minh bằng bài mẫu ở mục 8 |
 | `[NOT_CHECKED] hyperframes-doctor` | Chưa gọi được engine (không mạng / thiếu npx) | Có mạng và Node thì chạy lại doctor |
 
 Mã thoát: `0` dùng được · `2` phải sửa cấu hình · `3` còn thiếu công cụ hoặc trạm.
 
+`<bản ghim>` là bản HyperFrames ở dòng đầu của `doctor` (`HyperFrames x.y.z`), đọc từ biến
+`HYPERFRAMES_VERSION` → `station.json` của trạm (`hyperframes_version`) → mặc định của repo.
+`package.json` trong từng project (`projects/<tên>/package.json`) cũng ghi một bản, nhưng
+`video-studio` **không đọc** file đó — nó chỉ phục vụ lệnh `npm run preview/check/render` gõ tay
+trong project. Hai số lệch nhau thì số trong `station.json` là số render thật dùng.
+
+### 7b. Tắt telemetry của HyperFrames (một lần mỗi máy)
+
+HyperFrames CLI bật gửi thống kê sử dụng về nhà phát triển theo mặc định. Có Node rồi thì chạy
+một lần cho user đang dùng máy (cần mạng nếu `npx` chưa tải bản này):
+
+```text
+npx --yes hyperframes@<bản ghim> telemetry disable
+```
+
+Việc này không đổi gì trong repo hay trạm; báo người dùng đã tắt. Người dùng muốn giữ telemetry
+thì bỏ qua bước này.
+
 ## 8. Xác minh bằng bài mẫu
 
 Chỉ khi đã có Node, ffmpeg, repo giọng cùng venv **và** giọng mặc định (mục 5b). Lần render đầu
 cần mạng: `npx` tải HyperFrames đúng bản ghim, Chromium của nó tải về `~/.cache/hyperframes`
-(hoặc chạy trước lệnh `browser ensure` mà `doctor` in ra), trang HTML nạp thư viện hoạt ảnh từ
-CDN. Chạy từ gốc repo:
+(hoặc chạy trước `npx --yes hyperframes@<bản ghim> browser ensure` — đúng lệnh `doctor` in ra),
+trang HTML nạp thư viện hoạt ảnh từ CDN. Chạy từ gốc repo:
 
 ```text
 video-studio render --project news --input samples/news-mini/spec.json --brand samples/news-mini/brand.json --out out/news-mini --json
@@ -278,10 +307,10 @@ Kết quả phải khớp [samples/news-mini/EXPECTED.md](samples/news-mini/EXPE
 `2026-01-02.mp4` và `2026-01-02-short.mp4` trong `out/news-mini/`. Chưa có repo giọng thì lệnh dừng
 **mã 3** kèm lệnh cài — ghi render là `NOT_CHECKED` trong báo cáo, không coi là lỗi cài.
 
-**Trên Mac, đây là lần render thật đầu tiên trên arm64.** Bản HyperFrames repo đang ghim (0.8.54)
-chưa dựng bài `topstory` thật nào và chưa render gì trên macOS. Hỏng thì chép nguyên văn 15 dòng
-log cuối, đừng tự đổi bản engine; chạy được thì ghi thời gian dựng và thời lượng hai file vào báo
-cáo để điền dòng macOS của EXPECTED.md.
+**Trên Mac:** bài mẫu đã render thật trên arm64 (Mac mini M1, số đo trong EXPECTED.md). Bản
+HyperFrames repo đang ghim (0.8.54) vẫn chưa dựng bài `topstory` thật nào. Hỏng thì chép nguyên
+văn 15 dòng log cuối, đừng tự đổi bản engine; chạy được thì ghi thời gian dựng và thời lượng hai
+file vào báo cáo.
 
 ## 9. Báo cáo cuối cho người dùng
 
@@ -314,6 +343,8 @@ Dùng đúng khung này, lời thường, không rút gọn dòng doctor:
   định ở mục 4, cài lại.
 - **`init` báo mã 2 "hai nguồn sự thật":** máy đã có trạm ngoài (biến `VIDEO_STATION` hoặc trạm cũ)
   mà lại xin trạm trong repo. Hỏi người dùng giữ trạm nào; không tự xoá trạm nào.
+- **`init --yes` báo mã 2 "máy đã có trạm video ở …":** xem đoạn *Máy đã có trạm video từ trước*
+  ở mục 6 — hỏi người dùng, đừng tự thêm `--mode separate`.
 - **Render hỏng giữa chừng (mã 1):** chạy lại một lần; vẫn hỏng thì chép 15 dòng log cuối cho
   người dùng và chạy `video-studio doctor --hf <bản>` như lời khuyên in ra.
 

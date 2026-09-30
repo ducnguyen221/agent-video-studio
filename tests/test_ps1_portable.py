@@ -33,7 +33,15 @@ SCRIPTS = sorted((p for rel, p in repo_files() if rel.lower().endswith(".ps1")),
                  key=lambda p: p.as_posix())
 WRAPPER_DIR = sorted((ROOT / "scripts").glob("*.ps1")) if (ROOT / "scripts").is_dir() else []
 
+#: Đoán trạm ở home (`$HOME/.video`, `Join-Path $HOME '.video'`): máy cài embedded có trạm ở
+#: `<repo>/workspace/`, và script đoán home sẽ cài vào một trạm không ai dùng. Trạm do package
+#: phân giải (biến → studio.local.json → <repo>/workspace). Áp cho cả `.ps1` lẫn `.sh`.
+HOME_STATION_RULE = (
+    r"(?i)\$HOME[\\/]\.(video|voice|tts)\b|Join-Path\s+\$HOME\s+['\"]\.(video|voice|tts)\b",
+    "đoán trạm ở home — trạm do package phân giải (biến → studio.local.json → <repo>/workspace)")
+
 RULES = (
+    HOME_STATION_RULE,
     (r"\$env:USERPROFILE", "dùng $HOME (hoặc để CLI tự phân giải), không $env:USERPROFILE"),
     # `[A-Za-z]:\\?[A-Za-z]` cũ chỉ thấy dấu ngăn NGƯỢC, nên `C:/Users/x` — hợp lệ với
     # PowerShell y hệt — lọt. Nay nhận cả hai dấu ngăn; lookbehind loại `https://` (chữ `s:`
@@ -130,6 +138,7 @@ def test_wrapper_fatal_paths_pick_a_contract_exit_code(path):
 @pytest.mark.parametrize("path", SH, ids=lambda p: p.name)
 def test_shell_installer_is_posix_and_strict(path):
     text = path.read_text(encoding="utf-8")
+    assert not re.search(HOME_STATION_RULE[0], text), f"{path.name}: {HOME_STATION_RULE[1]}"
     assert text.startswith("#!/usr/bin/env sh"), "vỏ POSIX: đừng đòi bash trên máy không có"
     assert "set -eu" in text, "thiếu set -eu: một bước hỏng mà script vẫn chạy tiếp"
     assert "\r" not in text, "CRLF trong .sh làm `sh` báo lỗi khó hiểu trên macOS/Linux"
@@ -151,6 +160,9 @@ def test_shell_installer_is_posix_and_strict(path):
     ("# xem trước một project", True),           # còn dấu -> đỏ
     ("$argv = @('preview'); & $exe @argv", False),
     ("$c = Get-Command 'python'; & $c.Source -c 'import sys'", False),
+    ("if (-not $Station) { $Station = Join-Path $HOME '.video' }", True),
+    ('STATION="${VIDEO_STATION:-$HOME/.video}"', True),
+    ("# never guessed as a folder under $HOME", False),
 ])
 def test_rules_catch_their_target(snippet, caught):
     assert bool(problems(snippet)) is caught, snippet

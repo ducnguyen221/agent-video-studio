@@ -64,15 +64,91 @@ def test_an_existing_outside_station_wins_and_is_never_asked_about(repo, tmp_pat
     assert "VIDEO_STATION" in why
 
 
-def test_a_legacy_home_station_is_recognised(repo, tmp_path, monkeypatch):
-    """Trạm đời cũ chưa có station.json vẫn phải được nhận ra (mâu thuẫn M8 của kế hoạch)."""
+def _home_station(tmp_path, monkeypatch, legacy=True):
     home = tmp_path / "home"
-    (home / ".video" / "demo").mkdir(parents=True)
-    (home / ".video" / "demo" / "hyperframes.json").write_text("{}", encoding="utf-8")
+    if legacy:
+        (home / ".video" / "demo").mkdir(parents=True)
+        (home / ".video" / "demo" / "hyperframes.json").write_text("{}", encoding="utf-8")
+    else:
+        (home / ".video" / "projects").mkdir(parents=True)
     monkeypatch.setenv("USERPROFILE", str(home))
     monkeypatch.setenv("HOME", str(home))
-    mode, st, why = station.choose_mode(ask=lambda p: pytest.fail("không được hỏi"))
-    assert mode == "separate" and st == str(home / ".video") and "trạm" in why
+    return home / ".video"
+
+
+def test_a_legacy_home_station_is_recognised_and_asked_about(repo, tmp_path, monkeypatch):
+    """Trạm đời cũ chưa có station.json vẫn phải được nhận ra (M8) — nhưng nhận ra là để HỎI,
+    không phải để tự dùng: trả lời [1] mới thành separate."""
+    home_st = _home_station(tmp_path, monkeypatch)
+    asked = []
+    mode, st, why = station.choose_mode(ask=lambda p: asked.append(p) or "1")
+    assert mode == "separate" and st == str(home_st) and "trạm có sẵn" in why
+    assert asked and str(home_st) in asked[0] and "[2]" in asked[0]
+
+
+@pytest.mark.parametrize("answer", ["", "2", "khong"])
+def test_home_station_not_confirmed_stops_without_writing(answer, repo, tmp_path, monkeypatch):
+    _home_station(tmp_path, monkeypatch)
+    with pytest.raises(ContractError) as e:
+        station.choose_mode(ask=lambda p: answer)
+    assert "--mode separate" in str(e.value)
+    assert not (repo / "workspace").exists()
+
+
+@pytest.mark.parametrize("argv,tty", [
+    (["--yes"], True), (["--yes"], False), (["--non-interactive", "--yes"], False),
+    ([], False), (["--non-interactive"], True)])
+def test_yes_never_silently_adopts_a_home_station(argv, tty, repo, tmp_path, monkeypatch, capsys):
+    """Sự cố lượt Mac 29/09: `init --yes` nhận âm thầm `~/.video` có sẵn. `--yes` = embedded;
+    gặp trạm ở home thì mã 2, in bảng, không ghi byte nào — kể cả vào trạm có sẵn đó."""
+    home_st = _home_station(tmp_path, monkeypatch, legacy=False)
+    before = sorted(p.name for p in home_st.rglob("*"))
+    monkeypatch.setattr(station, "_stdin_is_tty", lambda: tty)
+    assert station.init_main(argv) == 2
+    err = capsys.readouterr().err
+    assert str(home_st) in err and "--mode separate" in err
+    assert not (repo / "workspace").exists()
+    assert not (repo / "studio.local.json").exists()
+    assert sorted(p.name for p in home_st.rglob("*")) == before
+
+
+@pytest.mark.parametrize("argv,reason", [(["--mode", "separate"], "--mode separate"),
+                                         (["--migrate", "--dry-run"], "--migrate")])
+def test_explicit_flag_adopts_the_home_station(argv, reason, repo, tmp_path, monkeypatch, capsys):
+    home_st = _home_station(tmp_path, monkeypatch)
+    monkeypatch.setattr(station, "_stdin_is_tty", lambda: False)
+    assert station.init_main(argv + ["--non-interactive", "--json"]) == 0
+    res = json.loads(capsys.readouterr().out.strip().splitlines()[-1])
+    assert res["mode"] == "separate" and res["station"] == str(home_st)
+    assert reason in res["reason"]
+
+
+def test_embedded_on_a_machine_with_a_home_station_is_refused(repo, tmp_path, monkeypatch):
+    _home_station(tmp_path, monkeypatch)
+    with pytest.raises(ContractError) as e:
+        station.choose_mode(mode="embedded")
+    assert "hai nguồn sự thật" in str(e.value)
+
+
+def test_previous_separate_choice_beats_a_home_station(repo, tmp_path, monkeypatch):
+    """studio.local.json đã ghi separate + đường riêng ⇒ dùng đường đó, không hỏi, không lấy
+    `~/.video` thay (bản cũ để trạm ở home thắng cả lựa chọn đã ghi)."""
+    _home_station(tmp_path, monkeypatch)
+    mine = tmp_path / "tram-cua-toi"
+    (repo / "studio.local.json").write_text(
+        json.dumps({"mode": "separate", "station_path": str(mine)}), encoding="utf-8")
+    mode, st, why = station.choose_mode(yes=True, ask=lambda p: pytest.fail("không được hỏi"))
+    assert (mode, st) == ("separate", str(mine)) and "studio.local.json" in why
+
+
+def test_env_station_is_unchanged_by_the_home_station_rule(repo, tmp_path, monkeypatch):
+    """Máy chạy lịch (Windows) đặt VIDEO_STATION: `--yes` vẫn dùng trạm đó, không hỏi."""
+    _home_station(tmp_path, monkeypatch)
+    outside = tmp_path / "tram-lich"
+    (outside / "projects").mkdir(parents=True)
+    monkeypatch.setenv("VIDEO_STATION", str(outside))
+    mode, st, why = station.choose_mode(yes=True, ask=lambda p: pytest.fail("không được hỏi"))
+    assert (mode, st) == ("separate", str(outside)) and "VIDEO_STATION" in why
 
 
 def test_asking_for_embedded_on_a_machine_with_an_outside_station_is_refused(

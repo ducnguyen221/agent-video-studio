@@ -16,9 +16,11 @@ chứa mã và skill. Skill KHÔNG được chép vào trạm: host đọc chún
     separate   trạm ngoài repo (mặc định ~/.video) — cho người dùng nhiều máy, repo public của
                chính mình, nhiều repo chia sẻ trạm.
 
-`--station DIR` = separate, không hỏi. Máy đã có trạm ngoài (VIDEO_STATION / VIDEO_ROOT đã đặt,
-hoặc ~/.video đã có station.json, projects/, hay seed demo/ đời cũ) ⇒ tự chọn separate, KHÔNG
-hỏi, KHÔNG BAO GIỜ tạo workspace/.
+`--station DIR` = separate, không hỏi. Máy đã CHỌN trạm ngoài (VIDEO_STATION / VIDEO_ROOT đã
+đặt, hoặc studio.local.json ghi separate) ⇒ dùng trạm đó, KHÔNG hỏi, KHÔNG BAO GIỜ tạo
+workspace/. `~/.video` chỉ tình cờ mang dấu trạm (station.json, projects/, hay seed demo/ đời
+cũ) ⇒ KHÔNG tự nhận: hỏi người dùng; `--yes` hay không có người thì dừng mã 2 — nhận nó phải
+bằng `--mode separate`, `--station DIR` hoặc `--migrate`.
 
 Kỷ luật thi hành:
 - Lập KẾ HOẠCH trọn vẹn và kiểm xung đột TRƯỚC khi ghi byte nào; xung đột ⇒ mã 2, không đụng gì.
@@ -146,15 +148,66 @@ def _pin_text(text, version):
 # ── chọn chế độ ────────────────────────────────────────────────────────────────────────
 
 def detect_external():
-    """Máy đã có trạm video ngoài? -> (đường trạm, lý do) hoặc None. Không ghi gì."""
+    """Máy đã có trạm video ngoài? -> (đường trạm, lý do, đã_chọn) hoặc None. Không ghi gì.
+
+    `đã_chọn` = True khi trạm được CHỌN tường minh (biến VIDEO_STATION / VIDEO_ROOT — máy chạy
+    lịch đặt biến là đã chọn). False khi chỉ là `~/.video` tình cờ mang dấu trạm: đó là một
+    PHÁT HIỆN, không phải một lựa chọn, và `init` không được tự nhận nó (xem `choose_mode`).
+    """
     if _env.env("VIDEO_STATION"):
-        return _env._expand(_env.env("VIDEO_STATION")), "biến VIDEO_STATION đã đặt"
+        return _env._expand(_env.env("VIDEO_STATION")), "biến VIDEO_STATION đã đặt", True
     if _env.env("VIDEO_ROOT"):
-        return _env._expand(_env.env("VIDEO_ROOT")), "biến VIDEO_ROOT (tên cũ) đã đặt"
+        return _env._expand(_env.env("VIDEO_ROOT")), "biến VIDEO_ROOT (tên cũ) đã đặt", True
     home = _env.default_station()
     if _env.has_marker(home):
-        return home, "~/.video đã là một trạm (station.json, projects/ hoặc seed demo/ đời cũ)"
+        return home, "~/.video đã là một trạm (station.json, projects/ hoặc seed demo/ đời cũ)", False
     return None
+
+
+ADOPT_TABLE = """\
+Máy này ĐÃ CÓ một trạm video: {path}
+({why}). Chưa ai chọn dùng trạm đó cho bản clone này.
+
+  [1] dùng trạm có sẵn đó (separate) — project cũ còn nguyên; mọi render sau này ghi vào đó,
+      kể cả khi nó đang là trạm của lịch chạy thật.
+  [2] dừng lại — muốn trạm mới trong repo (embedded, <repo>/workspace/) thì dời hoặc đổi tên
+      trạm cũ trước; giữ cả hai là hai nguồn sự thật cho một repo.
+
+Không trả lời gì = [2]. Chạy không có người: `--mode separate` (hoặc `--station DIR`) là [1].
+"""
+
+
+def _ask_adopt_console(prompt):
+    contract.log(prompt)
+    sys.stderr.write("Chọn [1/2] (Enter = 2, dừng): ")
+    sys.stderr.flush()
+    return input()
+
+
+def _adopt_or_stop(ext, yes, ask, non_interactive):
+    """`~/.video` mang dấu trạm nhưng chưa ai chọn nó ⇒ HỎI người dùng; không có người thì dừng.
+
+    Lượt cài trên Mac (29/09): `init --yes` nhận âm thầm một `~/.video` có sẵn, và mọi render
+    thử sau đó ghi vào trạm đó. `--yes` nghĩa là "nhận khuyến nghị = embedded", không phải
+    "nhận bất cứ trạm nào tình cờ nằm ở home".
+    """
+    path, why = ext[0], ext[1]
+    table = ADOPT_TABLE.format(path=path, why=why)
+    stop = ("máy đã có trạm video ở {p} ({w}) mà chưa ai chọn dùng nó; {lead}KHÔNG tự nhận. "
+            "Agent: hỏi người dùng, rồi chạy lại với --mode separate (dùng trạm có sẵn) hoặc "
+            "--station DIR; muốn trạm trong repo (embedded) thì dời/đổi tên trạm cũ trước.")
+    if yes or non_interactive or (ask is None and not _stdin_is_tty()):
+        contract.log(table)
+        lead = "--yes nghĩa là embedded (<repo>/workspace/) nên " if yes else ""
+        raise ContractError(stop.format(p=path, w=why, lead=lead))
+    ask = ask or _ask_adopt_console
+    try:
+        ans = (ask(table) or "").strip().lower()
+    except EOFError:
+        raise ContractError(stop.format(p=path, w=why, lead="không đọc được lựa chọn, "))
+    if ans in ("1", "separate"):
+        return "separate", path, f"người dùng chọn dùng trạm có sẵn — {why}"
+    raise ContractError(stop.format(p=path, w=why, lead="đã dừng theo lựa chọn, "))
 
 
 def _stdin_is_tty():
@@ -171,28 +224,43 @@ def _ask_console(prompt):
     return input()
 
 
-def choose_mode(station=None, mode=None, yes=False, ask=None, non_interactive=False):
+def choose_mode(station=None, mode=None, yes=False, ask=None, non_interactive=False,
+                migrate=False):
     """-> (chế độ, gốc trạm, lý do). Ném ContractError khi cần người chọn mà không hỏi được.
 
     `non_interactive` = người gọi TỰ KHAI "không có ai ngồi đây". Nó KHÔNG có nghĩa là "cứ
     đoán hộ tôi": thiếu `--yes`/`--mode`/`--station` thì vẫn là mã 2. Đoán ở đây là dựng
     trạm sai chỗ, và người dùng chỉ phát hiện ra sau khi đã dựng vài project.
+
+    Trạm ngoài có hai loại: ĐÃ CHỌN (biến VIDEO_STATION/VIDEO_ROOT, hoặc studio.local.json ghi
+    `separate`) thì dùng luôn, không hỏi — máy chạy lịch không đổi hành vi. CHỈ PHÁT HIỆN
+    (`~/.video` mang dấu trạm) thì chỉ nhận khi người dùng nói rõ: `--mode separate`,
+    `--migrate`, hoặc trả lời [1] ở câu hỏi; `--yes` và chạy không người ⇒ mã 2.
     """
     repo = _env.repo_root()
     if station:
         return "separate", _env._expand(station), "--station"
     ext = detect_external()
-    if ext:
+    if ext and ext[2]:
         if mode == "embedded":
             raise ContractError(
                 f"máy đã có trạm video ngoài ({ext[1]}: {ext[0]}); tạo thêm workspace/ sẽ thành "
                 "hai nguồn sự thật. Dùng trạm đó (bỏ --mode) hoặc gỡ biến/trạm cũ trước.")
         return "separate", ext[0], f"nhận diện trạm có sẵn — {ext[1]}"
+    local = _env.local_config(repo) if repo else {}
+    prev = local.get("mode")
+    if not mode and prev == "separate" and local.get("station_path"):
+        return "separate", _env.resolve_station()[0], "studio.local.json (lần chọn trước)"
+    if ext:
+        if mode == "separate" or migrate:
+            flag = "--mode separate" if mode == "separate" else "--migrate"
+            return "separate", ext[0], f"{flag} — nhận trạm có sẵn: {ext[1]}"
+        if mode == "embedded":
+            raise ContractError(
+                f"máy đã có trạm video ngoài ({ext[1]}: {ext[0]}); tạo thêm workspace/ sẽ thành "
+                "hai nguồn sự thật. Dùng trạm đó (--mode separate) hoặc dời/đổi tên trạm cũ trước.")
+        return _adopt_or_stop(ext, yes, ask, non_interactive)
     if not mode:
-        local = _env.local_config(repo) if repo else {}
-        prev = local.get("mode")
-        if prev == "separate" and local.get("station_path"):
-            return "separate", _env.resolve_station()[0], "studio.local.json (lần chọn trước)"
         if prev in MODES:
             mode, why = prev, "studio.local.json (lần chọn trước)"
         elif yes:
@@ -707,7 +775,7 @@ def install_hook(repo):
 def do_init(station=None, mode=None, yes=False, migrate=False, dry_run=False, ask=None,
             non_interactive=False):
     mode, st, why = choose_mode(station=station, mode=mode, yes=yes, ask=ask,
-                                non_interactive=non_interactive)
+                                non_interactive=non_interactive, migrate=migrate)
     if migrate and mode != "separate":
         raise ContractError("--migrate chỉ dùng để nhận một trạm ngoài đã có (separate): "
                             "truyền --station DIR")

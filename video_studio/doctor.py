@@ -286,9 +286,17 @@ def embedded_guard_checks():
 
 def voice_check():
     ok = importlib.util.find_spec("voice_studio") is not None
+    hint = ("tuỳ chọn — chỉ cần cho lồng tiếng: `pip install -e \"<repo agent-voice-studio>[engine]\"` "
+            "vào CÙNG venv (INSTALL.md mục 5b)")
+    if not ok:
+        # Bản clone repo giọng nằm cạnh repo này (nhận bằng nội dung, thư mục cha tên gì cũng
+        # được) ⇒ in đúng đường của máy này thay cho chỗ trống.
+        sib = _env.sibling_repo("voice_studio")
+        if sib:
+            hint = (f"tuỳ chọn — thấy repo giọng cạnh repo này: `python -m pip install -e "
+                    f"\"{sib}[engine]\"` bằng python của CÙNG venv (INSTALL.md mục 5b)")
     return _check("voice-studio", ok, "voice_studio importable" if ok else "chưa cài", level="warn",
-                  hint="tuỳ chọn — chỉ cần cho lồng tiếng: `pip install -e <repo agent-voice-studio>` "
-                       "vào CÙNG venv")
+                  hint=hint)
 
 
 UPSTREAM_FILE = "upstream.json"
