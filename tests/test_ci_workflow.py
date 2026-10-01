@@ -117,3 +117,15 @@ def test_checkout_does_not_persist_credentials(wf):
         for step in job.get("steps", []):
             if step.get("uses", "").startswith("actions/checkout@"):
                 assert (step.get("with") or {}).get("persist-credentials") is False, name
+
+
+def test_ffmpeg_job_installs_what_INSTALL_says_and_requires_it(wf):
+    """Mac mini 01/10/2026: `brew install ffmpeg` (core) thiếu drawtext/libass. Job này cài
+    đúng bản INSTALL dạy trên hai OS và đòi smoke chạy thật (skip = đỏ)."""
+    job = wf["jobs"]["ffmpeg"]
+    assert set(job["strategy"]["matrix"]["os"]) == {"windows-latest", "macos-latest"}
+    runs = "\n".join(s.get("run", "") for s in job["steps"])
+    assert "brew install ffmpeg-full" in runs and "choco install ffmpeg-full" in runs
+    assert "GITHUB_PATH" not in runs, "keg ffmpeg-full phải được mã tự dò, không nhờ PATH"
+    smoke = [s for s in job["steps"] if "test_ffmpeg_filters.py" in s.get("run", "")]
+    assert smoke and str(smoke[0]["env"]["VIDEO_STUDIO_REQUIRE_FFMPEG"]) == "1"

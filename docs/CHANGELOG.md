@@ -5,6 +5,30 @@ chính nhưng chưa có tag; khi phát hành, mục đó đổi tên thành số
 `pyproject.toml`, `video_studio/__init__.py` cùng ba manifest plugin (`tests/test_version_sync.py`
 kiểm).
 
+## 0.2.4 — 2026-10-01
+
+ffmpeg phải **đủ bộ lọc chữ**, không chỉ có lệnh. Trên Mac mini (01/10/2026), `brew install
+ffmpeg` theo INSTALL cũ cho bản Homebrew core đã bỏ libfreetype + libass ⇒ không có `drawtext`,
+`subtitles`, `ass`; `doctor` vẫn PASS, `edit` đốt phụ đề hỏng, và runner truyện của
+marketing-studio (dùng chung ffmpeg) chết ở bước dựng video sau 7 giờ đọc. Render bản tin
+(HyperFrames) không đổi.
+
+- **INSTALL**: macOS cài `ffmpeg-full` thay `ffmpeg` (INSTALL.md bảng công cụ + lệnh `brew`,
+  docs/INSTALL.md, GUIDE, START-HERE); giải thích keg-only. Bảng ghi rõ "bản có libfreetype +
+  libass".
+- **Dò ffmpeg**: `FFMPEG_DIR` → (macOS) keg `/opt/homebrew/opt/ffmpeg-full/bin` → `PATH`. Keg thắng
+  bản core trên `PATH`, không cần symlink hay sửa `PATH`.
+- **`doctor`**: dòng mới `ffmpeg-filters` đọc `ffmpeg -hide_banner -filters`, đòi `drawtext`,
+  `subtitles`, `ass`. Thiếu là **WARN** (render bản tin không cần) kèm lệnh cài; mã thoát không
+  đổi.
+- **`edit`**: cần đốt phụ đề mà ffmpeg không có `subtitles` ⇒ **mã 3 ngay**, trước khi cắt/ghép
+  đoạn nào (`edit/render.py: require_filters`); `--no-subtitles` vẫn chạy.
+- **CI job `ffmpeg`** (Windows + macOS): cài đúng bản INSTALL dạy (keg KHÔNG thêm vào `PATH`), rồi
+  kiểm bộ lọc + đốt phụ đề thật; `VIDEO_STUDIO_REQUIRE_FFMPEG=1` biến skip thành đỏ.
+- **Nâng cấp máy Mac đang chạy**: `brew install ffmpeg-full`; gỡ symlink tạm
+  `~/.local/bin/ffmpeg`/`ffprobe` nếu đã tạo; `video-studio doctor` phải có
+  `[PASS] ffmpeg-filters`.
+
 ## 0.2.3 — 2026-09-30
 
 Bản dọn theo báo cáo review repo 30/09, chỉ các mục rủi ro không/thấp. **Hành vi render, init và

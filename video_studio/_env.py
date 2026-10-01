@@ -50,6 +50,8 @@ import json
 import os
 import re
 import shutil
+import subprocess
+import sys
 import warnings
 
 from .contract import ContractError, StationMissing
@@ -354,12 +356,52 @@ def npm_exe():
     return _tool("npm", "NODE_DIR")
 
 
+# `brew install ffmpeg-full` là keg-only: KHÔNG link vào /opt/homebrew/bin. Bản `ffmpeg` core ở
+# đó (nếu có) không còn libfreetype/libass ⇒ không có `drawtext`/`subtitles`/`ass` (đo trên Mac
+# mini 01/10/2026). Keg phải thắng PATH, nếu không máy có cả hai bản sẽ dùng bản thiếu bộ lọc.
+_KEG_FFMPEG_FULL = ("/opt/homebrew/opt/ffmpeg-full/bin", "/usr/local/opt/ffmpeg-full/bin")
+# Bộ lọc chữ: `subtitles` (đốt phụ đề — `edit`), `drawtext`/`ass` (chữ/phụ đề ASS — runner
+# truyện của marketing-studio dùng chung ffmpeg này).
+TEXT_FILTERS = ("drawtext", "subtitles", "ass")
+_FILTER_LINE = re.compile(r"^\s*[A-Z.|]{2,4}\s+([A-Za-z0-9_]+)\s+\S+->\S+", re.M)
+
+
+def _ff_tool(name):
+    """FFMPEG_DIR → (macOS) keg `ffmpeg-full` → PATH."""
+    d = env("FFMPEG_DIR")
+    if d:
+        found = shutil.which(name, path=_expand(d))
+        if found:
+            return found
+    if sys.platform == "darwin":
+        for k in _KEG_FFMPEG_FULL:
+            found = shutil.which(name, path=k)
+            if found:
+                return found
+    return shutil.which(name)
+
+
 def ffmpeg_exe():
-    return _tool("ffmpeg", "FFMPEG_DIR")
+    return _ff_tool("ffmpeg")
 
 
 def ffprobe_exe():
-    return _tool("ffprobe", "FFMPEG_DIR")
+    return _ff_tool("ffprobe")
+
+
+def ffmpeg_filters(exe=None):
+    """Tên bộ lọc của ffmpeg (`-hide_banner -filters`). None = không có/không chạy được."""
+    exe = exe or ffmpeg_exe()
+    if not exe:
+        return None
+    try:
+        r = subprocess.run([exe, "-hide_banner", "-filters"], capture_output=True, text=True,
+                           encoding="utf-8", errors="replace", stdin=subprocess.DEVNULL,
+                           timeout=60)
+    except (OSError, subprocess.SubprocessError):
+        return None
+    names = set(_FILTER_LINE.findall(r.stdout or ""))
+    return names if (r.returncode == 0 and names) else None
 
 
 def chrome_bin():

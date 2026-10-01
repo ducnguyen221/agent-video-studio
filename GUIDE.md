@@ -8,7 +8,7 @@
 |---|---|---|
 | Python ≥ 3.10 | python.org or `winget install Python.Python.3.12` | `brew install python@3.12` |
 | Node ≥ 22 | `winget install OpenJS.NodeJS.LTS` | `brew install node` |
-| ffmpeg + ffprobe | `winget install Gyan.FFmpeg` | `brew install ffmpeg` |
+| ffmpeg + ffprobe (built with libfreetype + libass) | `winget install Gyan.FFmpeg` | `brew install ffmpeg-full` (keg-only, found automatically — the core `ffmpeg` formula lacks `drawtext`/`subtitles`) |
 | Inter font | download from rsms.me/inter and install | `brew install --cask font-inter` |
 
 If a tool is not on PATH, set `NODE_DIR` / `FFMPEG_DIR` to the folder that holds it.

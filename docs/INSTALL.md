@@ -14,7 +14,7 @@ thì `video-studio doctor` phải xanh.
 | Thứ | Vì sao | Windows | macOS |
 |---|---|---|---|
 | **Node ≥ 22** | HyperFrames chạy trên Node; mọi bản đang dùng đều khai `engines.node >= 22` | `winget install OpenJS.NodeJS.LTS` | `brew install node` |
-| **ffmpeg + ffprobe** | ghép tiếng, chuẩn âm lượng, cắt đoạn — thiếu `ffprobe` là hỏng ở giữa chừng chứ không hỏng lúc bắt đầu | `winget install Gyan.FFmpeg` | `brew install ffmpeg` |
+| **ffmpeg + ffprobe** bản **có libfreetype + libass** | ghép tiếng, chuẩn âm lượng, cắt đoạn, đốt phụ đề (`subtitles`), chữ (`drawtext`) — thiếu `ffprobe` là hỏng ở giữa chừng chứ không hỏng lúc bắt đầu | `winget install Gyan.FFmpeg` | `brew install ffmpeg-full` — keg-only, `video-studio` tự dò `/opt/homebrew/opt/ffmpeg-full/bin`; `brew install ffmpeg` (core) **thiếu** `drawtext`/`subtitles`, `doctor` báo `[WARN] ffmpeg-filters` |
 | **Python ≥ 3.10** | chính package này | `winget install Python.Python.3.12` | `brew install python@3.12` — rồi gọi đích danh `python3.12` |
 | **Font Inter** | stack chữ mặc định của template | tải từ rsms.me/inter → Install | `brew install --cask font-inter` |
 

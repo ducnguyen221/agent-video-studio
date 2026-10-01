@@ -8,7 +8,7 @@
 
 Kiểm: python · node ≥ 22 · npx · `npx hyperframes@<bản> doctor` · telemetry (chỉ in lệnh tắt,
 NOT_CHECKED) · Chromium của HyperFrames
-(`~/.cache/hyperframes`) · ffmpeg + ffprobe · font Inter · trạm (`VIDEO_STATION`, tên cũ
+(`~/.cache/hyperframes`) · ffmpeg + ffprobe + bộ lọc chữ (`drawtext`/`subtitles`/`ass`) · font Inter · trạm (`VIDEO_STATION`, tên cũ
 `VIDEO_ROOT` bị nhắc đổi) · `station.json` · hai nguồn sự thật (F17) · repo giọng (tuỳ chọn,
 cho narrate) · video-use (tuỳ chọn, cho edit).
 
@@ -53,8 +53,10 @@ KNOWN_CHROMIUM = {"0.7.94": "152.0.7928.2", "0.8.51": "152.0.7977.30",
 
 HINT_NODE = ("cài Node ≥ 22 — Windows: `winget install OpenJS.NodeJS.LTS`; macOS: `brew install node`; "
              "hoặc nodejs.org. Không nằm trên PATH thì đặt NODE_DIR")
-HINT_FFMPEG = ("cài ffmpeg — Windows: `winget install Gyan.FFmpeg`; macOS: `brew install ffmpeg`. "
-               "Không nằm trên PATH thì đặt FFMPEG_DIR")
+HINT_FFMPEG = ("cài ffmpeg CÓ libfreetype + libass — Windows: `winget install Gyan.FFmpeg`; macOS: "
+               "`brew install ffmpeg-full` (keg-only, doctor tự dò /opt/homebrew/opt/ffmpeg-full/bin; "
+               "`brew install ffmpeg` bản core thiếu drawtext/subtitles). Không nằm trên PATH thì "
+               "đặt FFMPEG_DIR")
 HINT_FONT = ("cài font Inter — macOS: `brew install --cask font-inter`; Windows: tải từ rsms.me/inter "
              "rồi Install; hoặc đặt VIDEO_FONT cho font khác")
 INSTALL_HINT = ("Cài trạm video: Node ≥ 22 + ffmpeg → `pip install -e <repo agent-video-studio>` → "
@@ -185,10 +187,31 @@ def font_check():
     return _check("font", False, f"không thấy font '{want}'", level="warn", hint=HINT_FONT)
 
 
+def filter_check(ff):
+    """ffmpeg có ĐỦ bộ lọc chữ không — có lệnh chưa đủ (Mac mini 01/10/2026: `brew install
+    ffmpeg` core không có libfreetype/libass, video truyện chết ở pass 1 sau 7 giờ đọc).
+
+    WARN chứ không FAIL: render bản tin đi qua HyperFrames (Chromium vẽ chữ), không cần các bộ
+    lọc này. Thứ cần là `edit` (đốt phụ đề bằng `subtitles`) — `edit` tự chặn TRƯỚC khi dựng
+    khi thiếu (`edit/render.py: require_filters`), nên ở đây chỉ cần nói trước."""
+    if not ff:
+        return _skip("ffmpeg-filters", "chưa có ffmpeg (xem dòng ffmpeg)")
+    have = _env.ffmpeg_filters(ff)
+    if have is None:
+        return _not_checked("ffmpeg-filters", f"không đọc được `{ff} -filters`", hint=HINT_FFMPEG)
+    missing = [f for f in _env.TEXT_FILTERS if f not in have]
+    if not missing:
+        return _check("ffmpeg-filters", True, ", ".join(_env.TEXT_FILTERS))
+    return _check("ffmpeg-filters", False,
+                  f"thiếu {', '.join(missing)} — `edit` đốt phụ đề sẽ FAIL; render bản tin "
+                  f"(HyperFrames) không cần", level="warn", hint=HINT_FFMPEG)
+
+
 def tool_checks():
     ff, fp = _env.ffmpeg_exe(), _env.ffprobe_exe()
     return [_check("ffmpeg", bool(ff), ff or "không thấy ffmpeg", hint=HINT_FFMPEG),
-            _check("ffprobe", bool(fp), fp or "không thấy ffprobe", hint=HINT_FFMPEG)]
+            _check("ffprobe", bool(fp), fp or "không thấy ffprobe", hint=HINT_FFMPEG),
+            filter_check(ff)]
 
 
 def station_checks(st, src):
