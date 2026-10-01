@@ -8,7 +8,7 @@
 |---|---|---|
 | Python ≥ 3.10 | python.org hoặc `winget install Python.Python.3.12` | `brew install python@3.12` |
 | Node ≥ 22 | `winget install OpenJS.NodeJS.LTS` | `brew install node` |
-| ffmpeg + ffprobe | `winget install Gyan.FFmpeg` | `brew install ffmpeg` |
+| ffmpeg + ffprobe (có libfreetype + libass) | `winget install Gyan.FFmpeg` | `brew install ffmpeg-full` (keg-only, tự dò — không phải `ffmpeg` core) |
 | Font Inter | tải từ rsms.me/inter rồi Install | `brew install --cask font-inter` |
 
 Công cụ không nằm trên PATH thì đặt `NODE_DIR` / `FFMPEG_DIR` trỏ tới thư mục chứa nó.

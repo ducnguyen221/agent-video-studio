@@ -103,7 +103,7 @@ def _ffbin(name):
     if not p:
         raise StationMissing(
             f"không thấy `{name}` — cài ffmpeg (Windows: `winget install Gyan.FFmpeg`; "
-            "macOS: `brew install ffmpeg`), hoặc đặt FFMPEG_DIR")
+            "macOS: `brew install ffmpeg-full`), hoặc đặt FFMPEG_DIR")
     return p
 
 

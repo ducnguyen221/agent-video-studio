@@ -64,3 +64,35 @@ jobs:
         env:
           VIDEO_STUDIO_CHECK_UPSTREAM: '1'
         run: python -m pytest -q tests/test_upstream_skills.py
+
+  ffmpeg:
+    # Job RIÊNG, và là ngoại lệ có ý thức của câu đầu file: nó cài ffmpeg THẬT theo đúng INSTALL
+    # (macOS `brew install ffmpeg-full`, Windows Gyan full) rồi đốt phụ đề thật. Lý do: Mac mini
+    # 01/10/2026 cài `brew install ffmpeg` theo INSTALL cũ ⇒ không có drawtext/subtitles/ass, và
+    # không test giả nào thấy được điều đó. Keg `ffmpeg-full` CỐ Ý không thêm vào PATH — mã phải
+    # tự dò. `VIDEO_STUDIO_REQUIRE_FFMPEG=1` biến skip thành đỏ.
+    name: ffmpeg thật — bộ lọc chữ + đốt phụ đề (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: '3.12'
+      - name: ffmpeg-full (macOS — đúng lệnh INSTALL)
+        if: runner.os == 'macOS'
+        run: brew install ffmpeg-full
+      - name: ffmpeg Gyan full (Windows)
+        if: runner.os == 'Windows'
+        run: choco install ffmpeg-full -y --no-progress
+      - run: python -m pip install --upgrade pip && python -m pip install -e ".[test]"
+      - name: doctor thấy bộ lọc + smoke đốt phụ đề
+        env:
+          VIDEO_STUDIO_REQUIRE_FFMPEG: '1'
+        run: python -m pytest -q -rs tests/test_ffmpeg_filters.py

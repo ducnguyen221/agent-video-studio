@@ -21,7 +21,8 @@ dọc che khoảng 25–30 % đáy khung.
 import os
 import re
 
-from ..contract import ContractError, EngineError, log
+from .. import _env
+from ..contract import ContractError, EngineError, StationMissing, log
 from . import _ff, edl as edl_mod, grade as grade_mod
 
 SUB_FORCE_STYLE = ("FontName=Helvetica,FontSize=18,Bold=1,"
@@ -276,11 +277,27 @@ def loudnorm(in_path, out_path, one_pass=False):
 
 # ── ráp lại ─────────────────────────────────────────────────────────────────────────────
 
+def require_filters(names, why):
+    """ffmpeg thiếu bộ lọc ⇒ StationMissing (mã 3) NGAY, trước khi cắt/ghép gì — đừng để lỗi
+    `No such filter` nổ ở bước cuối sau khi đã tốn cả lượt dựng (P0-9, Mac mini 01/10/2026)."""
+    have = _env.ffmpeg_filters()
+    if have is None:
+        return                         # không đọc được -filters: để chính lệnh ffmpeg nói
+    missing = [n for n in names if n not in have]
+    if missing:
+        raise StationMissing(
+            f"ffmpeg ({_env.ffmpeg_exe()}) thiếu bộ lọc {', '.join(missing)} — cần cho {why}. "
+            "Cài bản CÓ libfreetype + libass: macOS `brew install ffmpeg-full` (keg-only, tự "
+            "dò); Windows `winget install Gyan.FFmpeg`. Hoặc chạy với --no-subtitles.")
+
+
 def render_edl(data, base_dir, work_dir, out_path, quality="final", build_subtitles=False,
                subtitles=True, normalize=True, fps=None):
     """EDL đã kiểm → video hoàn chỉnh. -> dict kết quả."""
     if quality not in QUALITY:
         raise ContractError(f"mức chất lượng lạ: {quality} (có: {', '.join(QUALITY)})")
+    if subtitles and (build_subtitles or data.get("subtitles")):
+        require_filters(("subtitles",), "đốt phụ đề")
     os.makedirs(work_dir, exist_ok=True)
     os.makedirs(os.path.dirname(os.path.abspath(out_path)) or ".", exist_ok=True)
     segments = extract_all(data, base_dir, work_dir, quality=quality, fps=fps)

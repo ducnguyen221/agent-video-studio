@@ -68,7 +68,7 @@ zsh -lic 'echo $PATH'
 | Git | **Bắt buộc** | `Git.Git` | `git` |
 | Python ≥ 3.10 (khuyến nghị 3.12) | **Bắt buộc** | `Python.Python.3.12` | `python@3.12` |
 | Node ≥ 22 | Render (HyperFrames chạy trên Node) | `OpenJS.NodeJS.LTS` | `node` |
-| ffmpeg + ffprobe | Render, ghép tiếng | `Gyan.FFmpeg` | `ffmpeg` |
+| ffmpeg + ffprobe **bản có libfreetype + libass** (bộ lọc `drawtext`/`subtitles`/`ass`) | Render, ghép tiếng, `edit` đốt phụ đề | `Gyan.FFmpeg` | `ffmpeg-full` (keg-only — xem dưới) |
 | Font Inter | Chữ mặc định của template | tải từ rsms.me/inter | `--cask font-inter` |
 
 Trên Windows, `py -0p` trống mà `python --version` mở Microsoft Store nghĩa là máy chỉ có "Python
@@ -106,9 +106,17 @@ winget install --id Gyan.FFmpeg -e
 
 ```sh
 xcode-select --install
-brew install python@3.12 node ffmpeg git
+brew install python@3.12 node ffmpeg-full git
 brew install --cask font-inter
 ```
+
+**ffmpeg trên Mac phải là `ffmpeg-full`, không phải `ffmpeg`.** Bản `ffmpeg` của Homebrew core
+đã bỏ libfreetype và libass, nên không có `drawtext`, `subtitles`, `ass`: `edit` đốt phụ đề hỏng,
+và runner truyện của marketing-studio chết ở bước dựng video sau hàng giờ đọc (Mac mini,
+01/10/2026). `ffmpeg-full` là **keg-only** — Homebrew không link nó vào `/opt/homebrew/bin`.
+Không cần tự thêm vào `PATH`: `video-studio` (và marketing-studio) tự dò
+`/opt/homebrew/opt/ffmpeg-full/bin` TRƯỚC `PATH`. Muốn trỏ chỗ khác thì đặt `FFMPEG_DIR`. Kiểm:
+`video-studio doctor` có dòng `[PASS] ffmpeg-filters drawtext, subtitles, ass`.
 
 Trên Mac, `xcode-select --install` chỉ chạy khi `xcode-select -p` báo chưa có; `brew` chỉ chạy
 sau khi người dùng đã tự cài Homebrew (mục 2). Font Inter không chặn render: thiếu thì `doctor`

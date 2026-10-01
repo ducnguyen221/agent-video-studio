@@ -44,7 +44,7 @@ py -3 -m venv .venv
 ```
 
 macOS (Terminal) — cần trước Xcode Command Line Tools (`xcode-select --install`) và Homebrew
-(bạn tự cài theo brew.sh), rồi `brew install python@3.12 node ffmpeg git`. Gọi đích danh
+(bạn tự cài theo brew.sh), rồi `brew install python@3.12 node ffmpeg-full git` (`ffmpeg-full`, không phải `ffmpeg`: bản core thiếu `drawtext`/`subtitles`). Gọi đích danh
 `python3.12`: `python3` của Mac mới là 3.9, dưới mức tối thiểu.
 
 ```sh
