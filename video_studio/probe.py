@@ -125,7 +125,9 @@ def _chay_co_tran(argv, env=None, capture_output=True, timeout=None):
     p = subprocess.Popen(argv, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, **kw)
     try:
         out, err = p.communicate(timeout=timeout)
-    except subprocess.TimeoutExpired:
+    except BaseException:
+        # Quá giờ, Ctrl-C, mọi lỗi: con ở nhóm/session riêng nên SIGINT không tới nó — không giết ở
+        # đây là để npx/tải Chromium mồ côi tới 600 s (review 02/10 vòng 3).
         _kill_tree(p)
         raise
     return subprocess.CompletedProcess(argv, p.returncode, out, err)
@@ -179,6 +181,9 @@ def run_probe(timeout=DEFAULT_TIMEOUT, workdir=None, popen=subprocess.Popen, clo
                   stderr=subprocess.STDOUT, **kw)
         try:
             out, _ = p.communicate(timeout=timeout)
+        except KeyboardInterrupt:
+            _kill_tree(p)
+            raise
         except subprocess.TimeoutExpired:
             _kill_tree(p)
             raise EngineError(
