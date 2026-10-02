@@ -22,6 +22,8 @@ khuyên `doctor --hf`, tức chỉ sai hướng.
   **Làm ấm NGOÀI trần giờ** (`warm_up`): `npx hyperframes@<bản> --version` + `browser ensure` nếu
   `doctor` không thấy Chromium, mỗi bước trần 600 s; hỏng ⇒ mã 3 — lượt đầu sau nâng bản ghim /
   xoá cache không bị gọi nhầm là "kẹt". `Navigation timeout` chỉ tính khi render thử HỎNG.
+  Làm ấm chạy qua Popen + giết cả cây khi quá giờ (`subprocess.run` treo trên Windows khi node
+  cháu giữ pipe). `docs/CONTRACT.md` ghi rõ `--timeout` chỉ đo phần render.
 - **`render_project`**: MỌI lần thử chết vì `Navigation timeout` ⇒ lỗi `RENDER_STUCK:` nói thẳng
   "khởi động lại máy" (kèm `video-studio probe` để kiểm nhanh); hỏng lẫn lộn giữ lời khuyên cũ.
 - `docs/CONTRACT.md` §1: tên `RENDER_STUCK:` trong mã 1 và hợp đồng của `probe`. README, trang

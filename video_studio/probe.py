@@ -114,6 +114,23 @@ def _kill_tree(p):
         pass
 
 
+def _chay_co_tran(argv, env=None, capture_output=True, timeout=None):
+    """Như `subprocess.run(capture_output=True, timeout=…)` nhưng quá giờ thì giết CẢ CÂY.
+
+    `subprocess.run` chỉ giết con trực tiếp (`npx.cmd`/cmd); trên Windows nó rồi gọi
+    `communicate()` KHÔNG trần trong khi node cháu còn giữ pipe ⇒ treo vô hạn (review 02/10).
+    """
+    kw = {"start_new_session": True} if os.name != "nt" else {
+        "creationflags": subprocess.CREATE_NEW_PROCESS_GROUP}
+    p = subprocess.Popen(argv, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, **kw)
+    try:
+        out, err = p.communicate(timeout=timeout)
+    except subprocess.TimeoutExpired:
+        _kill_tree(p)
+        raise
+    return subprocess.CompletedProcess(argv, p.returncode, out, err)
+
+
 def _lam_am_mot(argv, ten, run):
     try:
         r = run(argv, env=render.render_env(), capture_output=True, timeout=WARM_TIMEOUT)
@@ -129,8 +146,9 @@ def _lam_am_mot(argv, ten, run):
                              f"\n{err.strip()[-600:]}")
 
 
-def warm_up(run=subprocess.run, chromium=None):
+def warm_up(run=None, chromium=None):
     """Gói npx + Chromium sẵn sàng TRƯỚC khi bấm giờ. Ném StationMissing (mã 3) nếu không được."""
+    run = run or _chay_co_tran
     _lam_am_mot(render.hyperframes_argv("--version"), "hyperframes --version", run)
     if chromium is None:
         from . import doctor

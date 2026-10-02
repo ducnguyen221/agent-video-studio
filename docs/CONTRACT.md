@@ -32,8 +32,12 @@ máy bị kẹt**, không phải project hỏng: chạy lại ngay vẫn hỏng,
 mini 02/10/2026). Bên gọi nên dừng và báo người, không thử lại vòng nữa.
 
 `video-studio probe [--timeout 30] [--json]` render thử một trang 320×180 dài 0,5 s, không tài
-nguyên ngoài (vài giây trên máy khoẻ): `0` dùng được · `1` hỏng (`RENDER_STUCK:` nếu quá giờ hoặc
-Navigation timeout) · `3` thiếu `npx`. JSON khi xong: `{"ok": true, "seconds", "hyperframes"}`.
+nguyên ngoài (vài giây trên máy khoẻ): `0` dùng được · `1` hỏng — `RENDER_STUCK:` nếu phần RENDER
+quá `--timeout`, hoặc render HỎNG kèm Navigation timeout; hỏng kiểu khác không mang tiền tố đó ·
+`3` thiếu công cụ: không có `npx`, hoặc LÀM ẤM hỏng. Làm ấm chạy TRƯỚC và NGOÀI `--timeout`:
+`npx hyperframes@<bản> --version` rồi `browser ensure` nếu chưa thấy Chromium, mỗi bước trần 600 s
+(lần đầu sau nâng bản ghim có thể mất vài phút; thường vài giây). JSON khi xong:
+`{"ok": true, "seconds", "hyperframes"}` (`seconds` chỉ tính phần render).
 Pipeline đặt nó **trước** các bước tốn kém (agent, TTS).
 
 > **Bẫy PowerShell 5.1:** đừng `2>&1` khi gọi lệnh native — mỗi dòng stderr bị bọc thành

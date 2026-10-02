@@ -257,3 +257,23 @@ def test_navigation_timeout_trong_log_nhung_render_DAT_thi_khong_ket(npx, tmp_pa
     res = probe.run_probe(timeout=30, workdir=str(tmp_path),
                           popen=lambda a, **k: Qua(a, mode="ok", **k))
     assert res["hyperframes"] == "0.8.54"
+
+
+def test_warm_mac_dinh_qua_gio_thi_GIET_CA_CAY(npx, monkeypatch):
+    """Review 02/10 vòng 2: `subprocess.run` treo trên Windows khi cháu giữ pipe."""
+    giet = []
+
+    class P:
+        pid, returncode = 77, None
+
+        def __init__(self, *a, **k):
+            pass
+
+        def communicate(self, timeout=None):
+            raise subprocess.TimeoutExpired("npx", timeout)
+
+    monkeypatch.setattr(probe.subprocess, "Popen", P)
+    monkeypatch.setattr(probe, "_kill_tree", lambda p: giet.append(p.pid))
+    with pytest.raises(StationMissing):
+        probe.warm_up(chromium=True)
+    assert giet == [77]
