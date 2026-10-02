@@ -26,6 +26,13 @@ TRƯỚC các bước tốn kém.
 
 Quá giờ thì giết **cả cây** tiến trình (npx → node → các worker Chrome), không chỉ vỏ npx:
 để lại Chrome mồ côi đúng lúc máy đang kẹt là làm nó kẹt thêm.
+
+**Làm ấm NGOÀI trần giờ.** Trần `--timeout` chỉ đo phần render. Trước đó `warm_up` bảo đảm npx
+đã có gói `hyperframes@<bản ghim>` (`--version`) và Chromium của HyperFrames đã nằm trong cache
+(`browser ensure` nếu `doctor` không thấy), mỗi bước trần `WARM_TIMEOUT`. Không làm vậy thì lượt
+đầu sau khi nâng bản ghim / xoá cache bị tính là "kẹt" — và vì bị giết giữa lúc tải, cache không
+bao giờ đầy, mọi lượt sau cũng "kẹt" (review 02/10). Làm ấm hỏng ⇒ mã 3 (thiếu công cụ), không
+phải `RENDER_STUCK`: khởi động lại máy không chữa được mạng hay cache.
 """
 import argparse
 import os
@@ -36,9 +43,10 @@ import tempfile
 import time
 
 from . import _env, contract, render
-from .contract import EngineError  # noqa: F401 — tên lỗi của hợp đồng, test dùng
+from .contract import EngineError, StationMissing
 
 DEFAULT_TIMEOUT = 30
+WARM_TIMEOUT = 600      # giây cho mỗi bước làm ấm (tải gói npx / Chromium lần đầu)
 STUCK = render.STUCK_PREFIX
 HINT_REBOOT = "khởi động lại máy rồi chạy lại"
 NAV_TIMEOUT = "navigation timeout"
@@ -106,12 +114,43 @@ def _kill_tree(p):
         pass
 
 
-def run_probe(timeout=DEFAULT_TIMEOUT, workdir=None, popen=subprocess.Popen, clock=time.monotonic):
+def _lam_am_mot(argv, ten, run):
+    try:
+        r = run(argv, env=render.render_env(), capture_output=True, timeout=WARM_TIMEOUT)
+    except subprocess.TimeoutExpired as e:
+        raise StationMissing(f"làm ấm `{ten}` quá {WARM_TIMEOUT}s (đang tải lần đầu? mạng?) — "
+                             f"chạy tay `{' '.join(argv[1:])}` rồi thử lại") from e
+    except OSError as e:
+        raise StationMissing(f"không chạy được `{ten}`: {e}") from e
+    if r.returncode != 0:
+        err = r.stderr or r.stdout or b""
+        err = err.decode("utf-8", "replace") if isinstance(err, bytes) else str(err)
+        raise StationMissing(f"`{ten}` hỏng (mã {r.returncode}) — chạy `video-studio doctor --hf`"
+                             f"\n{err.strip()[-600:]}")
+
+
+def warm_up(run=subprocess.run, chromium=None):
+    """Gói npx + Chromium sẵn sàng TRƯỚC khi bấm giờ. Ném StationMissing (mã 3) nếu không được."""
+    _lam_am_mot(render.hyperframes_argv("--version"), "hyperframes --version", run)
+    if chromium is None:
+        from . import doctor
+        chromium = doctor.chromium_check(_env.hyperframes_version())["ok"]
+    if not chromium:
+        contract.log("[probe] chưa thấy Chromium của HyperFrames trong cache — `browser ensure` ...")
+        _lam_am_mot(render.hyperframes_argv("browser", "ensure"), "hyperframes browser ensure", run)
+
+
+def run_probe(timeout=DEFAULT_TIMEOUT, workdir=None, popen=subprocess.Popen, clock=time.monotonic,
+              warm=True):
     """Render thử. -> {"seconds", "hyperframes"}; ném EngineError (mã 1) / StationMissing (mã 3).
 
-    `popen`/`clock` mở cho test — không gọi Node thật trong bộ test lõi.
+    `popen`/`clock`/`warm` mở cho test — không gọi Node thật trong bộ test lõi.
     """
     argv = render.hyperframes_argv("render", "-o", OUT, "-q", "draft")
+    if warm is True:
+        warm_up()            # tra tên lúc GỌI (không đóng băng lúc định nghĩa) — test thay được
+    elif warm:
+        warm()
     own = workdir is None
     d = write_project(workdir or tempfile.mkdtemp(prefix="video-studio-probe-"))
     kw = {"start_new_session": True} if os.name != "nt" else {
@@ -130,12 +169,14 @@ def run_probe(timeout=DEFAULT_TIMEOUT, workdir=None, popen=subprocess.Popen, clo
         secs = round(clock() - t0, 1)
         text = (out or b"").decode("utf-8", "replace") if isinstance(out, bytes) else str(out or "")
         tail = "\n".join(text.strip().splitlines()[-15:])
-        if NAV_TIMEOUT in text.lower():
+        mp4 = os.path.join(d, OUT)
+        hong = p.returncode != 0 or not os.path.isfile(mp4) or os.path.getsize(mp4) == 0
+        # Chỉ tính Navigation timeout khi lượt HỎNG: engine thử lại nội bộ rồi qua thì vẫn đạt.
+        if hong and NAV_TIMEOUT in text.lower():
             raise EngineError(
                 f"{STUCK}: môi trường render kẹt — HyperFrames không mở được trang "
                 f"(Navigation timeout) — {HINT_REBOOT}\n{tail}")
-        mp4 = os.path.join(d, OUT)
-        if p.returncode != 0 or not os.path.isfile(mp4) or os.path.getsize(mp4) == 0:
+        if hong:
             raise EngineError(
                 f"render thử hỏng (mã {p.returncode}) sau {secs}s — chạy `video-studio doctor "
                 f"--hf` để kiểm engine; không rõ nguyên nhân thì {HINT_REBOOT}\n{tail}")

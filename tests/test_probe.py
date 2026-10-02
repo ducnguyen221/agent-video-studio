@@ -195,3 +195,65 @@ def test_probe_cli_stuck_prints_no_traceback(npx, monkeypatch, capsys):
     monkeypatch.setattr(probe, "run_probe", boom)
     probe.main(["--timeout", "3"])
     assert "Traceback" not in capsys.readouterr().err
+
+
+# ── làm ấm NGOÀI trần giờ (review 02/10: tải lần đầu không được tính là "kẹt") ──────────
+
+@pytest.fixture(autouse=True)
+def _khong_lam_am_that(monkeypatch, request):
+    if "warm" not in request.node.name:
+        monkeypatch.setattr(probe, "warm_up", lambda: None)
+
+
+class WarmRun:
+    def __init__(self, *codes):
+        self.codes, self.calls = list(codes), []
+
+    def __call__(self, argv, **kw):
+        self.calls.append((argv, kw))
+        c = self.codes[len(self.calls) - 1]
+        if c == "timeout":
+            raise subprocess.TimeoutExpired(argv, kw.get("timeout"))
+        return subprocess.CompletedProcess(argv, c, b"", b"loi tai goi")
+
+
+def test_warm_up_co_chromium_chi_goi_version(npx):
+    run = WarmRun(0)
+    probe.warm_up(run=run, chromium=True)
+    assert [c[0][3:] for c in run.calls] == [["--version"]]
+    assert run.calls[0][1]["timeout"] == probe.WARM_TIMEOUT
+
+
+def test_warm_up_thieu_chromium_thi_browser_ensure(npx):
+    run = WarmRun(0, 0)
+    probe.warm_up(run=run, chromium=False)
+    assert run.calls[1][0][3:] == ["browser", "ensure"]
+
+
+def test_warm_up_qua_gio_la_ma_3_KHONG_phai_ket(npx):
+    with pytest.raises(StationMissing) as e:
+        probe.warm_up(run=WarmRun("timeout"), chromium=True)
+    assert probe.STUCK not in str(e.value) and e.value.code == contract.STATION_MISSING
+
+
+def test_warm_up_hong_la_ma_3(npx):
+    with pytest.raises(StationMissing):
+        probe.warm_up(run=WarmRun(0, 1), chromium=False)
+
+
+def test_run_probe_lam_am_TRUOC_khi_bam_gio(npx, tmp_path):
+    thu_tu = []
+    probe.run_probe(timeout=30, workdir=str(tmp_path), popen=lambda a, **k: (
+        thu_tu.append("render"), FakePopen(a, mode="ok", **k))[1],
+        warm=lambda: thu_tu.append("warm"))
+    assert thu_tu == ["warm", "render"]
+
+
+def test_navigation_timeout_trong_log_nhung_render_DAT_thi_khong_ket(npx, tmp_path):
+    class Qua(FakePopen):
+        def communicate(self, timeout=None):
+            out, _ = super().communicate(timeout)
+            return b"retry: Navigation timeout of 60000 ms exceeded\n" + out, None
+    res = probe.run_probe(timeout=30, workdir=str(tmp_path),
+                          popen=lambda a, **k: Qua(a, mode="ok", **k))
+    assert res["hyperframes"] == "0.8.54"

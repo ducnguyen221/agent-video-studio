@@ -19,6 +19,9 @@ khuyên `doctor --hf`, tức chỉ sai hướng.
   `Navigation timeout` ⇒ mã 1, lỗi mở đầu `RENDER_STUCK:` + "khởi động lại máy rồi chạy lại", giết
   **cả cây** tiến trình (npx → node → Chrome). Hỏng kiểu khác ⇒ mã 1 kèm đuôi log + `doctor --hf`.
   Thiếu `npx` ⇒ mã 3. Không in traceback: hỏng của phép thử là kết quả đo.
+  **Làm ấm NGOÀI trần giờ** (`warm_up`): `npx hyperframes@<bản> --version` + `browser ensure` nếu
+  `doctor` không thấy Chromium, mỗi bước trần 600 s; hỏng ⇒ mã 3 — lượt đầu sau nâng bản ghim /
+  xoá cache không bị gọi nhầm là "kẹt". `Navigation timeout` chỉ tính khi render thử HỎNG.
 - **`render_project`**: MỌI lần thử chết vì `Navigation timeout` ⇒ lỗi `RENDER_STUCK:` nói thẳng
   "khởi động lại máy" (kèm `video-studio probe` để kiểm nhanh); hỏng lẫn lộn giữ lời khuyên cũ.
 - `docs/CONTRACT.md` §1: tên `RENDER_STUCK:` trong mã 1 và hợp đồng của `probe`. README, trang
