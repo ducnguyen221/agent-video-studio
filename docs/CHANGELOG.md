@@ -5,6 +5,26 @@ chính nhưng chưa có tag; khi phát hành, mục đó đổi tên thành số
 `pyproject.toml`, `video_studio/__init__.py` cùng ba manifest plugin (`tests/test_version_sync.py`
 kiểm).
 
+## 0.2.5 — 2026-10-02
+
+Rào cho bước render (P1-24). Mac mini 02/10/2026: Hot AI 18:00 hỏng sau 42 phút — `page.goto …
+Navigation timeout of 60000 ms` ở frame 0, ba lần thử, mọi project và cả bản HyperFrames mới nhất
+đều hỏng, Chromium/puppeteer mở cùng trang bình thường; **khởi động lại máy là hết**. Lỗi môi
+trường, không phải lỗi repo — nhưng pipeline chỉ biết sau 40 phút agent + TTS, và thông báo lỗi
+khuyên `doctor --hf`, tức chỉ sai hướng.
+
+- **Lệnh mới `video-studio probe [--timeout 30] [--json]`** (`video_studio/probe.py`): render thật
+  một trang 320×180 dài 0,5 s, không tài nguyên ngoài (không font web, không GSAP từ CDN), timeline
+  giả tối thiểu (thiếu nó engine chờ 45 s). Đo trên Windows: 7–9 s kể cả khởi động npx. Quá giờ hoặc
+  `Navigation timeout` ⇒ mã 1, lỗi mở đầu `RENDER_STUCK:` + "khởi động lại máy rồi chạy lại", giết
+  **cả cây** tiến trình (npx → node → Chrome). Hỏng kiểu khác ⇒ mã 1 kèm đuôi log + `doctor --hf`.
+  Thiếu `npx` ⇒ mã 3. Không in traceback: hỏng của phép thử là kết quả đo.
+- **`render_project`**: MỌI lần thử chết vì `Navigation timeout` ⇒ lỗi `RENDER_STUCK:` nói thẳng
+  "khởi động lại máy" (kèm `video-studio probe` để kiểm nhanh); hỏng lẫn lộn giữ lời khuyên cũ.
+- `docs/CONTRACT.md` §1: tên `RENDER_STUCK:` trong mã 1 và hợp đồng của `probe`. README, trang
+  giới thiệu: thêm dòng `probe` vào bảng lệnh.
+- **Bên gọi**: agent-marketing-studio 1.1.8 chạy `probe` trước bước nghiên cứu của ba runner tin.
+
 ## 0.2.4 — 2026-10-01
 
 ffmpeg phải **đủ bộ lọc chữ**, không chỉ có lệnh. Trên Mac mini (01/10/2026), `brew install

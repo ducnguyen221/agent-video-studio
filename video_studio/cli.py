@@ -17,6 +17,8 @@ COMMANDS = {
     "doctor":  ("video_studio.doctor", "kiểm node, HyperFrames, Chromium, ffmpeg, font, trạm"),
     "render":  ("video_studio.render",
                 "spec JSON → video theo template (news | news-weekly | topstory | repo-today)"),
+    "probe":   ("video_studio.probe",
+                "render thử một trang tí hon (≤ 30 s) — môi trường render kẹt thì báo ngay"),
     "edit":    ("video_studio.edit", "chỉnh footage thật theo transcript"),
     "preview": ("video_studio.preview", "xem trước một project HyperFrames"),
     "narrate": ("video_studio.narrate", "video câm + lời dẫn → MP4 có giọng (qua voice-studio)"),

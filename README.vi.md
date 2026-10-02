@@ -6,7 +6,7 @@ Engine dựng video cho agent: composition HTML/CSS/GSAP được
 [HyperFrames](https://github.com/heygen-com/hyperframes) render ra MP4, bọc trong một package
 Python cài được với một lệnh duy nhất, `video-studio`.
 
-> **Trạng thái: v0.2.4.** Bản này có bố cục trạm, lệnh kiểm máy, công cụ di trú,
+> **Trạng thái: v0.2.5.** Bản này có bố cục trạm, lệnh kiểm máy, công cụ di trú,
 > họ template bản tin, lồng tiếng, xem trước, chỉnh footage, và `export` / `import` để mang dữ
 > liệu trạm sang máy khác. Mọi lệnh trong bảng dưới đều đã có mã thật.
 
@@ -24,6 +24,7 @@ câm vẫn chạy, chỉ là không lồng tiếng được. Không có thứ t�
 | `video-studio doctor` | Kiểm Node ≥ 22, npx, bản HyperFrames đang ghim, Chromium headless của nó, ffmpeg/ffprobe, font Inter, trạm và `station.json`. `--check-updates` chỉ *báo* bản HyperFrames mới. |
 | `video-studio init` | Dựng trạm (`embedded` trong repo, hoặc `separate` ngoài repo), ghi `station.json`. `--migrate` nhận một trạm bố cục cũ (và gỡ bản skill bản cũ đã chép vào đó), `--dry-run` in kế hoạch không ghi gì, `--undo` đảo lần chạy gần nhất theo nhật ký. |
 | `video-studio render` | spec JSON (`schema_version: 1`) → MP4 theo template: `news`, `news-weekly`, `topstory`, `repo-today`. Cần phần phụ `[voice]`. |
+| `video-studio probe` | Render thử một trang 320×180 dài 0,5 s, không tài nguyên ngoài (vài giây trên máy khoẻ). Môi trường render kẹt (quá giờ hoặc `Navigation timeout`) ⇒ mã 1, lỗi mở đầu `RENDER_STUCK:` — khởi động lại máy. Pipeline chạy lệnh này trước các bước tốn kém. |
 | `video-studio narrate` | video câm (hoặc cả một project, render trước) + lời dẫn → một MP4 hoàn chỉnh có giọng và nhạc nền tuỳ chọn, qua trạm giọng. |
 | `video-studio preview` | Mở studio xem trước của HyperFrames cho một project — bằng **đúng bản đã ghim**, nên thứ bạn soi chính là thứ sẽ render. |
 | `video-studio edit` | Cắt footage quay thật: bóc lời tại máy, gom cụm thành markdown đọc được, rồi dựng theo EDL kèm chỉnh màu, overlay, phụ đề và chuẩn âm lượng. Helper chưng cất từ `video-use` (MIT); cũng gọi được bản upstream đã cài ở trạm. |

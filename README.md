@@ -6,7 +6,7 @@ A video-production engine an AI agent can drive: HTML/CSS/GSAP compositions rend
 [HyperFrames](https://github.com/heygen-com/hyperframes), wrapped in an installable Python package
 with one CLI, `video-studio`.
 
-> **Status: v0.2.4.** This build ships the station layout, the machine check,
+> **Status: v0.2.5.** This build ships the station layout, the machine check,
 > the migration tool, the news template family, narration, preview, footage editing, and
 > `export` / `import` for moving station data between machines. Every command in the table
 > below is backed by real code.
@@ -26,6 +26,7 @@ work, you just cannot add narration. There is no required install order and no b
 | `video-studio doctor` | Checks Node ≥ 22, npx, the pinned HyperFrames build, its headless Chromium, ffmpeg/ffprobe, the Inter font, the station and `station.json`. `--check-updates` only *reports* a newer HyperFrames. |
 | `video-studio init` | Lays out a station (`embedded` inside the repo, or `separate` outside it), writes `station.json`. `--migrate` adopts an older station layout (and removes skill copies an older version left there), `--dry-run` prints the plan without writing, `--undo` reverses the last run from its journal. |
 | `video-studio render` | A JSON spec (`schema_version: 1`) → MP4s from a template: `news`, `news-weekly`, `topstory`, `repo-today`. Needs the `[voice]` extra. |
+| `video-studio probe` | Renders a tiny 320×180, 0.5 s page with no external assets (seconds on a healthy machine). Exits 1 with `RENDER_STUCK:` when the render environment is wedged (timeout or `Navigation timeout`) — restart the machine. Pipelines run it before their expensive steps. |
 | `video-studio narrate` | A silent MP4 (or a whole project, rendered first) + narration text → one finished MP4 with voice and optional background music, through the voice studio. |
 | `video-studio preview` | Opens the HyperFrames preview studio for a project — with the *pinned* build, so what you inspect is what will render. |
 | `video-studio edit` | Cuts real footage: transcribe locally, pack the transcript into phrase-level markdown, then render an EDL with grade, overlays, subtitles and loudness normalisation. Helpers distilled from `video-use` (MIT); can also drive a vendored upstream copy. |
