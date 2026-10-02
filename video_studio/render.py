@@ -36,6 +36,9 @@ RETRIES = 3
 RETRY_SLEEP = 20
 # Mức chất lượng khai tường minh cho `hyperframes render` — xem render_project().
 QUALITY = "standard"
+# Tiền tố lỗi khi môi trường render kẹt — cùng chữ với `probe.STUCK`; bên gọi (runner marketing,
+# triage) tìm đúng chuỗi này để nói "khởi động lại máy" thay vì "sửa project".
+STUCK_PREFIX = "RENDER_STUCK"
 
 # tên project ở dòng lệnh -> (module template, hàm, mô tả)
 TEMPLATES = {
@@ -45,7 +48,7 @@ TEMPLATES = {
     "repo-today":  ("news", "render_repo_today", "deep-dive nhiều cảnh (news v2)"),
 }
 
-__all__ = ["FONT_TOKEN", "QUALITY", "TEMPLATES", "render_env", "hyperframes_argv",
+__all__ = ["FONT_TOKEN", "QUALITY", "STUCK_PREFIX", "TEMPLATES", "render_env", "hyperframes_argv",
            "write_index", "render_project", "main"]
 
 
@@ -114,6 +117,7 @@ def render_project(proj_dir, out_file, timeout=DEFAULT_TIMEOUT, retries=RETRIES,
     env = render_env()
     tag = f"[{label}] " if label else ""
     last = None
+    nav = 0                     # số lần thử hỏng vì `Navigation timeout` (không mở được trang)
     for attempt in range(max(1, retries)):
         try:
             subprocess.run(argv, cwd=proj_dir, env=env, check=True, capture_output=True,
@@ -126,13 +130,22 @@ def render_project(proj_dir, out_file, timeout=DEFAULT_TIMEOUT, retries=RETRIES,
             err = e.stderr or b""
             err = err.decode("utf-8", "replace") if isinstance(err, bytes) else str(err)
             tail = "\n".join(err.strip().splitlines()[-15:])
-            more = " — thử lại sau %ds" % RETRY_SLEEP if attempt < retries - 1 else ""
+            if "navigation timeout" in err.lower():
+                nav += 1
+            more =" — thử lại sau %ds" % RETRY_SLEEP if attempt < retries - 1 else ""
             contract.log(f"  ! {tag}HyperFrames render hỏng (mã {e.returncode}), "
                          f"lần {attempt + 1}/{retries}{more}\n{tail}")
             if attempt < retries - 1:
                 sleep(RETRY_SLEEP)
     # `max(1, retries)` ở vòng lặp: `retries=0` vẫn chạy MỘT lần, nên câu "hỏng sau 0 lần"
     # là sai sự thật với chính vòng lặp ngay trên nó.
+    if nav == max(1, retries):
+        # P1-24 (Mac mini 02/10/2026): MỌI lần thử chết ở `page.goto … Navigation timeout` (frame
+        # 0) là dấu vân tay của môi trường kẹt, không phải lỗi project — mọi project khác cũng
+        # hỏng, khởi động lại máy là hết. Nói thẳng điều đó; "chạy doctor" ở đây là chỉ sai hướng.
+        raise EngineError(f"{tag}{STUCK_PREFIX}: môi trường render kẹt — HyperFrames không mở được "
+                          f"trang ở cả {nav} lần thử (Navigation timeout ở frame 0) — khởi động "
+                          f"lại máy rồi chạy lại (kiểm nhanh: `video-studio probe`)")
     raise EngineError(f"{tag}HyperFrames render hỏng sau {max(1, retries)} lần "
                       f"(mã {last.returncode}) — "
                       f"xem log ở trên; chạy `video-studio doctor --hf` để kiểm engine")

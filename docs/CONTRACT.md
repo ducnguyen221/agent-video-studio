@@ -26,6 +26,20 @@ Cùng một hợp đồng với `voice-studio`, cố ý: một người viết s
 Phân biệt 1 với 2–3 là để lịch chạy biết **khi nào thử lại là vô ích**. Retry một lỗi hợp đồng
 chỉ tạo ra ba lần hỏng thay vì một.
 
+**Ngoại lệ có tên trong mã 1 — `RENDER_STUCK:`.** Lỗi mở đầu bằng chuỗi này (từ `probe`, hoặc từ
+`render` khi MỌI lần thử chết ở `Navigation timeout` ở frame 0) nghĩa là **môi trường render của
+máy bị kẹt**, không phải project hỏng: chạy lại ngay vẫn hỏng, **khởi động lại máy** thì hết (Mac
+mini 02/10/2026). Bên gọi nên dừng và báo người, không thử lại vòng nữa.
+
+`video-studio probe [--timeout 30] [--json]` render thử một trang 320×180 dài 0,5 s, không tài
+nguyên ngoài (vài giây trên máy khoẻ): `0` dùng được · `1` hỏng — `RENDER_STUCK:` nếu phần RENDER
+quá `--timeout`, hoặc render HỎNG kèm Navigation timeout; hỏng kiểu khác không mang tiền tố đó ·
+`3` thiếu công cụ: không có `npx`, hoặc LÀM ẤM hỏng. Làm ấm chạy TRƯỚC và NGOÀI `--timeout`:
+`npx hyperframes@<bản> --version` rồi `browser ensure` nếu chưa thấy Chromium, mỗi bước trần 600 s
+(lần đầu sau nâng bản ghim có thể mất vài phút; thường vài giây). JSON khi xong:
+`{"ok": true, "seconds", "hyperframes"}` (`seconds` chỉ tính phần render).
+Pipeline đặt nó **trước** các bước tốn kém (agent, TTS).
+
 > **Bẫy PowerShell 5.1:** đừng `2>&1` khi gọi lệnh native — mỗi dòng stderr bị bọc thành
 > ErrorRecord và `$?` thành `False` dù mã thoát là 0. Đọc `$LASTEXITCODE`.
 
@@ -44,7 +58,7 @@ Thành công:
              {"kind": "short", "path": "…/2026-01-02-top-short.mp4", "duration": 78.1}],
  "timings": {"total": 812.5},
  "engine": {"hyperframes": "0.8.54", "voice_studio": "1.0.0", "voice_studio_version": "0.3.0",
-            "video_studio": "0.2.4", "contract": "1.0.0"}}
+            "video_studio": "0.2.5", "contract": "1.0.0"}}
 ```
 
 Nghĩa từng khoá của `engine` (giống nhau ở `render` và `narrate`):
@@ -54,7 +68,7 @@ Nghĩa từng khoá của `engine` (giống nhau ở `render` và `narrate`):
 | `hyperframes` | bản HyperFrames đã ghim (biến → `station.json`) | `0.8.54` |
 | `voice_studio` | bản **hợp đồng** của repo giọng (`voice_studio.API_VERSION`) — cùng nghĩa với khoá này trong JSON của `voice-studio speak`/`narrate` | `1.0.0` |
 | `voice_studio_version` | bản **phát hành** của gói giọng (`voice_studio.__version__`) | `0.3.0` |
-| `video_studio` | bản **phát hành** của repo này | `0.2.4` |
+| `video_studio` | bản **phát hành** của repo này | `0.2.5` |
 | `contract` | bản **hợp đồng** của repo này (`API_VERSION`) | `1.0.0` |
 
 Chưa cài repo giọng thì hai khoá `voice_studio*` là `null`. Bên gọi muốn ghim tối thiểu thì so
