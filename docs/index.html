@@ -417,7 +417,7 @@
         <li class="m"><b class="num" data-to="24">24</b> skill cho agent</li>
         <li><b class="num" data-to="4">4</b> template bản tin</li>
         <li><b class="num" data-to="670">670</b> test</li>
-        <li>phiên bản <b>v0.2.6</b></li>
+        <li>phiên bản <b>v0.2.7</b></li>
         <li>lõi <b>0</b> phụ thuộc Python</li>
       </ul>
     </div>
@@ -715,7 +715,7 @@
   <div class="wrap">
     <div class="sec-head reveal">
       <span class="eyebrow"><span class="dot"></span>Bảng lệnh</span>
-      <h2>Toàn bộ lệnh của bản v0.2.6</h2>
+      <h2>Toàn bộ lệnh của bản v0.2.7</h2>
       <p>Chính là bảng mà <code>video-studio --help</code> in ra — một cổng trong bộ test giữ cho hai
         bên không trôi khỏi nhau.</p>
     </div>
@@ -726,7 +726,7 @@
           <tr><td class="lbl">init</td><td>dựng trạm (embedded | separate) + <code>station.json</code>; <code>--migrate</code> nhận trạm cũ; <code>--undo</code></td></tr>
           <tr><td class="lbl">doctor</td><td>kiểm node, engine render, Chromium, ffmpeg, font, trạm</td></tr>
           <tr><td class="lbl m">render</td><td>spec JSON → video theo template (<code>news</code> | <code>news-weekly</code> | <code>topstory</code> | <code>repo-today</code>)</td></tr>
-          <tr><td class="lbl">probe</td><td>render thử một trang tí hon (≤ 30 s, không tài nguyên ngoài): môi trường render kẹt thì báo ngay, kèm gợi ý khởi động lại máy</td></tr>
+          <tr><td class="lbl">probe</td><td>render thử một trang tí hon (≤ 30 s, không tài nguyên ngoài): môi trường render kẹt thì báo ngay, kèm gợi ý khởi động lại máy; <code>--heal</code> chụp gói chẩn đoán và tự chữa (giết Chrome mồ côi, xoá profile tạm cũ, thử lại) trước khi chịu thua</td></tr>
           <tr><td class="lbl">edit</td><td>chỉnh footage thật theo transcript</td></tr>
           <tr><td class="lbl">preview</td><td>xem trước một project bằng đúng bản engine đã ghim</td></tr>
           <tr><td class="lbl m">narrate</td><td>video câm + lời dẫn → MP4 có giọng (qua trạm giọng)</td></tr>

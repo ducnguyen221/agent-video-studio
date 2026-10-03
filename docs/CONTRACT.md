@@ -40,6 +40,18 @@ quá `--timeout`, hoặc render HỎNG kèm Navigation timeout; hỏng kiểu kh
 `{"ok": true, "seconds", "hyperframes"}` (`seconds` chỉ tính phần render).
 Pipeline đặt nó **trước** các bước tốn kém (agent, TTS).
 
+`--heal [--diag-dir DIR] [--heal-waits 60,600]` (0.2.7): lần đầu ra `RENDER_STUCK` thì **chụp gói
+chẩn đoán** vào `DIR/<YYYYmmdd-HHMMSS>/` (tiến trình top CPU, tiến trình Chrome/HyperFrames và số mồ
+côi, thư mục tạm của Chrome, lỗi + output của lần probe; macOS thêm `pmset -g assertions`/`therm` và
+10 phút `log show` của WindowServer/coreaudiod — không biến môi trường, không dòng lệnh tiến trình,
+chuỗi dạng token bị che), rồi **tự chữa**: giết Chrome/HyperFrames **mồ côi** (cha đã chết) của user
+cùng cây con, xoá `puppeteer_dev_chrome_profile-*` / `hyperframes*` / `video-studio-probe-*` trong
+thư mục tạm cũ hơn 1 h, chờ từng mức trong `--heal-waits` rồi probe lại. Qua ở lần nào ⇒ `0`, JSON
+thêm `"heal": {"recovered": true, "step", "diag", "killed", "cleaned", "waits"}`; hết thang ⇒ `1`
+`RENDER_STUCK:` "đã tự chữa … vẫn kẹt — khởi động lại máy", JSON thêm `"diag"`. Không kẹt thì JSON y
+như không có `--heal`. Dòng stderr máy đọc: `RENDER_DIAG=<thư mục>`, `RENDER_HEAL=recovered step=N`,
+`RENDER_HEAL=failed steps=N`. Hỏng kiểu khác `RENDER_STUCK` ⇒ không chạy thang.
+
 > **Bẫy PowerShell 5.1:** đừng `2>&1` khi gọi lệnh native — mỗi dòng stderr bị bọc thành
 > ErrorRecord và `$?` thành `False` dù mã thoát là 0. Đọc `$LASTEXITCODE`.
 

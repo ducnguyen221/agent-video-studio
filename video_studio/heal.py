@@ -1,0 +1,354 @@
+"""heal.py — thang tự chữa + gói chẩn đoán khi `probe` báo `RENDER_STUCK` (P1-25).
+
+## Vì sao có file này
+
+Mac mini 02/10/2026 18:30: mọi project HyperFrames hỏng `Navigation timeout` ở frame 0, kể cả
+mẫu từng dựng được; Chromium/puppeteer mở cùng trang bình thường; khởi động lại máy là hết và
+SAU đó không tái hiện được. Dấu hiệu duy nhất ghi lại được là `WindowServer` 21–35 % CPU lúc máy
+rảnh — ghi bằng tay, sau khi đã khởi động lại thì không còn gì để soi. Nguyên nhân gốc vẫn chưa
+rõ. Hai thứ thiếu: **chứng cứ chụp ngay lúc kẹt**, và **một thang chữa rẻ** thử trước khi bắt
+người khởi động lại máy.
+
+## Thang (chỉ chạy khi lần probe đầu ra `RENDER_STUCK`)
+
+1. Chụp **gói chẩn đoán** vào `<diag-dir>/<YYYYmmdd-HHMMSS>/` (xem `diag_bundle`).
+2. Giết tiến trình Chrome/HyperFrames **mồ côi của chính user** (cha đã chết: POSIX `ppid == 1`,
+   Windows cha không còn sống) — cả cây con của nó. Không đụng tiến trình còn cha: đó có thể là
+   một lượt dựng khác đang chạy thật.
+3. Xoá thư mục tạm `puppeteer_dev_chrome_profile-*` / `hyperframes*` / `video-studio-probe-*`
+   cũ hơn 1 giờ (lượt đang chạy luôn có profile mới hơn thế).
+4. Chờ `waits[0]` (60 s) → probe lại. Qua ⇒ xong, mã 0, có ghi đã tự chữa ở bước nào.
+5. Vẫn kẹt ⇒ chờ `waits[1]` (600 s) → probe lần cuối.
+6. Hết thang mới ném `RENDER_STUCK:` "khởi động lại máy", kèm đường gói chẩn đoán.
+
+Hỏng kiểu KHÁC `RENDER_STUCK` ở bất kỳ lần nào ⇒ ném nguyên lỗi đó: thang này chữa máy kẹt,
+không chữa cài đặt hỏng.
+
+## Secret không vào gói
+
+Gói chẩn đoán KHÔNG đọc biến môi trường, không chép `.env`, không ghi dòng lệnh đầy đủ của tiến
+trình nào (dòng lệnh có thể mang token): danh sách tiến trình chỉ có pid · cha · tên chương trình
+· CPU/bộ nhớ · tuổi. Mọi văn bản ghi ra còn đi qua `_che` (che chuỗi có dạng token/khoá).
+"""
+from __future__ import annotations
+
+import datetime as _dt
+import fnmatch
+import getpass
+import json
+import os
+import platform
+import re
+import shutil
+import signal
+import subprocess
+import sys
+import tempfile
+import time
+
+from . import contract, render
+from .contract import EngineError
+
+STUCK = render.STUCK_PREFIX
+HINT_REBOOT = "khởi động lại máy rồi chạy lại"
+WAITS = (60, 600)                 # giây chờ trước lần probe 2 và 3
+PROFILE_AGE = 3600                # thư mục tạm cũ hơn ngần này giây mới xoá
+PROFILE_GLOBS = ("puppeteer_dev_chrome_profile-*", "hyperframes*", "video-studio-probe-*")
+# Dấu nhận một tiến trình thuộc bộ dựng (so trên dòng lệnh viết thường, chỉ trong bộ nhớ).
+RENDER_MARKS = ("chrome-headless-shell", "hyperframes", "puppeteer_dev_chrome_profile")
+CMD_TIMEOUT = 30                  # giây cho mỗi lệnh chụp chẩn đoán
+LOG_SHOW_TIMEOUT = 120            # `log show` 10 phút có thể chậm
+TRAN_FILE = 5 * 1024 * 1024       # mỗi file trong gói tối đa 5 MB
+
+_NT = os.name == "nt"             # quy ước "mồ côi" theo hệ (test đổi được)
+
+_CHE = re.compile(
+    r"(?i)((?:token|secret|password|passwd|api[_-]?key|authorization|bearer)\s*[=:]\s*)\S+"
+    r"|\b\d{5,}:[A-Za-z0-9_-]{20,}\b"            # token bot Telegram
+    r"|\b(?:sk|ghp|gho|ghs|xox[bp])[-_][A-Za-z0-9_-]{16,}\b")
+
+
+def _che(s: str) -> str:
+    return _CHE.sub(lambda m: (m.group(1) or "") + "<da-che>", s or "")
+
+
+def _run_text(argv, timeout=CMD_TIMEOUT, run=subprocess.run) -> str:
+    """Chạy một lệnh chụp chẩn đoán -> văn bản (kể cả khi hỏng). Không bao giờ ném."""
+    try:
+        r = run(argv, capture_output=True, timeout=timeout)
+    except subprocess.TimeoutExpired:
+        return f"(quá {timeout}s: {' '.join(argv)})"
+    except OSError as e:
+        return f"(không chạy được {argv[0]}: {e})"
+    out = r.stdout or b""
+    err = r.stderr or b""
+    if isinstance(out, bytes):
+        out = out.decode("utf-8", "replace")
+    if isinstance(err, bytes):
+        err = err.decode("utf-8", "replace")
+    head = "" if r.returncode == 0 else f"(mã {r.returncode})\n"
+    return head + out + (("\n--- stderr ---\n" + err) if err.strip() else "")
+
+
+# ── danh sách tiến trình (pid, ppid, tên, dòng lệnh chỉ để so) ────────────────────────────
+
+def list_processes(run=subprocess.run) -> list[dict]:
+    """-> [{pid, ppid, name, cmd, user_own}] của user hiện tại. Rỗng nếu không đọc được.
+
+    `cmd` (dòng lệnh) CHỈ dùng để nhận diện trong bộ nhớ — không bao giờ ghi ra gói.
+    """
+    ra = []
+    if os.name == "nt":
+        ps = ("Get-CimInstance Win32_Process | Select-Object ProcessId,ParentProcessId,Name,"
+              "CommandLine | ConvertTo-Json -Compress")
+        txt = _run_text(["powershell", "-NoProfile", "-NonInteractive", "-Command", ps], run=run)
+        i = min([k for k in (txt.find("["), txt.find("{")) if k >= 0], default=-1)
+        try:
+            data = json.loads(txt[i:]) if i >= 0 else []
+        except ValueError:
+            return []
+        for d in data if isinstance(data, list) else [data]:
+            try:
+                ra.append({"pid": int(d.get("ProcessId")), "ppid": int(d.get("ParentProcessId") or 0),
+                           "name": str(d.get("Name") or ""), "cmd": str(d.get("CommandLine") or "")})
+            except (TypeError, ValueError):
+                continue
+        return ra
+    # Hai lượt `ps`: `comm` (tên chương trình — được ghi ra gói) và `command` (dòng lệnh — chỉ để
+    # nhận diện, không ghi ra đâu cả).
+    uid = str(os.getuid())
+    ten = {}
+    for line in _run_text(["ps", "-U", uid, "-o", "pid=,comm="], run=run).splitlines():
+        parts = line.strip().split(None, 1)
+        if len(parts) == 2 and parts[0].isdigit():
+            ten[int(parts[0])] = os.path.basename(parts[1].strip())
+    for line in _run_text(["ps", "-U", uid, "-o", "pid=,ppid=,command="], run=run).splitlines():
+        parts = line.strip().split(None, 2)
+        if len(parts) < 3 or not parts[0].isdigit() or not parts[1].isdigit():
+            continue
+        pid = int(parts[0])
+        ra.append({"pid": pid, "ppid": int(parts[1]), "name": ten.get(pid, "?"), "cmd": parts[2]})
+    return ra
+
+
+def _la_bo_dung(p: dict) -> bool:
+    s = (p.get("cmd") or p.get("name") or "").lower()
+    return any(m in s for m in RENDER_MARKS)
+
+
+def find_orphans(procs: list[dict], self_pid: int | None = None, nt: bool | None = None) -> list[dict]:
+    """Tiến trình bộ dựng MỒ CÔI + cả cây con của chúng (thứ tự: gốc trước).
+
+    Mồ côi = cha không còn: POSIX bị nhận về `init`/`launchd` (`ppid == 1`); Windows cha không
+    có trong danh sách sống. Tiến trình còn cha (một lượt dựng khác đang chạy) KHÔNG bị đụng.
+    """
+    self_pid = os.getpid() if self_pid is None else self_pid
+    nt = _NT if nt is None else nt
+    song = {p["pid"] for p in procs}
+    con: dict[int, list[dict]] = {}
+    for p in procs:
+        con.setdefault(p["ppid"], []).append(p)
+
+    def mo_coi(p):
+        if nt:
+            return p["ppid"] not in song
+        return p["ppid"] == 1
+
+    goc = [p for p in procs if _la_bo_dung(p) and mo_coi(p) and p["pid"] != self_pid]
+    ra, da = [], set()
+    hang = list(goc)
+    while hang:
+        p = hang.pop(0)
+        if p["pid"] in da or p["pid"] == self_pid:
+            continue
+        da.add(p["pid"])
+        ra.append(p)
+        hang.extend(con.get(p["pid"], []))
+    return ra
+
+
+def kill_orphans(procs: list[dict] | None = None, run=subprocess.run, kill=None) -> list[dict]:
+    """Giết tiến trình bộ dựng mồ côi của user. -> [{pid, name}] đã gửi lệnh giết. Không ném."""
+    procs = list_processes(run) if procs is None else procs
+    nan = find_orphans(procs)
+    if not nan:
+        return []
+    if kill is None:
+        def kill(pid):
+            if os.name == "nt":
+                run(["taskkill", "/T", "/F", "/PID", str(pid)], capture_output=True,
+                    timeout=CMD_TIMEOUT)
+            else:
+                os.kill(pid, signal.SIGKILL)
+    ra = []
+    for p in nan:
+        try:
+            kill(p["pid"])
+            ra.append({"pid": p["pid"], "name": p["name"]})
+        except (OSError, subprocess.SubprocessError):
+            continue
+    return ra
+
+
+# ── thư mục tạm cũ ─────────────────────────────────────────────────────────────────────
+
+def old_profiles(tmpdir: str | None = None, older_than=PROFILE_AGE, now=None) -> list[str]:
+    tmpdir = tmpdir or tempfile.gettempdir()
+    now = time.time() if now is None else now
+    ra = []
+    try:
+        names = os.listdir(tmpdir)
+    except OSError:
+        return []
+    for n in sorted(names):
+        if not any(fnmatch.fnmatch(n, g) for g in PROFILE_GLOBS):
+            continue
+        p = os.path.join(tmpdir, n)
+        try:
+            if os.path.islink(p) or not os.path.isdir(p):
+                continue
+            if now - os.path.getmtime(p) > older_than:
+                ra.append(p)
+        except OSError:
+            continue
+    return ra
+
+
+def clean_profiles(tmpdir: str | None = None, older_than=PROFILE_AGE, now=None) -> list[str]:
+    """Xoá thư mục tạm của Chrome/HyperFrames cũ hơn `older_than`. -> [đã xoá]. Không ném."""
+    ra = []
+    for p in old_profiles(tmpdir, older_than, now):
+        shutil.rmtree(p, ignore_errors=True)
+        if not os.path.exists(p):
+            ra.append(p)
+    return ra
+
+
+# ── gói chẩn đoán ──────────────────────────────────────────────────────────────────────
+
+def _ghi(d: str, ten: str, text: str) -> None:
+    b = _che(text).encode("utf-8", "replace")
+    if len(b) > TRAN_FILE:
+        b = b"(...cat phan dau, giu " + str(TRAN_FILE).encode() + b" byte cuoi)\n" + b[-TRAN_FILE:]
+    with open(os.path.join(d, ten), "wb") as f:
+        f.write(b)
+
+
+def _bang_tien_trinh(run) -> str:
+    if os.name == "nt":
+        ps = ("Get-Process | Sort-Object CPU -Descending | Select-Object -First 40 Id,ProcessName,"
+              "CPU,WorkingSet64,StartTime | Format-Table -AutoSize | Out-String -Width 200")
+        return _run_text(["powershell", "-NoProfile", "-NonInteractive", "-Command", ps], run=run)
+    # `comm` (tên chương trình), KHÔNG `command`: dòng lệnh đầy đủ có thể mang token.
+    txt = _run_text(["ps", "-Ao", "pid,ppid,user,pcpu,pmem,etime,comm"], run=run)
+    dong = txt.splitlines()
+    if len(dong) < 2:
+        return txt
+
+    def cpu(l):
+        try:
+            return float(l.split()[3])
+        except (IndexError, ValueError):
+            return 0.0
+    return "\n".join([dong[0]] + sorted(dong[1:], key=cpu, reverse=True)[:40]) + "\n"
+
+
+def diag_bundle(root: str, error: str = "", output: str = "", run=subprocess.run,
+                now=None, tmpdir: str | None = None, procs: list[dict] | None = None) -> str:
+    """Chụp chứng cứ lúc kẹt vào `<root>/<YYYYmmdd-HHMMSS>/` -> đường thư mục. Không ném OSError
+    ra ngoài vì từng file: một lệnh hỏng chỉ để lại dòng "(không chạy được …)" trong file đó."""
+    now = now or _dt.datetime.now()
+    d = os.path.join(root, now.strftime("%Y%m%d-%H%M%S"))
+    os.makedirs(d, exist_ok=True)
+    mac = sys.platform == "darwin"
+    procs = list_processes(run) if procs is None else procs
+    bo_dung = [p for p in procs if _la_bo_dung(p)]
+    mo_coi = {p["pid"] for p in find_orphans(procs)}
+    _ghi(d, "probe-error.txt", (error or "") + ("\n\n--- output ---\n" + output if output else ""))
+    _ghi(d, "ps-top-cpu.txt", _bang_tien_trinh(run))
+    _ghi(d, "render-procs.txt",
+         f"{len(bo_dung)} tiến trình bộ dựng (Chrome/HyperFrames) của user, {len(mo_coi)} mồ côi\n"
+         + "".join(f"pid={p['pid']} ppid={p['ppid']} name={p['name']}"
+                   f"{' MO_COI' if p['pid'] in mo_coi else ''}\n" for p in bo_dung))
+    tmp = tmpdir or tempfile.gettempdir()
+    dong = []
+    ts = time.time()
+    try:
+        for n in sorted(os.listdir(tmp)):
+            if any(fnmatch.fnmatch(n, g) for g in PROFILE_GLOBS):
+                try:
+                    tuoi = int(ts - os.path.getmtime(os.path.join(tmp, n)))
+                except OSError:
+                    tuoi = -1
+                dong.append(f"{n}  tuoi={tuoi}s")
+    except OSError as e:
+        dong.append(f"(không đọc được {tmp}: {e})")
+    _ghi(d, "temp-profiles.txt", f"{tmp}\n" + "\n".join(dong) + "\n")
+    if mac:
+        _ghi(d, "pmset-assertions.txt", _run_text(["pmset", "-g", "assertions"], run=run))
+        _ghi(d, "pmset-therm.txt", _run_text(["pmset", "-g", "therm"], run=run))
+        _ghi(d, "log-show-windowserver-coreaudiod.txt", _run_text(
+            ["log", "show", "--last", "10m", "--style", "compact", "--predicate",
+             'process == "WindowServer" OR process == "coreaudiod"'],
+            timeout=LOG_SHOW_TIMEOUT, run=run))
+    tom = {"time": now.isoformat(timespec="seconds"), "platform": platform.platform(),
+           "user": getpass.getuser(), "render_procs": len(bo_dung), "orphans": len(mo_coi),
+           "temp_profiles": len(dong)}
+    _ghi(d, "summary.json", json.dumps(tom, ensure_ascii=False, indent=2))
+    return d
+
+
+# ── thang ──────────────────────────────────────────────────────────────────────────────
+
+def _stuck(e: Exception) -> bool:
+    return isinstance(e, EngineError) and str(e).startswith(STUCK)
+
+
+def ladder(probe_fn, timeout, diag_dir=None, waits=WAITS, sleep=time.sleep, run=subprocess.run,
+           kill=None, tmpdir=None, log=contract.log):
+    """Chạy probe; kẹt thì chụp gói + tự chữa + thử lại theo `waits`. -> kết quả probe + "heal".
+
+    Ném `EngineError` `RENDER_STUCK:` (kèm `.diag`) khi hết thang; lỗi khác ném nguyên.
+    """
+    try:
+        res = probe_fn(timeout)
+        return dict(res, heal=None)
+    except Exception as e:      # noqa: BLE001 — chỉ bắt để phân loại, lỗi khác ném lại nguyên
+        if not _stuck(e):
+            raise
+        loi_dau = e
+    goc = diag_dir or os.path.join(tempfile.gettempdir(), "video-studio-render-stuck")
+    try:
+        diag = diag_bundle(goc, str(loi_dau), getattr(loi_dau, "output", ""), run=run, tmpdir=tmpdir)
+    except OSError as e:
+        diag = f"(không ghi được gói chẩn đoán vào {goc}: {e})"
+    log(f"[probe] {STUCK} — đã chụp gói chẩn đoán: {diag}")
+    log(f"RENDER_DIAG={diag}")
+    giet = kill_orphans(run=run, kill=kill)
+    xoa = clean_profiles(tmpdir)
+    log(f"[probe] tự chữa: giết {len(giet)} tiến trình bộ dựng mồ côi"
+        + (f" ({', '.join(sorted({p['name'] for p in giet}))})" if giet else "")
+        + f", xoá {len(xoa)} thư mục tạm cũ > {PROFILE_AGE // 3600} h")
+    heal = {"diag": diag, "killed": len(giet), "cleaned": len(xoa), "waits": list(waits)}
+    loi = loi_dau
+    for buoc, cho in enumerate(waits, start=2):
+        log(f"[probe] chờ {cho}s rồi thử lại (lần {buoc}/{len(waits) + 1}) ...")
+        sleep(cho)
+        try:
+            res = probe_fn(timeout)
+        except Exception as e:  # noqa: BLE001
+            if not _stuck(e):
+                raise
+            loi = e
+            continue
+        log(f"[probe] render thử OK sau tự chữa (lần {buoc}) — gói chẩn đoán giữ ở {diag}")
+        log(f"RENDER_HEAL=recovered step={buoc}")
+        return dict(res, heal=dict(heal, recovered=True, step=buoc))
+    log(f"RENDER_HEAL=failed steps={len(waits) + 1}")
+    duoi = str(loi).split("\n", 1)[1][-600:] if "\n" in str(loi) else ""
+    out = EngineError(
+        f"{STUCK}: môi trường render kẹt — đã tự chữa (giết {len(giet)} tiến trình mồ côi, xoá "
+        f"{len(xoa)} thư mục tạm cũ, thử lại {len(waits)} lần trong {sum(waits)}s) vẫn kẹt — "
+        f"{HINT_REBOOT}. Gói chẩn đoán: {diag}" + ("\n" + duoi if duoi else ""))
+    out.diag = diag
+    raise out

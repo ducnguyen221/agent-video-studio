@@ -5,6 +5,26 @@ chính nhưng chưa có tag; khi phát hành, mục đó đổi tên thành số
 `pyproject.toml`, `video_studio/__init__.py` cùng ba manifest plugin (`tests/test_version_sync.py`
 kiểm).
 
+## 0.2.7 — 2026-10-04
+
+Tự chữa render kẹt + chụp chứng cứ (P1-25, Mac mini 02–03/10). Mã thoát và JSON của `probe` không
+`--heal` không đổi.
+
+- **`video-studio probe --heal [--diag-dir DIR] [--heal-waits 60,600]`** (`video_studio/heal.py`):
+  lần probe đầu ra `RENDER_STUCK` ⇒ (1) chụp **gói chẩn đoán** vào `DIR/<YYYYmmdd-HHMMSS>/`: top CPU,
+  tiến trình Chrome/HyperFrames + số mồ côi, thư mục tạm của Chrome, lỗi + output của probe; macOS
+  thêm `pmset -g assertions`, `pmset -g therm`, 10 phút `log show` của WindowServer/coreaudiod. Không
+  đọc biến môi trường, không ghi dòng lệnh tiến trình (chỉ tên chương trình), che chuỗi dạng token;
+  (2) giết Chrome/HyperFrames **mồ côi** của user (POSIX `ppid == 1`, Windows cha không còn) cùng cây
+  con — tiến trình còn cha (một lượt dựng khác) không bị đụng; (3) xoá profile tạm
+  `puppeteer_dev_chrome_profile-*` / `hyperframes*` / `video-studio-probe-*` cũ hơn 1 h; (4) chờ
+  60 s → probe lại; (5) chờ 600 s → probe lần cuối. Qua ⇒ mã 0, JSON có `heal` (bước nào qua, đường
+  gói); hết thang ⇒ mã 1 `RENDER_STUCK:` "đã tự chữa … vẫn kẹt — khởi động lại máy" + `diag`. Dòng
+  stderr `RENDER_DIAG=` / `RENDER_HEAL=` cho pipeline đọc. Đo trên Windows: probe khoẻ với `--heal`
+  9,1 s, JSON y như cũ; giả lập kẹt (`--timeout 1 --heal-waits 1,1`) ⇒ gói 5 file, mã 1.
+- Stderr Chrome riêng (`--enable-logging`) chưa vào gói: HyperFrames không mở cờ Chrome ra ngoài;
+  output gộp của HyperFrames ở lần probe hỏng đã có trong `probe-error.txt`.
+
 ## 0.2.6 — 2026-10-03
 
 Một skill duy nhất cho thư viện theme (bản trùng tên ở bộ skill khác trên máy đã bỏ). Mã engine,
