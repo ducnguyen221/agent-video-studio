@@ -54,8 +54,7 @@ HINT_REBOOT = "khởi động lại máy rồi chạy lại"
 WAITS = (60, 600)                 # giây chờ trước lần probe 2 và 3
 PROFILE_AGE = 3600                # thư mục tạm cũ hơn ngần này giây mới xoá
 PROFILE_GLOBS = ("puppeteer_dev_chrome_profile-*", "hyperframes*", "video-studio-probe-*")
-# Dấu nhận một tiến trình thuộc bộ dựng (so trên dòng lệnh viết thường, chỉ trong bộ nhớ).
-RENDER_MARKS = ("chrome-headless-shell", "hyperframes", "puppeteer_dev_chrome_profile")
+PROFILE_SCAN_MAX = 5000           # số mục tối đa khi đo mtime mới nhất (đệ quy) của một thư mục tạm
 CMD_TIMEOUT = 30                  # giây cho mỗi lệnh chụp chẩn đoán
 LOG_SHOW_TIMEOUT = 120            # `log show` 10 phút có thể chậm
 TRAN_FILE = 5 * 1024 * 1024       # mỗi file trong gói tối đa 5 MB
@@ -63,13 +62,28 @@ TRAN_FILE = 5 * 1024 * 1024       # mỗi file trong gói tối đa 5 MB
 _NT = os.name == "nt"             # quy ước "mồ côi" theo hệ (test đổi được)
 
 _CHE = re.compile(
-    r"(?i)((?:token|secret|password|passwd|api[_-]?key|authorization|bearer)\s*[=:]\s*)\S+"
+    # khoá=giá trị / "khoá": "giá trị" (JSON) / Authorization: Bearer <token>
+    r"(?i)(\"?[\w-]*(?:token|secret|password|passwd|api[_-]?key|authorization)\"?\s*[=:]\s*\"?)"
+    r"(?:bearer\s+)?[^\s\",}]+"
+    r"|(?i:\bbearer\s+[A-Za-z0-9._~+/=-]{8,})"
     r"|\b\d{5,}:[A-Za-z0-9_-]{20,}\b"            # token bot Telegram
-    r"|\b(?:sk|ghp|gho|ghs|xox[bp])[-_][A-Za-z0-9_-]{16,}\b")
+    r"|\b(?:sk|ghp|gho|ghs|xox[bp]|ya29)[-_.][A-Za-z0-9_-]{16,}")
 
 
 def _che(s: str) -> str:
     return _CHE.sub(lambda m: (m.group(1) or "") + "<da-che>", s or "")
+
+
+def _run_out(argv, timeout=CMD_TIMEOUT, run=subprocess.run) -> str | None:
+    """CHỈ stdout của lệnh (None nếu không chạy được / mã ≠ 0) — để parse, không trộn stderr."""
+    try:
+        r = run(argv, capture_output=True, timeout=timeout)
+    except (subprocess.TimeoutExpired, OSError):
+        return None
+    if r.returncode != 0:
+        return None
+    out = r.stdout or b""
+    return out.decode("utf-8", "replace") if isinstance(out, bytes) else str(out)
 
 
 def _run_text(argv, timeout=CMD_TIMEOUT, run=subprocess.run) -> str:
@@ -90,68 +104,103 @@ def _run_text(argv, timeout=CMD_TIMEOUT, run=subprocess.run) -> str:
     return head + out + (("\n--- stderr ---\n" + err) if err.strip() else "")
 
 
-# ── danh sách tiến trình (pid, ppid, tên, dòng lệnh chỉ để so) ────────────────────────────
+# ── danh sách tiến trình (pid, ppid, tên, giờ tạo, dòng lệnh chỉ để so) ────────────────
 
-def list_processes(run=subprocess.run) -> list[dict]:
-    """-> [{pid, ppid, name, cmd, user_own}] của user hiện tại. Rỗng nếu không đọc được.
+# Windows: chỉ tiến trình CÙNG phiên đăng nhập với chính lệnh này (task "highest privileges" không
+# được với sang Chrome của user khác); `Tao` = giờ tạo (FILETIME) để chống PID bị cấp lại.
+_PS_WIN = ("$s = (Get-CimInstance Win32_Process -Filter \"ProcessId=$PID\").SessionId; "
+           "@(Get-CimInstance Win32_Process | Where-Object { $_.SessionId -eq $s } | "
+           "Select-Object ProcessId,ParentProcessId,Name,CommandLine,"
+           "@{n='Tao';e={ if ($_.CreationDate) { $_.CreationDate.ToFileTimeUtc() } else { 0 } }}) "
+           "| ConvertTo-Json -Compress")
 
-    `cmd` (dòng lệnh) CHỈ dùng để nhận diện trong bộ nhớ — không bao giờ ghi ra gói.
+
+def list_processes(run=subprocess.run, log=None) -> list[dict]:
+    """-> [{pid, ppid, name, cmd, tao}] của user hiện tại. Rỗng (kèm một dòng log) nếu không đọc được.
+
+    `cmd` (dòng lệnh) CHỈ dùng để nhận diện trong bộ nhớ — không bao giờ ghi ra gói. `tao` = giờ
+    tạo (Windows; POSIX `None` — ở đó cha chết thì ppid đổi về 1, không có chuyện PID cấp lại).
     """
+    log = log or contract.log
     ra = []
     if os.name == "nt":
-        ps = ("Get-CimInstance Win32_Process | Select-Object ProcessId,ParentProcessId,Name,"
-              "CommandLine | ConvertTo-Json -Compress")
-        txt = _run_text(["powershell", "-NoProfile", "-NonInteractive", "-Command", ps], run=run)
-        i = min([k for k in (txt.find("["), txt.find("{")) if k >= 0], default=-1)
+        out = _run_out(["powershell", "-NoProfile", "-NonInteractive", "-Command", _PS_WIN], run=run)
         try:
-            data = json.loads(txt[i:]) if i >= 0 else []
-        except ValueError:
+            i = min(k for k in ((out or "").find("["), (out or "").find("{")) if k >= 0)
+            data, _ = json.JSONDecoder().raw_decode(out[i:])
+        except (ValueError, TypeError):
+            log("[probe] WARN: không đọc được danh sách tiến trình (Win32_Process) — bỏ bước giết mồ côi")
             return []
         for d in data if isinstance(data, list) else [data]:
             try:
                 ra.append({"pid": int(d.get("ProcessId")), "ppid": int(d.get("ParentProcessId") or 0),
-                           "name": str(d.get("Name") or ""), "cmd": str(d.get("CommandLine") or "")})
-            except (TypeError, ValueError):
+                           "name": str(d.get("Name") or ""), "cmd": str(d.get("CommandLine") or ""),
+                           "tao": int(d.get("Tao") or 0) or None})
+            except (TypeError, ValueError, AttributeError):
                 continue
         return ra
     # Hai lượt `ps`: `comm` (tên chương trình — được ghi ra gói) và `command` (dòng lệnh — chỉ để
     # nhận diện, không ghi ra đâu cả).
     uid = str(os.getuid())
     ten = {}
-    for line in _run_text(["ps", "-U", uid, "-o", "pid=,comm="], run=run).splitlines():
+    for line in (_run_out(["ps", "-U", uid, "-o", "pid=,comm="], run=run) or "").splitlines():
         parts = line.strip().split(None, 1)
         if len(parts) == 2 and parts[0].isdigit():
             ten[int(parts[0])] = os.path.basename(parts[1].strip())
-    for line in _run_text(["ps", "-U", uid, "-o", "pid=,ppid=,command="], run=run).splitlines():
+    out = _run_out(["ps", "-U", uid, "-o", "pid=,ppid=,command="], run=run)
+    if out is None:
+        log("[probe] WARN: không đọc được danh sách tiến trình (ps) — bỏ bước giết mồ côi")
+        return []
+    for line in out.splitlines():
         parts = line.strip().split(None, 2)
         if len(parts) < 3 or not parts[0].isdigit() or not parts[1].isdigit():
             continue
         pid = int(parts[0])
-        ra.append({"pid": pid, "ppid": int(parts[1]), "name": ten.get(pid, "?"), "cmd": parts[2]})
+        ra.append({"pid": pid, "ppid": int(parts[1]), "name": ten.get(pid, "?"), "cmd": parts[2],
+                   "tao": None})
     return ra
 
 
 def _la_bo_dung(p: dict) -> bool:
-    s = (p.get("cmd") or p.get("name") or "").lower()
-    return any(m in s for m in RENDER_MARKS)
+    """Gốc thuộc BỘ DỰNG: Chrome headless của puppeteer/HyperFrames, hoặc node đang `hyperframes render`.
+
+    Hẹp có chủ đích (review 04/10): HyperFrames còn đẻ tiến trình CỐ Ý tách cha — `preview
+    --background`, bộ cập nhật nền `node -e`, telemetry — và chrome-devtools MCP cũng mở Chrome qua
+    puppeteer (không headless). Chúng mồ côi theo thiết kế; giết chúng là phá việc của người khác.
+    """
+    s = (p.get("cmd") or "").lower()
+    n = (p.get("name") or "").lower()
+    if "chrome-headless-shell" in s or "chrome-headless-shell" in n:
+        return True
+    if ("chrome" in n or "chromium" in n) and "--headless" in s and "puppeteer_dev_chrome_profile" in s:
+        return True
+    return ("hyperframes" in s and re.search(r"\brender\b", s) is not None
+            and "preview" not in s and "node -e" not in s)
 
 
 def find_orphans(procs: list[dict], self_pid: int | None = None, nt: bool | None = None) -> list[dict]:
     """Tiến trình bộ dựng MỒ CÔI + cả cây con của chúng (thứ tự: gốc trước).
 
     Mồ côi = cha không còn: POSIX bị nhận về `init`/`launchd` (`ppid == 1`); Windows cha không
-    có trong danh sách sống. Tiến trình còn cha (một lượt dựng khác đang chạy) KHÔNG bị đụng.
+    có trong danh sách sống, HOẶC "cha" sinh SAU con (PID của cha đã chết bị cấp lại cho tiến
+    trình khác — Windows không cập nhật ParentProcessId). Cây con chỉ nhận con sinh sau cha, vì
+    cùng lý do. Tiến trình còn cha (một lượt dựng khác đang chạy) KHÔNG bị đụng.
     """
     self_pid = os.getpid() if self_pid is None else self_pid
     nt = _NT if nt is None else nt
-    song = {p["pid"] for p in procs}
+    theo_pid = {p["pid"]: p for p in procs}
     con: dict[int, list[dict]] = {}
     for p in procs:
         con.setdefault(p["ppid"], []).append(p)
 
+    def sau(a, b):
+        """a sinh SAU b? (thiếu giờ tạo ⇒ không kết luận được ⇒ False)"""
+        return bool(a.get("tao") and b.get("tao") and a["tao"] > b["tao"])
+
     def mo_coi(p):
         if nt:
-            return p["ppid"] not in song
+            cha = theo_pid.get(p["ppid"])
+            return cha is None or sau(cha, p)
         return p["ppid"] == 1
 
     goc = [p for p in procs if _la_bo_dung(p) and mo_coi(p) and p["pid"] != self_pid]
@@ -163,25 +212,32 @@ def find_orphans(procs: list[dict], self_pid: int | None = None, nt: bool | None
             continue
         da.add(p["pid"])
         ra.append(p)
-        hang.extend(con.get(p["pid"], []))
+        hang.extend(c for c in con.get(p["pid"], []) if not sau(p, c))
     return ra
 
 
 def kill_orphans(procs: list[dict] | None = None, run=subprocess.run, kill=None) -> list[dict]:
-    """Giết tiến trình bộ dựng mồ côi của user. -> [{pid, name}] đã gửi lệnh giết. Không ném."""
+    """Giết tiến trình bộ dựng mồ côi của user. -> [{pid, name}] đã gửi lệnh giết. Không ném.
+
+    Giết ĐÚNG danh sách đã tính (Windows không `/T`: taskkill tự đi theo ParentProcessId và dính
+    đúng lỗi PID cấp lại). Ngay trước khi giết, đọc lại danh sách: pid nào đổi tên/giờ tạo ⇒ bỏ.
+    """
     procs = list_processes(run) if procs is None else procs
     nan = find_orphans(procs)
     if not nan:
         return []
+    moi = {p["pid"]: p for p in list_processes(run)}
     if kill is None:
         def kill(pid):
             if os.name == "nt":
-                run(["taskkill", "/T", "/F", "/PID", str(pid)], capture_output=True,
-                    timeout=CMD_TIMEOUT)
+                run(["taskkill", "/F", "/PID", str(pid)], capture_output=True, timeout=CMD_TIMEOUT)
             else:
                 os.kill(pid, signal.SIGKILL)
     ra = []
     for p in nan:
+        q = moi.get(p["pid"])
+        if q is None or q.get("name") != p.get("name") or q.get("tao") != p.get("tao"):
+            continue
         try:
             kill(p["pid"])
             ra.append({"pid": p["pid"], "name": p["name"]})
@@ -192,9 +248,30 @@ def kill_orphans(procs: list[dict] | None = None, run=subprocess.run, kill=None)
 
 # ── thư mục tạm cũ ─────────────────────────────────────────────────────────────────────
 
-def old_profiles(tmpdir: str | None = None, older_than=PROFILE_AGE, now=None) -> list[str]:
+def _moi_nhat(p: str) -> float:
+    """mtime MỚI NHẤT trong cây `p` (tối đa PROFILE_SCAN_MAX mục): thư mục cấp một của Chrome ít khi
+    đổi mtime dù profile đang được dùng."""
+    m = os.path.getmtime(p)
+    dem = 0
+    for goc, dirs, files in os.walk(p):
+        for n in dirs + files:
+            dem += 1
+            if dem > PROFILE_SCAN_MAX:
+                return m
+            try:
+                m = max(m, os.lstat(os.path.join(goc, n)).st_mtime)
+            except OSError:
+                continue
+    return m
+
+
+def old_profiles(tmpdir: str | None = None, older_than=PROFILE_AGE, now=None,
+                 procs: list[dict] | None = None) -> list[str]:
+    """Thư mục tạm của Chrome/HyperFrames cũ hơn `older_than` VÀ không tiến trình sống nào nhắc tới
+    (`procs`: dòng lệnh chứa tên thư mục ⇒ đang dùng, vd một lượt truyện render dài > 1 h)."""
     tmpdir = tmpdir or tempfile.gettempdir()
     now = time.time() if now is None else now
+    dang_dung = " ".join((p.get("cmd") or "") for p in (procs or [])).lower()
     ra = []
     try:
         names = os.listdir(tmpdir)
@@ -203,21 +280,24 @@ def old_profiles(tmpdir: str | None = None, older_than=PROFILE_AGE, now=None) ->
     for n in sorted(names):
         if not any(fnmatch.fnmatch(n, g) for g in PROFILE_GLOBS):
             continue
+        if n.lower() in dang_dung:
+            continue
         p = os.path.join(tmpdir, n)
         try:
             if os.path.islink(p) or not os.path.isdir(p):
                 continue
-            if now - os.path.getmtime(p) > older_than:
+            if now - _moi_nhat(p) > older_than:
                 ra.append(p)
         except OSError:
             continue
     return ra
 
 
-def clean_profiles(tmpdir: str | None = None, older_than=PROFILE_AGE, now=None) -> list[str]:
-    """Xoá thư mục tạm của Chrome/HyperFrames cũ hơn `older_than`. -> [đã xoá]. Không ném."""
+def clean_profiles(tmpdir: str | None = None, older_than=PROFILE_AGE, now=None,
+                   procs: list[dict] | None = None) -> list[str]:
+    """Xoá thư mục tạm của Chrome/HyperFrames cũ và không ai dùng. -> [đã xoá]. Không ném."""
     ra = []
-    for p in old_profiles(tmpdir, older_than, now):
+    for p in old_profiles(tmpdir, older_than, now, procs):
         shutil.rmtree(p, ignore_errors=True)
         if not os.path.exists(p):
             ra.append(p)
@@ -324,8 +404,9 @@ def ladder(probe_fn, timeout, diag_dir=None, waits=WAITS, sleep=time.sleep, run=
         diag = f"(không ghi được gói chẩn đoán vào {goc}: {e})"
     log(f"[probe] {STUCK} — đã chụp gói chẩn đoán: {diag}")
     log(f"RENDER_DIAG={diag}")
-    giet = kill_orphans(run=run, kill=kill)
-    xoa = clean_profiles(tmpdir)
+    procs = list_processes(run)
+    giet = kill_orphans(procs, run=run, kill=kill)
+    xoa = clean_profiles(tmpdir, procs=procs)
     log(f"[probe] tự chữa: giết {len(giet)} tiến trình bộ dựng mồ côi"
         + (f" ({', '.join(sorted({p['name'] for p in giet}))})" if giet else "")
         + f", xoá {len(xoa)} thư mục tạm cũ > {PROFILE_AGE // 3600} h")

@@ -44,9 +44,10 @@ Pipeline đặt nó **trước** các bước tốn kém (agent, TTS).
 chẩn đoán** vào `DIR/<YYYYmmdd-HHMMSS>/` (tiến trình top CPU, tiến trình Chrome/HyperFrames và số mồ
 côi, thư mục tạm của Chrome, lỗi + output của lần probe; macOS thêm `pmset -g assertions`/`therm` và
 10 phút `log show` của WindowServer/coreaudiod — không biến môi trường, không dòng lệnh tiến trình,
-chuỗi dạng token bị che), rồi **tự chữa**: giết Chrome/HyperFrames **mồ côi** (cha đã chết) của user
-cùng cây con, xoá `puppeteer_dev_chrome_profile-*` / `hyperframes*` / `video-studio-probe-*` trong
-thư mục tạm cũ hơn 1 h, chờ từng mức trong `--heal-waits` rồi probe lại. Qua ở lần nào ⇒ `0`, JSON
+chuỗi dạng token bị che), rồi **tự chữa**: giết Chrome headless / node `hyperframes … render` **mồ côi** (cha đã chết; Windows:
+cùng phiên đăng nhập, chống PID cấp lại bằng giờ tạo) của user cùng cây con — không đụng `preview
+--background` hay tiến trình còn cha —, xoá `puppeteer_dev_chrome_profile-*` / `hyperframes*` / `video-studio-probe-*` trong
+thư mục tạm cũ hơn 1 h (mtime mới nhất trong cây, không tiến trình sống nào dùng), chờ từng mức trong `--heal-waits` rồi probe lại. Qua ở lần nào ⇒ `0`, JSON
 thêm `"heal": {"recovered": true, "step", "diag", "killed", "cleaned", "waits"}`; hết thang ⇒ `1`
 `RENDER_STUCK:` "đã tự chữa … vẫn kẹt — khởi động lại máy", JSON thêm `"diag"`. Không kẹt thì JSON y
 như không có `--heal`. Dòng stderr máy đọc: `RENDER_DIAG=<thư mục>`, `RENDER_HEAL=recovered step=N`,

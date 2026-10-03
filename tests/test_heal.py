@@ -242,3 +242,75 @@ def test_cli_without_heal_json_unchanged(monkeypatch, capsys):
 @pytest.mark.parametrize("bad", ["", "a,b", "-1,5"])
 def test_cli_bad_heal_waits_is_code_2(bad, capsys):
     assert probe.main(["--json", "--heal", "--heal-waits", bad]) == contract.CONTRACT_ERROR
+
+
+# ── review 04/10: PID cấp lại (Windows), dấu nhận hẹp, profile đang dùng, che token ─────
+
+def test_windows_pid_cap_lai_KHONG_keo_explorer_vao_cay():
+    """explorer.exe mang ppid 1234 của userinit đã chết; PID 1234 nay là Chrome mồ côi."""
+    procs = [
+        {"pid": 1234, "ppid": 9999, "name": "chrome-headless-shell.exe", "cmd": "chrome-headless-shell.exe", "tao": 500},
+        {"pid": 1235, "ppid": 1234, "name": "chrome-headless-shell.exe", "cmd": "--type=gpu", "tao": 501},
+        {"pid": 4000, "ppid": 1234, "name": "explorer.exe", "cmd": "explorer.exe", "tao": 100},
+    ]
+    assert [p["pid"] for p in heal.find_orphans(procs, self_pid=1, nt=True)] == [1234, 1235]
+
+
+def test_windows_cha_sinh_SAU_con_la_mo_coi():
+    procs = [
+        {"pid": 50, "ppid": 1234, "name": "chrome-headless-shell.exe", "cmd": "chrome-headless-shell.exe", "tao": 100},
+        {"pid": 1234, "ppid": 4, "name": "notepad.exe", "cmd": "notepad.exe", "tao": 900},  # PID cấp lại
+    ]
+    assert [p["pid"] for p in heal.find_orphans(procs, self_pid=1, nt=True)] == [50]
+
+
+@pytest.mark.parametrize("cmd,name,la", [
+    ("node /x/hyperframes/dist/cli.js render -o out.mp4", "node", True),
+    ("node /x/hyperframes/dist/cli.js preview --background", "node", False),   # cố ý tách cha
+    ("node -e require('hyperframes/update')", "node", False),                  # cập nhật nền
+    ("/x/Chrome --remote-debugging-pipe --user-data-dir=/tmp/puppeteer_dev_chrome_profile-a", "Chrome", False),
+    ("/x/chrome --headless --user-data-dir=/tmp/puppeteer_dev_chrome_profile-a", "chrome", True),
+    ("/x/chrome-headless-shell --type=renderer", "chrome-headless-shell", True),
+])
+def test_dau_nhan_bo_dung_hep(cmd, name, la):
+    assert heal._la_bo_dung({"cmd": cmd, "name": name}) is la
+
+
+def test_kill_doc_lai_truoc_khi_giet_pid_doi_thi_bo(monkeypatch):
+    truoc = [{"pid": 500, "ppid": 1, "name": "chrome-headless-shell", "cmd": "chrome-headless-shell", "tao": None}]
+    sau = [{"pid": 500, "ppid": 1, "name": "bash", "cmd": "bash", "tao": None}]
+    monkeypatch.setattr(heal, "_NT", False)
+    monkeypatch.setattr(heal, "list_processes", lambda run=None, log=None: sau)
+    killed = []
+    assert heal.kill_orphans(truoc, kill=killed.append) == [] and killed == []
+
+
+def test_profile_DANG_DUNG_hoac_co_file_moi_ben_trong_thi_giu(tmp_path):
+    now = time.time()
+    for name in ("puppeteer_dev_chrome_profile-dangdung", "puppeteer_dev_chrome_profile-ruot-moi",
+                 "puppeteer_dev_chrome_profile-cu"):
+        d = tmp_path / name
+        (d / "Default").mkdir(parents=True)
+        f = d / "Default" / "Cookies"
+        f.write_text("x")
+        tuoi = 60 if name.endswith("ruot-moi") else 7200
+        os.utime(f, (now - tuoi, now - tuoi))
+        os.utime(d / "Default", (now - 7200, now - 7200))
+        os.utime(d, (now - 7200, now - 7200))
+    procs = [{"pid": 9, "ppid": 2, "name": "chrome",
+              "cmd": f"chrome --user-data-dir={tmp_path}/puppeteer_dev_chrome_profile-dangdung"}]
+    xoa = heal.clean_profiles(str(tmp_path), now=now, procs=procs)
+    assert [os.path.basename(p) for p in xoa] == ["puppeteer_dev_chrome_profile-cu"]
+
+
+def test_che_bearer_va_json():
+    s = heal._che('Authorization: Bearer abcdefghijklmnop {"access_token": "ya29.AAAAAAAAAAAAAAAAAAAA"}')
+    assert "abcdefghijklmnop" not in s and "ya29.AAAA" not in s
+
+
+def test_run_out_chi_lay_stdout_va_ma_khac_0_la_None():
+    class R:
+        def __init__(self, rc):
+            self.returncode, self.stdout, self.stderr = rc, b'[{"a":1}]', b"canh bao"
+    assert heal._run_out(["x"], run=lambda *a, **k: R(0)) == '[{"a":1}]'
+    assert heal._run_out(["x"], run=lambda *a, **k: R(1)) is None

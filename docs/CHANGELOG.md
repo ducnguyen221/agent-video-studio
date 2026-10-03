@@ -22,6 +22,14 @@ Tự chữa render kẹt + chụp chứng cứ (P1-25, Mac mini 02–03/10). Mã
   gói); hết thang ⇒ mã 1 `RENDER_STUCK:` "đã tự chữa … vẫn kẹt — khởi động lại máy" + `diag`. Dòng
   stderr `RENDER_DIAG=` / `RENDER_HEAL=` cho pipeline đọc. Đo trên Windows: probe khoẻ với `--heal`
   9,1 s, JSON y như cũ; giả lập kẹt (`--timeout 1 --heal-waits 1,1`) ⇒ gói 5 file, mã 1.
+- **Sau review độc lập (04/10):** chỉ nhận gốc là Chrome headless (chrome-headless-shell, hoặc Chrome
+  `--headless` với profile puppeteer) hoặc node đang `hyperframes … render` — không đụng `hyperframes
+  preview --background`, bộ cập nhật nền `node -e`, Chrome của chrome-devtools MCP; Windows: chỉ tiến
+  trình cùng phiên đăng nhập, chống PID cấp lại bằng giờ tạo (cha sinh sau con = cha đã chết; cây con
+  chỉ nhận con sinh sau cha), `taskkill /F` không `/T`, đọc lại danh sách ngay trước khi giết (đổi
+  tên/giờ tạo ⇒ bỏ); profile tạm chỉ xoá khi mtime MỚI NHẤT trong cây > 1 h và không tiến trình sống
+  nào nhắc tới; danh sách tiến trình đọc hỏng ⇒ dòng WARN (không im lặng "giết 0"); che thêm
+  `Bearer <token>` và `"khoá": "giá trị"` kiểu JSON.
 - Stderr Chrome riêng (`--enable-logging`) chưa vào gói: HyperFrames không mở cờ Chrome ra ngoài;
   output gộp của HyperFrames ở lần probe hỏng đã có trong `probe-error.txt`.
 
