@@ -80,31 +80,48 @@ _NT = os.name == "nt"             # quy ước "mồ côi" theo hệ (test đổ
 # được neo ở đầu từ và có trần độ dài, giá trị có trần độ dài; văn bản bị cắt về TRAN_FILE TRƯỚC khi
 # che. `tests/test_heal.py` đo thời gian trên chuỗi xấu nhất.
 _TU_NHAY_CAM = (r"(?:token|secret|pass(?:wd|word|phrase)|pwd|api[_-]?key|access[_-]?key"
-                r"|private[_-]?key|client[_-]?secret|credential|cookie|authorization|auth(?![a-z]))")
+                r"|private[_-]?key|client[_-]?secret|credential|cookie|authorization|auth(?![a-z])"
+                r"|(?<![a-z])sig(?![a-z])|signature)")
 _KHOA_TRAN = r"[\w.-]{0,40}?" + _TU_NHAY_CAM + r"[\w.-]{0,40}"
 _KHOA = r"(?<![\w.-])" + _KHOA_TRAN       # neo đầu từ: không quay lui giữa một dải chữ dài
-_GT_NHAY = r"(?P<q>[\"'])(?P<vq>[^\"'\n]{1,512})(?P=q)"
-_GT_TRAN = r"(?:(?:bearer|basic|token)\s+)?(?P<v>[^\s\"',;}&]{1,512})"
-_CHE_KV = re.compile(r"(?i)(?P<k>[\"']?" + _KHOA + r"[\"']?[ \t]{0,8}(?:[=:]|%3d)[ \t]{0,8})"
+_SEP = r"(?::=|=>|[=:]|%3d)"               # `=` `:` `:=` `=>` `%3D` (mã hoá URL)
+# Giá trị trong nháy: tới đúng nháy ĐÓNG cùng loại (được chứa nháy kia: "it's x"), trần 4096.
+_GT_NHAY = r"(?P<q>[\"'])(?P<vq>(?:(?!(?P=q))[^\n]){1,4096})(?P=q)"
+# Giá trị trần: tới khoảng trắng / nháy / `&` — thà che thừa `,;}` còn hơn để lộ đuôi secret.
+_GT_TRAN = r"(?:(?:bearer|basic|token)\s+)?(?P<v>[^\s\"'&]{1,512})"
+_CHE_KV = re.compile(r"(?i)(?P<k>[\"']?" + _KHOA + r"[\"']?[ \t]{0,8}" + _SEP + r"[ \t]{0,8})"
                      r"(?:" + _GT_NHAY + r"|" + _GT_TRAN + r")")
 _CHE_CO = re.compile(r"(?i)(?P<k>(?<![\w-])--?" + _KHOA_TRAN + r"[ \t]{1,8})(?P<v>[^\s\-][^\s]{0,511})")
-_CHE_HEADER = re.compile(r"(?i)(?P<k>(?<![\w-])(?:set-cookie|cookie|proxy-authorization|authorization)"
+# Header chỉ ở ĐẦU DÒNG (log HTTP): giữa dòng `[com.apple.Authorization:authd] …` không phải header.
+_CHE_HEADER = re.compile(r"(?im)^(?P<k>[ \t>]{0,8}(?:set-cookie|cookie|proxy-authorization|authorization)"
                          r"[ \t]{0,8}:[ \t]{0,8})(?P<v>[^\n]{1,4096})")
-_CHE_URL = re.compile(r"(?i)(?P<k>\b[a-z][a-z0-9+.-]{0,20}://[^/\s:@]{1,256}:)[^@\s/]{1,256}(?=@)")
+_CHE_URL = re.compile(r"(?i)(?P<k>\b[a-z][a-z0-9+.-]{0,20}://[^/\s:@]{0,256}:)[^@\s/]{1,256}(?=@)")
+# Mọi hình dạng neo bằng `(?<![\w-])` (không phải `\b`): `\b` khớp ngay sau `-`, nên chuỗi kiểu
+# `eyJ-eyJ-…` mở một điểm bắt đầu mỗi 4 ký tự, mỗi điểm quét tới trần (review vòng 4: 4,65 s/MB).
 _CHE_HINH = re.compile(
-    r"-----BEGIN [A-Z ]{0,40}PRIVATE KEY-----[A-Za-z0-9+/=\s]{0,20000}-----END [A-Z ]{0,40}PRIVATE KEY-----"
-    r"|(?i:\b(?:bearer|basic)[ \t]{1,8}[A-Za-z0-9._~+/=-]{8,512})"
-    r"|\beyJ[\w-]{10,2048}\.[\w-]{10,4096}\.[\w-]{5,2048}"                # JWT
-    r"|\b(?:AKIA|ASIA)[0-9A-Z]{16}\b"                                    # khoá AWS
-    r"|\bAIza[0-9A-Za-z_-]{35}"                                          # khoá Google API
-    r"|\b\d{5,12}:[A-Za-z0-9_-]{20,64}\b"                                # token bot Telegram
-    r"|\b(?:sk|ghp|gho|ghs|ghu|github_pat|glpat|npm|xox[abpr]|ya29)[-_.][A-Za-z0-9_-]{16,256}"
-    r"|\b[0-9a-fA-F]{40,512}\b")
+    r"-----BEGIN [A-Z ]{0,40}PRIVATE KEY-----(?:[A-Za-z0-9+/=\s:,]|-(?!----)){0,20000}"
+    r"-----END [A-Z ]{0,40}PRIVATE KEY-----"                                # PEM (kể cả Proc-Type:)
+    r"|(?i:(?<![\w-])(?:bearer|basic)[ \t]{1,8}[A-Za-z0-9._~+/=-]{8,512})"
+    r"|(?<![\w-])eyJ[\w-]{10,2048}\.[\w-]{10,4096}\.[\w-]{5,2048}"          # JWT
+    r"|(?<![\w-])(?:AKIA|ASIA)[0-9A-Z]{16}(?![\w-])"                      # khoá AWS
+    r"|(?<![\w-])AIza[0-9A-Za-z_-]{35}"                                   # khoá Google API
+    r"|(?<!\d)\d{5,12}:[A-Za-z0-9_-]{20,64}(?![\w-])"                  # token bot Telegram (kể cả `/bot123:…`)
+    r"|(?<![\w-])(?:sk|ghp|gho|ghs|ghu|ghr|github_pat|glpat|npm|hf|xox[abpr]|xapp|ya29)"
+    r"[-_.][A-Za-z0-9_-]{16,256}"
+    r"|hooks\.slack\.com/services/[A-Za-z0-9/_-]{10,256}"                 # webhook Slack
+    r"|(?<![\w-])[0-9a-fA-F]{40,512}(?![\w-])")
 _TEN_BIEN_BI_MAT = re.compile(r"(?i)" + _TU_NHAY_CAM)
 # Tên khớp mẫu nhưng KHÔNG phải secret: `PWD` = thư mục đang làm (shell POSIX luôn đặt) — che nó là
 # xoá mọi đường dẫn dự án trong stack trace.
 _TEN_KHONG_BI_MAT = {"PWD", "OLDPWD"}
 GIA_TRI_TOI_THIEU = 8             # giá trị env ngắn hơn ngần này không che (tránh che "1", "true")
+# Giá trị KHÔNG phải secret dù đứng sau tên khoá nhạy cảm (`"auth": true`, `OAuth: disabled`).
+_GT_THUONG = {"true", "false", "null", "none", "nil", "yes", "no", "on", "off", "enabled",
+              "disabled", "undefined", "required", "optional", "<da-che>"}
+_DUOI_KHOA = re.compile(r"(?i)[\"'\s]*(?::=|=>|[=:]|%3d)[\"'\s]*$")   # bỏ dấu tách khỏi tên khoá
+# Nhãn hệ con trong log macOS: `[com.apple.Authorization:authd]` — không phải secret.
+_NHAN_LOG = re.compile(r"[a-z][a-z0-9_.-]{0,40}\]")
+_SO_VI_TRI = re.compile(r"\d{1,9}(?:[:.]\d{1,9}){0,3}[,;)}\]]?")   # `token.js:12:3`, `1.2.3`
 
 
 def gia_tri_bi_mat(env=None) -> list[str]:
@@ -117,16 +134,23 @@ def gia_tri_bi_mat(env=None) -> list[str]:
 
 
 def _la_so_dem(v: str) -> bool:
-    """`token_count: 123`, `cookie: 42` (log WindowServer) — số đếm, không phải secret."""
+    """`token_count: 123`, `cookie: 42`, `token.js:12:3`, `true` — không phải secret."""
     v = (v or "").strip()
-    return v.isdigit() and len(v) < 10
+    return (v.lower().rstrip(",;)}]") in _GT_THUONG
+            or (_SO_VI_TRI.fullmatch(v) is not None and len(v.replace(":", "").replace(".", "")) < 10))
 
 
 def _che_kv(m) -> str:
+    k = m.group("k")
+    ten = _DUOI_KHOA.sub("", k).strip("\"' ").upper()
+    if ten in _TEN_KHONG_BI_MAT:
+        return m.group(0)
     if m.group("q"):
-        return m.group("k") + m.group("q") + "<da-che>" + m.group("q")
+        if _la_so_dem(m.group("vq")):
+            return m.group(0)
+        return k + m.group("q") + "<da-che>" + m.group("q")
     v = m.group("v") or ""
-    if _la_so_dem(v):
+    if _la_so_dem(v) or (_NHAN_LOG.fullmatch(v) and "." in ten):   # [com.apple.X:authd]
         return m.group(0)
     return m.group(0)[: len(m.group(0)) - len(v)] + "<da-che>"
 
@@ -135,12 +159,24 @@ def _che(s: str, bi_mat=None) -> str:
     s = s or ""
     for v in (gia_tri_bi_mat() if bi_mat is None else bi_mat):
         s = s.replace(v, "<da-che>")
+    s = s.replace('\\"', '"')                 # JSON lồng có thoát `{\"password\":\"x\"}`
     s = _CHE_HINH.sub("<da-che>", s)          # PEM/JWT trước: header bên dưới che tới hết dòng
     s = _CHE_HEADER.sub(lambda m: m.group(0) if _la_so_dem(m.group("v"))
                         else m.group("k") + "<da-che>", s)
     s = _CHE_URL.sub(lambda m: m.group("k") + "<da-che>", s)
     s = _CHE_KV.sub(_che_kv, s)
     return _CHE_CO.sub(lambda m: m.group("k") + "<da-che>", s)
+
+
+def _che_duoi_pem(b: bytes) -> bytes:
+    """Cắt về 5 MB có thể rơi GIỮA một khối PEM: dòng BEGIN mất, thân khoá còn — che từ đầu tới END."""
+    i = b.find(b"PRIVATE KEY-----")
+    if i < 0:
+        return b
+    j = b.find(b"-----END ")
+    if 0 <= j < i and b.find(b"-----BEGIN ", 0, j) < 0:
+        return b"<da-che>" + b[i + len(b"PRIVATE KEY-----"):]
+    return b
 
 
 def _run_out(argv, timeout=CMD_TIMEOUT, run=subprocess.run) -> str | None:
@@ -381,6 +417,8 @@ def kill_orphans(procs: list[dict] | None = None, run=subprocess.run, kill=None,
             log(f"[probe] bỏ qua {len(la)} tiến trình mồ côi không thuộc user này (hoặc không đọc "
                 f"được chủ): {', '.join(sorted({p['name'] for p in la}))}")
         nan = [p for p in nan if sid.get(p["pid"]) == me]
+        if not nan:
+            return []
     # Đọc lại SAU khi hỏi chủ — khe hở cho PID bị cấp lại càng hẹp càng tốt.
     moi = {p["pid"]: p for p in list_processes(run)}
     if kill is None:
@@ -467,7 +505,7 @@ def _ghi(d: str, ten: str, text: str) -> None:
     dau = b""
     if len(b) > TRAN_FILE:            # cắt TRƯỚC khi che: che có chi phí theo độ dài
         dau = b"(...cat phan dau, giu " + str(TRAN_FILE).encode() + b" byte cuoi)\n"
-        b = b[-TRAN_FILE:]
+        b = _che_duoi_pem(b[-TRAN_FILE:])
     b = dau + _che(b.decode("utf-8", "replace")).encode("utf-8", "replace")
     with open(os.path.join(d, ten), "wb") as f:
         f.write(b)

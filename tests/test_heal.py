@@ -449,6 +449,13 @@ CHUOI_XAU = {
     "co-lap": lambda: "--token " * 120_000,
     "pem-lap": lambda: "-----BEGIN PRIVATE KEY-----" * 30_000,
     "gach-chu": lambda: ("--" + "a" * 38 + " ") * 25_000,
+    # review vòng 4: `\b` khớp sau `-` ⇒ mỗi 4 ký tự một điểm bắt đầu (4,65 s/MB)
+    "jwt-gach": lambda: "eyJ-" * 250_000,
+    "sk-gach": lambda: "sk-" * 333_333,
+    "telegram-lap": lambda: "1234567:" * 125_000,
+    "pem-gach": lambda: "-----BEGIN PRIVATE KEY-----" + "-" * 1_000_000,
+    "nhay-lap": lambda: "token='" + 'x"y' * 300_000,
+    "slack-lap": lambda: "hooks.slack.com/services/" * 40_000,
 }
 
 
@@ -507,3 +514,44 @@ def test_ghi_CAT_truoc_khi_che(tmp_path, monkeypatch):
     monkeypatch.setattr(heal, "TRAN_FILE", 1000)
     heal._ghi(str(tmp_path), "x.txt", "a" * 50_000)
     assert goi == [1000], "che phải chạy trên phần ĐÃ cắt, không phải toàn bộ"
+
+
+# ── review vòng 4 (04/10) ────────────────────────────────────────────────────────────────
+
+@pytest.mark.parametrize("vao,lo", [
+    ("redis://:passpassxx@host:6379", "passpassxx"),
+    ("https://api.telegram.org/bot123456789:AAHabcdefghijklmnopqrstuvwxyz0123456/sendMessage",
+     "AAHabcdefghijklmnopqrstuvwxyz"),
+    ('{\\"password\\":\\"xxxxsecret\\"}', "xxxxsecret"),
+    ("PASSWORD := xxxxsecret", "xxxxsecret"),
+    ("password => 'xxxxsecret'", "xxxxsecret"),
+    ("password=S3cr,etVal", "etVal"),
+    ('"password": "it\'s xxxsecret"', "xxxsecret"),
+    ("token='" + "z" * 1000 + "'", "z" * 20),
+    ("sig=abcdEFGH1234", "abcdEFGH1234"),
+    ("-----BEGIN RSA PRIVATE KEY-----\nProc-Type: 4,ENCRYPTED\nDEK-Info: AES-128-CBC,AB\n"
+     "MIIEabcdefgh\n-----END RSA PRIVATE KEY-----", "MIIEabcdefgh"),
+    ("hooks.slack.com/services/T000/B000/XXXXXXXXXXXX", "XXXXXXXXXXXX"),
+    ("hf_abcdefghijklmnopqrstuvwx", "abcdefghijklmnop"),
+    ("[token:abcd1234]", "abcd1234"),
+])
+def test_che_cac_dang_review_vong_4(vao, lo):
+    assert lo not in heal._che(vao, bi_mat=[])
+
+
+@pytest.mark.parametrize("giu", [
+    "[com.apple.Authorization:authd] Succeeded authorizing right",
+    "token.js:12:3",
+    '"auth": true',
+    "OAuth: disabled",
+    "PWD=/Users/x/Code",
+    "OLDPWD=/a/b/c",
+])
+def test_che_KHONG_qua_tay_review_vong_4(giu):
+    assert heal._che(giu, bi_mat=[]) == giu
+
+
+def test_cat_roi_giua_khoi_PEM_van_che_than_khoa():
+    assert heal._che_duoi_pem(b"MIIEbody\n-----END PRIVATE KEY-----\nduoi") == b"<da-che>\nduoi"
+    nguyen = b"-----BEGIN PRIVATE KEY-----\nMIIE\n-----END PRIVATE KEY-----"
+    assert heal._che_duoi_pem(nguyen) == nguyen, "khối đủ BEGIN/END để _che lo"

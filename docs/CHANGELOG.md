@@ -51,6 +51,14 @@ Tự chữa render kẹt + chụp chứng cứ (P1-25, Mac mini 02–03/10). Mã
   giá trị trong nháy có dấu cách, header `Cookie:`/`Authorization:` che tới hết dòng, `passphrase`,
   `auth`, `%3D`, khoá Google `AIza…`, GitLab `glpat-`, `npm_`, khối PEM. (d) Không che quá tay: bỏ
   `PWD`/`OLDPWD` khỏi danh sách biến secret, số đếm ngắn (`token_count: 123`, `cookie: 42`) giữ nguyên.
+- **Review vòng 4 (04/10):** mọi mẫu hình dạng neo bằng `(?<![\w-])` thay `\b` (`\b` khớp sau `-` ⇒
+  `eyJ-eyJ-…` mất 4,65 s/MB; nay ≤ 0,55 s/MB trên 14 chuỗi đối kháng 1 MB, có test); thêm che:
+  `redis://:pass@`, token Telegram trong URL `/bot123:…`, JSON thoát `{\"password\":…}`, dấu tách
+  `:=`/`=>`, giá trị chứa `,;}`, giá trị trong nháy chứa nháy kia hoặc dài tới 4096, PEM có
+  `Proc-Type:`/`DEK-Info:`, thân PEM khi điểm cắt 5 MB rơi giữa khối, `sig=`, `hf_`/`ghr_`/`xapp-`,
+  webhook Slack; header `Cookie:`/`Authorization:` chỉ tính ở đầu dòng; không che `true/false/…`,
+  `token.js:12:3`, `PWD=`, nhãn log `[com.apple.Authorization:authd]`. Giới hạn đã biết (không
+  che): mật khẩu dính liền cờ một chữ (`mysql -pX`), giá trị cờ nằm ở dòng sau (`--token⏎X`).
 - Stderr Chrome riêng (`--enable-logging`) chưa vào gói: HyperFrames không mở cờ Chrome ra ngoài;
   output gộp của HyperFrames ở lần probe hỏng đã có trong `probe-error.txt`.
 
