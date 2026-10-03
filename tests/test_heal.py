@@ -314,3 +314,26 @@ def test_run_out_chi_lay_stdout_va_ma_khac_0_la_None():
             self.returncode, self.stdout, self.stderr = rc, b'[{"a":1}]', b"canh bao"
     assert heal._run_out(["x"], run=lambda *a, **k: R(0)) == '[{"a":1}]'
     assert heal._run_out(["x"], run=lambda *a, **k: R(1)) is None
+
+
+def test_node_exe_e_tren_windows_khong_phai_luot_dung():
+    cmd = '"C:\\nodejs\\node.exe" -e fetch("posthog") hyperframes {"command":"render"}'
+    assert heal._la_bo_dung({"cmd": cmd, "name": "node.exe"}) is False
+
+
+def test_thang_xoa_DUNG_profile_cua_chrome_vua_giet(monkeypatch, tmp_path):
+    """Review vòng 2 N1: profile nằm trong dòng lệnh của chính Chrome mồ côi vừa giết vẫn phải xoá."""
+    tmp = tmp_path / "tmp"
+    d = tmp / "puppeteer_dev_chrome_profile-mo-coi"
+    d.mkdir(parents=True)
+    cu = time.time() - 7200
+    os.utime(d, (cu, cu))
+    mo_coi = {"pid": 500, "ppid": 1, "name": "chrome-headless-shell", "tao": None,
+              "cmd": f"chrome-headless-shell --user-data-dir={d}"}
+    monkeypatch.setattr(heal, "_NT", False)
+    monkeypatch.setattr(heal, "list_processes", lambda run=None, log=None: [dict(mo_coi)])
+    monkeypatch.setattr(heal, "diag_bundle", lambda root, *a, **k: root)
+    with pytest.raises(EngineError):
+        heal.ladder(Probe("stuck"), 1, diag_dir=str(tmp_path / "rs"), waits=(0,), sleep=lambda s: None,
+                    kill=lambda pid: None, tmpdir=str(tmp), log=lambda m: None)
+    assert not d.exists()

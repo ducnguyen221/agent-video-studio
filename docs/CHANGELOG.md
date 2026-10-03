@@ -30,6 +30,8 @@ Tự chữa render kẹt + chụp chứng cứ (P1-25, Mac mini 02–03/10). Mã
   tên/giờ tạo ⇒ bỏ); profile tạm chỉ xoá khi mtime MỚI NHẤT trong cây > 1 h và không tiến trình sống
   nào nhắc tới; danh sách tiến trình đọc hỏng ⇒ dòng WARN (không im lặng "giết 0"); che thêm
   `Bearer <token>` và `"khoá": "giá trị"` kiểu JSON.
+  Vòng 2: profile của chính Chrome mồ côi vừa giết được xoá ngay trong lần chữa đó; `node.exe" -e`
+  (Windows) cũng bị loại như `node -e`.
 - Stderr Chrome riêng (`--enable-logging`) chưa vào gói: HyperFrames không mở cờ Chrome ra ngoài;
   output gộp của HyperFrames ở lần probe hỏng đã có trong `probe-error.txt`.
 

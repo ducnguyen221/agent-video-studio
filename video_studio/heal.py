@@ -54,7 +54,10 @@ HINT_REBOOT = "khởi động lại máy rồi chạy lại"
 WAITS = (60, 600)                 # giây chờ trước lần probe 2 và 3
 PROFILE_AGE = 3600                # thư mục tạm cũ hơn ngần này giây mới xoá
 PROFILE_GLOBS = ("puppeteer_dev_chrome_profile-*", "hyperframes*", "video-studio-probe-*")
-PROFILE_SCAN_MAX = 5000           # số mục tối đa khi đo mtime mới nhất (đệ quy) của một thư mục tạm
+# `node -e …` / `node.exe" -e …` (Windows có nháy quanh đường chương trình): script nội tuyến của
+# bộ cập nhật nền / telemetry HyperFrames — không phải lượt dựng.
+_NODE_E = re.compile(r'node(?:\.exe)?"?\s+-e\b')
+PROFILE_SCAN_MAX = 5000          # số mục tối đa khi đo mtime mới nhất (đệ quy) của một thư mục tạm
 CMD_TIMEOUT = 30                  # giây cho mỗi lệnh chụp chẩn đoán
 LOG_SHOW_TIMEOUT = 120            # `log show` 10 phút có thể chậm
 TRAN_FILE = 5 * 1024 * 1024       # mỗi file trong gói tối đa 5 MB
@@ -175,7 +178,7 @@ def _la_bo_dung(p: dict) -> bool:
     if ("chrome" in n or "chromium" in n) and "--headless" in s and "puppeteer_dev_chrome_profile" in s:
         return True
     return ("hyperframes" in s and re.search(r"\brender\b", s) is not None
-            and "preview" not in s and "node -e" not in s)
+            and "preview" not in s and _NODE_E.search(s) is None)
 
 
 def find_orphans(procs: list[dict], self_pid: int | None = None, nt: bool | None = None) -> list[dict]:
@@ -406,7 +409,10 @@ def ladder(probe_fn, timeout, diag_dir=None, waits=WAITS, sleep=time.sleep, run=
     log(f"RENDER_DIAG={diag}")
     procs = list_processes(run)
     giet = kill_orphans(procs, run=run, kill=kill)
-    xoa = clean_profiles(tmpdir, procs=procs)
+    # Tiến trình vừa giết không còn "dùng" profile của nó — bỏ khỏi danh sách trước khi xoá, nếu
+    # không chính profile của Chrome mồ côi sẽ được giữ lại (review vòng 2).
+    da_giet = {p["pid"] for p in giet}
+    xoa = clean_profiles(tmpdir, procs=[p for p in procs if p["pid"] not in da_giet])
     log(f"[probe] tự chữa: giết {len(giet)} tiến trình bộ dựng mồ côi"
         + (f" ({', '.join(sorted({p['name'] for p in giet}))})" if giet else "")
         + f", xoá {len(xoa)} thư mục tạm cũ > {PROFILE_AGE // 3600} h")
