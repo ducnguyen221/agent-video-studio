@@ -5,13 +5,16 @@ chính nhưng chưa có tag; khi phát hành, mục đó đổi tên thành số
 `pyproject.toml`, `video_studio/__init__.py` cùng ba manifest plugin (`tests/test_version_sync.py`
 kiểm).
 
-## Chưa phát hành
+## 0.2.6 — 2026-10-03
+
+Một skill duy nhất cho thư viện theme (bản trùng tên ở bộ skill khác trên máy đã bỏ). Mã engine,
+render và mã thoát không đổi.
 
 - **`video-theme-library` đọc catalog của trạm trước.** Skill tìm `THEME-LIBRARY.md` ở gốc trạm
   video (nơi thư viện sống theo từng đợt dựng của người dùng); trạm chưa có thì lùi về
   `docs/THEME-LIBRARY.md` của repo. Nghĩa vụ giữ thư viện còn sống áp cho catalog đang dùng.
-  Nội dung `docs/THEME-LIBRARY.md` không đổi. Không bump phiên bản ở đây — gộp vào bản phát hành
-  kế tiếp cùng nhánh khác đang chờ (0.2.5); adapter `.claude/skills` + `.agents/skills` đã sinh lại.
+  Nội dung `docs/THEME-LIBRARY.md` không đổi. Nhánh này viết khi 0.2.5 còn chờ gộp; 0.2.5 đã gắn
+  tag trước nên mục này thành bản riêng. Adapter `.claude/skills` + `.agents/skills` đã sinh lại.
 
 ## 0.2.5 — 2026-10-02
 

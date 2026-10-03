@@ -6,7 +6,7 @@ A video-production engine an AI agent can drive: HTML/CSS/GSAP compositions rend
 [HyperFrames](https://github.com/heygen-com/hyperframes), wrapped in an installable Python package
 with one CLI, `video-studio`.
 
-> **Status: v0.2.5.** This build ships the station layout, the machine check,
+> **Status: v0.2.6.** This build ships the station layout, the machine check,
 > the migration tool, the news template family, narration, preview, footage editing, and
 > `export` / `import` for moving station data between machines. Every command in the table
 > below is backed by real code.
