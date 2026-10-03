@@ -68,25 +68,42 @@ _NT = os.name == "nt"             # quy ước "mồ côi" theo hệ (test đổ
 # ── che secret: BA LỚP, chạy trên MỌI văn bản trước khi ghi vào gói ──────────────────────
 # Lớp 1 — theo GIÁ TRỊ: giá trị của biến môi trường có tên trông như secret (đọc trong bộ nhớ,
 #          không ghi ra đâu) bị thay ở mọi chỗ nó xuất hiện. Mẫu nào chưa nghĩ tới cũng không lọt.
-# Lớp 2 — theo TÊN KHOÁ: `khoá=giá trị`, `khoá: giá trị`, `"khoá": "giá trị"`, `'khoá': 'giá trị'`,
-#          cờ dòng lệnh `--khoá giá trị`; khoá CHỨA từ nhạy cảm ở bất kỳ vị trí nào
-#          (`AWS_SECRET_ACCESS_KEY`, `x-api-key`, `refresh_token`…); `Bearer`/`Basic` đi kèm.
-# Lớp 3 — theo HÌNH DẠNG: JWT, khoá AWS, token bot Telegram, token GitHub/OpenAI/Slack/Google,
-#          chuỗi hex ≥ 40 ký tự.
-_TU_NHAY_CAM = (r"(?:token|secret|passw(?:or)?d|pwd|api[_-]?key|access[_-]?key|private[_-]?key"
-                r"|client[_-]?secret|credential|cookie|authorization)")
-_KHOA = r"[\w.-]*" + _TU_NHAY_CAM + r"[\w.-]*"
-_CHE_KV = re.compile(r"(?i)(?P<k>[\"']?" + _KHOA + r"[\"']?\s*[=:]\s*[\"']?(?:(?:bearer|basic)\s+)?)"
-                     r"(?P<v>[^\s\"',;}&]+)")
-_CHE_CO = re.compile(r"(?i)(?P<k>(?<![\w-])--?" + _KHOA + r"\s+)(?P<v>[^\s-]\S*)")
+# Lớp 2 — theo TÊN KHOÁ: `khoá=giá trị`, `khoá: giá trị`, `"khoá": "giá trị có cách"`, `'khoá':
+#          '…'`, `khoá%3D…` (mã hoá URL), cờ `--khoá giá trị`; khoá CHỨA từ nhạy cảm ở bất kỳ vị
+#          trí nào (`AWS_SECRET_ACCESS_KEY`, `x-auth`, `refresh_token`…); dòng header
+#          `Cookie:`/`Set-Cookie:`/`Authorization:` che tới hết dòng; mật khẩu trong URL
+#          `scheme://user:pass@host`.
+# Lớp 3 — theo HÌNH DẠNG: khối PEM private key, JWT, khoá AWS/Google, token GitHub/GitLab/npm/
+#          OpenAI/Slack/Google OAuth, token bot Telegram, hex ≥ 40 ký tự.
+# HIỆU NĂNG LÀ YÊU CẦU, không phải tối ưu (review 04/10): bản trước có `[\w.-]*` không neo ⇒ quay
+# lui bậc hai — 40 KB chữ liền mất 74 s, gói 5 MB treo `--heal` đúng lúc cần chữa. Nay mọi tên khoá
+# được neo ở đầu từ và có trần độ dài, giá trị có trần độ dài; văn bản bị cắt về TRAN_FILE TRƯỚC khi
+# che. `tests/test_heal.py` đo thời gian trên chuỗi xấu nhất.
+_TU_NHAY_CAM = (r"(?:token|secret|pass(?:wd|word|phrase)|pwd|api[_-]?key|access[_-]?key"
+                r"|private[_-]?key|client[_-]?secret|credential|cookie|authorization|auth(?![a-z]))")
+_KHOA_TRAN = r"[\w.-]{0,40}?" + _TU_NHAY_CAM + r"[\w.-]{0,40}"
+_KHOA = r"(?<![\w.-])" + _KHOA_TRAN       # neo đầu từ: không quay lui giữa một dải chữ dài
+_GT_NHAY = r"(?P<q>[\"'])(?P<vq>[^\"'\n]{1,512})(?P=q)"
+_GT_TRAN = r"(?:(?:bearer|basic|token)\s+)?(?P<v>[^\s\"',;}&]{1,512})"
+_CHE_KV = re.compile(r"(?i)(?P<k>[\"']?" + _KHOA + r"[\"']?[ \t]{0,8}(?:[=:]|%3d)[ \t]{0,8})"
+                     r"(?:" + _GT_NHAY + r"|" + _GT_TRAN + r")")
+_CHE_CO = re.compile(r"(?i)(?P<k>(?<![\w-])--?" + _KHOA_TRAN + r"[ \t]{1,8})(?P<v>[^\s\-][^\s]{0,511})")
+_CHE_HEADER = re.compile(r"(?i)(?P<k>(?<![\w-])(?:set-cookie|cookie|proxy-authorization|authorization)"
+                         r"[ \t]{0,8}:[ \t]{0,8})(?P<v>[^\n]{1,4096})")
+_CHE_URL = re.compile(r"(?i)(?P<k>\b[a-z][a-z0-9+.-]{0,20}://[^/\s:@]{1,256}:)[^@\s/]{1,256}(?=@)")
 _CHE_HINH = re.compile(
-    r"(?i:\b(?:bearer|basic)\s+[A-Za-z0-9._~+/=-]{8,})"
-    r"|\beyJ[\w-]{10,}\.[\w-]{10,}\.[\w-]{5,}"                     # JWT
-    r"|\b(?:AKIA|ASIA)[0-9A-Z]{16}\b"                                # khoá AWS
-    r"|\b\d{5,}:[A-Za-z0-9_-]{20,}\b"                                # token bot Telegram
-    r"|\b(?:sk|ghp|gho|ghs|ghu|github_pat|xox[abpr]|ya29)[-_.][A-Za-z0-9_-]{16,}"
-    r"|\b[0-9a-fA-F]{40,}\b")
+    r"-----BEGIN [A-Z ]{0,40}PRIVATE KEY-----[A-Za-z0-9+/=\s]{0,20000}-----END [A-Z ]{0,40}PRIVATE KEY-----"
+    r"|(?i:\b(?:bearer|basic)[ \t]{1,8}[A-Za-z0-9._~+/=-]{8,512})"
+    r"|\beyJ[\w-]{10,2048}\.[\w-]{10,4096}\.[\w-]{5,2048}"                # JWT
+    r"|\b(?:AKIA|ASIA)[0-9A-Z]{16}\b"                                    # khoá AWS
+    r"|\bAIza[0-9A-Za-z_-]{35}"                                          # khoá Google API
+    r"|\b\d{5,12}:[A-Za-z0-9_-]{20,64}\b"                                # token bot Telegram
+    r"|\b(?:sk|ghp|gho|ghs|ghu|github_pat|glpat|npm|xox[abpr]|ya29)[-_.][A-Za-z0-9_-]{16,256}"
+    r"|\b[0-9a-fA-F]{40,512}\b")
 _TEN_BIEN_BI_MAT = re.compile(r"(?i)" + _TU_NHAY_CAM)
+# Tên khớp mẫu nhưng KHÔNG phải secret: `PWD` = thư mục đang làm (shell POSIX luôn đặt) — che nó là
+# xoá mọi đường dẫn dự án trong stack trace.
+_TEN_KHONG_BI_MAT = {"PWD", "OLDPWD"}
 GIA_TRI_TOI_THIEU = 8             # giá trị env ngắn hơn ngần này không che (tránh che "1", "true")
 
 
@@ -94,17 +111,36 @@ def gia_tri_bi_mat(env=None) -> list[str]:
     """Giá trị của biến môi trường có TÊN trông như secret, dài trước — chỉ để che, không ghi ra."""
     env = os.environ if env is None else env
     ra = {str(v) for k, v in env.items()
-          if _TEN_BIEN_BI_MAT.search(str(k)) and len(str(v or "")) >= GIA_TRI_TOI_THIEU}
+          if str(k).upper() not in _TEN_KHONG_BI_MAT and _TEN_BIEN_BI_MAT.search(str(k))
+          and len(str(v or "")) >= GIA_TRI_TOI_THIEU}
     return sorted(ra, key=len, reverse=True)
+
+
+def _la_so_dem(v: str) -> bool:
+    """`token_count: 123`, `cookie: 42` (log WindowServer) — số đếm, không phải secret."""
+    v = (v or "").strip()
+    return v.isdigit() and len(v) < 10
+
+
+def _che_kv(m) -> str:
+    if m.group("q"):
+        return m.group("k") + m.group("q") + "<da-che>" + m.group("q")
+    v = m.group("v") or ""
+    if _la_so_dem(v):
+        return m.group(0)
+    return m.group(0)[: len(m.group(0)) - len(v)] + "<da-che>"
 
 
 def _che(s: str, bi_mat=None) -> str:
     s = s or ""
     for v in (gia_tri_bi_mat() if bi_mat is None else bi_mat):
         s = s.replace(v, "<da-che>")
-    s = _CHE_KV.sub(lambda m: m.group("k") + "<da-che>", s)
-    s = _CHE_CO.sub(lambda m: m.group("k") + "<da-che>", s)
-    return _CHE_HINH.sub("<da-che>", s)
+    s = _CHE_HINH.sub("<da-che>", s)          # PEM/JWT trước: header bên dưới che tới hết dòng
+    s = _CHE_HEADER.sub(lambda m: m.group(0) if _la_so_dem(m.group("v"))
+                        else m.group("k") + "<da-che>", s)
+    s = _CHE_URL.sub(lambda m: m.group("k") + "<da-che>", s)
+    s = _CHE_KV.sub(_che_kv, s)
+    return _CHE_CO.sub(lambda m: m.group("k") + "<da-che>", s)
 
 
 def _run_out(argv, timeout=CMD_TIMEOUT, run=subprocess.run) -> str | None:
@@ -249,28 +285,73 @@ def find_orphans(procs: list[dict], self_pid: int | None = None, nt: bool | None
     return ra
 
 
-_PS_CHU = ("$me = [Security.Principal.WindowsIdentity]::GetCurrent().User.Value; $sid = @{}; "
-           "foreach ($id in @(__PIDS__)) { $p = Get-CimInstance Win32_Process -Filter \"ProcessId=$id\"; "
-           "if ($p) { try { $o = Invoke-CimMethod -InputObject $p -MethodName GetOwnerSid; "
-           "$sid[[string]$id] = [string]$o.Sid } catch {} } }; "
-           "@{ me = $me; sid = $sid } | ConvertTo-Json -Compress")
+def _sid_cua(pid: int) -> str | None:
+    """SID chủ của tiến trình `pid` (Windows) qua ctypes — <1 ms/tiến trình. Không đọc được ⇒ None.
 
-
-def chu_so_huu_windows(pids, run=subprocess.run) -> tuple[str | None, dict]:
-    """-> (SID của chính user này, {pid: SID chủ tiến trình}). Hỏng ⇒ (None, {}).
-
-    Chỉ hỏi các pid sắp giết (thường 0–vài cái): `GetOwnerSid` mỗi tiến trình tốn một lượt CIM.
+    Review 04/10: bản PowerShell `GetOwnerSid` tốn ~0,5 s/tiến trình ⇒ hơn ~35 pid là quá trần,
+    đúng lúc nhiều Chrome mồ côi tích lại. Dùng `ctypes.WinDLL(...)` RIÊNG, không `ctypes.windll`
+    (bộ đệm dùng chung toàn tiến trình — đặt argtypes ở đó là đổi hành vi của mã khác).
     """
-    ids = ",".join(str(int(x)) for x in pids)
-    out = _run_out(["powershell", "-NoProfile", "-NonInteractive", "-Command",
-                    _PS_CHU.replace("__PIDS__", ids)], run=run)
+    import ctypes
+    from ctypes import wintypes
+    k32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    adv = ctypes.WinDLL("advapi32", use_last_error=True)
+    k32.OpenProcess.argtypes = [wintypes.DWORD, wintypes.BOOL, wintypes.DWORD]
+    k32.OpenProcess.restype = wintypes.HANDLE
+    k32.CloseHandle.argtypes = [wintypes.HANDLE]
+    k32.LocalFree.argtypes = [ctypes.c_void_p]
+    k32.LocalFree.restype = ctypes.c_void_p
+    adv.OpenProcessToken.argtypes = [wintypes.HANDLE, wintypes.DWORD, ctypes.POINTER(wintypes.HANDLE)]
+    adv.GetTokenInformation.argtypes = [wintypes.HANDLE, ctypes.c_int, ctypes.c_void_p,
+                                        wintypes.DWORD, ctypes.POINTER(wintypes.DWORD)]
+    adv.ConvertSidToStringSidW.argtypes = [ctypes.c_void_p, ctypes.POINTER(ctypes.c_void_p)]
+    h = k32.OpenProcess(0x1000, False, int(pid))     # PROCESS_QUERY_LIMITED_INFORMATION
+    if not h:
+        return None
     try:
-        i = (out or "").index("{")
-        data, _ = json.JSONDecoder().raw_decode(out[i:])
-        return (str(data.get("me") or "") or None,
-                {int(k): str(v) for k, v in (data.get("sid") or {}).items() if v})
-    except (ValueError, TypeError, AttributeError):
+        tok = wintypes.HANDLE()
+        if not adv.OpenProcessToken(h, 0x0008, ctypes.byref(tok)):  # TOKEN_QUERY
+            return None
+        try:
+            n = wintypes.DWORD(0)
+            adv.GetTokenInformation(tok, 1, None, 0, ctypes.byref(n))  # 1 = TokenUser
+            if not n.value:
+                return None
+            buf = ctypes.create_string_buffer(n.value)
+            if not adv.GetTokenInformation(tok, 1, buf, n, ctypes.byref(n)):
+                return None
+            psid = ctypes.cast(buf, ctypes.POINTER(ctypes.c_void_p))[0]   # TOKEN_USER.User.Sid
+            chuoi = ctypes.c_void_p()
+            if not adv.ConvertSidToStringSidW(psid, ctypes.byref(chuoi)):
+                return None
+            try:
+                return ctypes.wstring_at(chuoi.value)
+            finally:
+                k32.LocalFree(chuoi)
+        finally:
+            k32.CloseHandle(tok)
+    finally:
+        k32.CloseHandle(h)
+
+
+def chu_so_huu_windows(pids, sid_cua=None) -> tuple[str | None, dict]:
+    """-> (SID của chính tiến trình này, {pid: SID chủ}). Không đọc được SID của mình ⇒ (None, {})."""
+    sid_cua = sid_cua or _sid_cua
+    try:
+        me = sid_cua(os.getpid())
+    except (OSError, AttributeError, ValueError):
         return None, {}
+    if not me:
+        return None, {}
+    ra = {}
+    for pid in pids:
+        try:
+            v = sid_cua(int(pid))
+        except (OSError, AttributeError, ValueError):
+            v = None
+        if v:
+            ra[int(pid)] = v
+    return me, ra
 
 
 def kill_orphans(procs: list[dict] | None = None, run=subprocess.run, kill=None, owner=None,
@@ -281,7 +362,8 @@ def kill_orphans(procs: list[dict] | None = None, run=subprocess.run, kill=None,
     đúng lỗi PID cấp lại). Ngay trước khi giết, đọc lại danh sách: pid nào đổi tên/giờ tạo ⇒ bỏ.
     Windows: lọc theo PHIÊN chưa đủ — task "dù user có đăng nhập hay không" chạy ở phiên 0 chung
     với task của user khác — nên còn đối chiếu SID chủ tiến trình với SID của chính mình
-    (`owner`, mặc định `chu_so_huu_windows`); không đọc được chủ ⇒ KHÔNG giết. POSIX: `ps -U <uid>`
+    (`owner`, mặc định `chu_so_huu_windows` — ctypes, <1 ms/tiến trình); pid không đọc được chủ
+    thì bỏ riêng pid đó, không đọc được SID của chính mình ⇒ KHÔNG giết gì. POSIX: `ps -U <uid>`
     đã chỉ trả tiến trình của user này.
     """
     log = log or contract.log
@@ -289,9 +371,8 @@ def kill_orphans(procs: list[dict] | None = None, run=subprocess.run, kill=None,
     nan = find_orphans(procs)
     if not nan:
         return []
-    moi = {p["pid"]: p for p in list_processes(run)}
     if _NT:
-        me, sid = (owner or (lambda ds: chu_so_huu_windows(ds, run)))([p["pid"] for p in nan])
+        me, sid = (owner or chu_so_huu_windows)([p["pid"] for p in nan])
         if not me:
             log("[probe] WARN: không đọc được chủ sở hữu tiến trình — KHÔNG giết tiến trình nào")
             return []
@@ -300,6 +381,8 @@ def kill_orphans(procs: list[dict] | None = None, run=subprocess.run, kill=None,
             log(f"[probe] bỏ qua {len(la)} tiến trình mồ côi không thuộc user này (hoặc không đọc "
                 f"được chủ): {', '.join(sorted({p['name'] for p in la}))}")
         nan = [p for p in nan if sid.get(p["pid"]) == me]
+    # Đọc lại SAU khi hỏi chủ — khe hở cho PID bị cấp lại càng hẹp càng tốt.
+    moi = {p["pid"]: p for p in list_processes(run)}
     if kill is None:
         def kill(pid):
             if os.name == "nt":
@@ -380,9 +463,12 @@ def clean_profiles(tmpdir: str | None = None, older_than=PROFILE_AGE, now=None,
 # ── gói chẩn đoán ──────────────────────────────────────────────────────────────────────
 
 def _ghi(d: str, ten: str, text: str) -> None:
-    b = _che(text).encode("utf-8", "replace")
-    if len(b) > TRAN_FILE:
-        b = b"(...cat phan dau, giu " + str(TRAN_FILE).encode() + b" byte cuoi)\n" + b[-TRAN_FILE:]
+    b = (text or "").encode("utf-8", "replace")
+    dau = b""
+    if len(b) > TRAN_FILE:            # cắt TRƯỚC khi che: che có chi phí theo độ dài
+        dau = b"(...cat phan dau, giu " + str(TRAN_FILE).encode() + b" byte cuoi)\n"
+        b = b[-TRAN_FILE:]
+    b = dau + _che(b.decode("utf-8", "replace")).encode("utf-8", "replace")
     with open(os.path.join(d, ten), "wb") as f:
         f.write(b)
 

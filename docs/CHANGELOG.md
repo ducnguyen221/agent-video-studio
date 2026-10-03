@@ -42,6 +42,15 @@ Tự chữa render kẹt + chụp chứng cứ (P1-25, Mac mini 02–03/10). Mã
   `AWS_SECRET_ACCESS_KEY`), theo HÌNH DẠNG (JWT, AWS `AKIA…`, Telegram, GitHub/OpenAI/Slack/Google,
   hex ≥ 40). Test cài sẵn secret vào env + output probe + output lệnh chụp + dòng lệnh tiến trình
   rồi khẳng định không file nào của gói chứa chúng.
+- **Review vòng 3 (04/10) — viết lại lần nữa:** (a) regex che bản trước quay lui BẬC HAI (40 KB chữ
+  liền 74 s — gói 5 MB treo `--heal`): nay mọi tên khoá neo đầu từ + trần độ dài, giá trị/PEM có
+  trần, văn bản cắt về 5 MB TRƯỚC khi che; test đo 8 chuỗi xấu nhất 1 MB (đo trên Windows ≤ 0,54 s
+  mỗi chuỗi). (b) Tra SID bằng ctypes `OpenProcessToken`/`GetTokenInformation` (đo: ~200 tiến trình
+  trong ~1 s cả liệt kê; bản PowerShell `GetOwnerSid` tốn ~0,5 s mỗi tiến trình ⇒ quá trần từ ~35
+  pid); đọc lại danh sách SAU khi hỏi chủ. (c) Hết lọt: mật khẩu trong URL `scheme://user:pass@`,
+  giá trị trong nháy có dấu cách, header `Cookie:`/`Authorization:` che tới hết dòng, `passphrase`,
+  `auth`, `%3D`, khoá Google `AIza…`, GitLab `glpat-`, `npm_`, khối PEM. (d) Không che quá tay: bỏ
+  `PWD`/`OLDPWD` khỏi danh sách biến secret, số đếm ngắn (`token_count: 123`, `cookie: 42`) giữ nguyên.
 - Stderr Chrome riêng (`--enable-logging`) chưa vào gói: HyperFrames không mở cờ Chrome ra ngoài;
   output gộp của HyperFrames ở lần probe hỏng đã có trong `probe-error.txt`.
 

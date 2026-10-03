@@ -367,14 +367,20 @@ def test_windows_khong_doc_duoc_chu_thi_KHONG_giet_gi(monkeypatch):
     assert killed == [] and any("KHÔNG giết" in l for l in logs)
 
 
-def test_chu_so_huu_windows_doc_json_va_hong_thi_rong():
-    class R:
-        def __init__(self, out, rc=0):
-            self.returncode, self.stdout, self.stderr = rc, out, b""
-    ok = b'WARNING: x\n{"me":"S-1","sid":{"500":"S-1","600":"S-2"}}'
-    assert heal.chu_so_huu_windows([500, 600], run=lambda *a, **k: R(ok)) == ("S-1", {500: "S-1", 600: "S-2"})
-    assert heal.chu_so_huu_windows([1], run=lambda *a, **k: R(b"rac")) == (None, {})
-    assert heal.chu_so_huu_windows([1], run=lambda *a, **k: R(b"", 1)) == (None, {})
+def test_chu_so_huu_windows_bo_pid_khong_doc_duoc_va_thieu_SID_minh_thi_rong():
+    me = os.getpid()
+    bang = {me: "S-1", 500: "S-1", 600: "S-2"}
+    assert heal.chu_so_huu_windows([500, 600, 700], sid_cua=bang.get) == ("S-1", {500: "S-1", 600: "S-2"})
+    assert heal.chu_so_huu_windows([500], sid_cua={500: "S-1"}.get) == (None, {})
+
+
+@pytest.mark.skipif(os.name != "nt", reason="ctypes OpenProcessToken chỉ có trên Windows")
+def test_sid_that_tren_windows_nhanh_va_dung():
+    t0 = time.time()
+    me, sid = heal.chu_so_huu_windows([os.getpid(), 4, 999999])
+    assert me and me.startswith("S-1-") and sid.get(os.getpid()) == me
+    assert 999999 not in sid and sid.get(4) != me, "System / pid không tồn tại không bao giờ là của mình"
+    assert time.time() - t0 < 5, "review 04/10: bản PowerShell tốn ~0,5 s mỗi tiến trình"
 
 
 # ── điểm 2 (04/10): che secret ba lớp ────────────────────────────────────────────────────
@@ -430,3 +436,74 @@ def test_goi_chan_doan_KHONG_chua_secret_cai_san(monkeypatch, tmp_path):
         noi_dung = open(os.path.join(d, f), encoding="utf-8").read()
         for b in bi_mat:
             assert b not in noi_dung, f"{f} lọt {b}"
+
+
+# ── review vòng 3 (04/10): che tuyến tính, hết lọt, không che quá tay ───────────────────
+
+CHUOI_XAU = {
+    "chu-lien": lambda: "a" * 1_000_000,
+    "hex": lambda: "0123456789abcdef" * 62_500,
+    "base64": lambda: ("QUJDREVGR0hJSktMTU5PUFFSU1RVVldYWVo+/" * 28_000)[:1_000_000],
+    "khoa-lap": lambda: "token=" * 160_000,
+    "gach": lambda: "-" * 1_000_000,
+    "co-lap": lambda: "--token " * 120_000,
+    "pem-lap": lambda: "-----BEGIN PRIVATE KEY-----" * 30_000,
+    "gach-chu": lambda: ("--" + "a" * 38 + " ") * 25_000,
+}
+
+
+# Tên test là KHOÁ, không phải chuỗi 1 MB: pytest đặt tên test vào biến môi trường
+# PYTEST_CURRENT_TEST (Windows trần 32 767 ký tự).
+@pytest.mark.parametrize("ten", sorted(CHUOI_XAU))
+def test_che_TUYEN_TINH_tren_1MB(ten):
+    """Bản trước quay lui bậc hai: 40 KB chữ liền mất 74 s — gói 5 MB treo `--heal`."""
+    chuoi = CHUOI_XAU[ten]()
+    t0 = time.time()
+    heal._che(chuoi, bi_mat=[])
+    assert time.time() - t0 < 5, f"{ten}: che 1 MB quá chậm"
+
+
+@pytest.mark.parametrize("vao,lo", [
+    ("https://user:hunter2pass@host/x", "hunter2pass"),
+    ("postgres://admin:pwpwpwpw@db:5432/x", "pwpwpwpw"),
+    ("password: 'my secret pass'", "secret pass"),
+    ('TOKEN="abc def ghi"', "def ghi"),
+    ("api_key = 'AAAA BBBB'", "BBBB"),
+    ("Cookie: a=1; session=SSSSSSSS", "SSSSSSSS"),
+    ("Authorization: token ghp_short", "ghp_short"),
+    ("passphrase=pppppppp", "pppppppp"),
+    ("auth=aaaaaaaa", "aaaaaaaa"),
+    ("x-auth: xxxxxxxx", "xxxxxxxx"),
+    ("token%3Dqqqqqqqq", "qqqqqqqq"),
+    ("AIzaSyA1234567890abcdefghijklmnopqrstuv", "AIzaSyA1234567890"),
+    ("glpat-abcdefghijklmnopqrst", "abcdefghijklmnopqrst"),
+    ("npm_abcdefghijklmnopqrstuvwxyz0123456789", "abcdefghijklmnop"),
+    ("-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkq\n-----END PRIVATE KEY-----", "MIIEvQIBADANBgkq"),
+])
+def test_che_cac_dang_review_vong_3(vao, lo):
+    assert lo not in heal._che(vao, bi_mat=[])
+
+
+@pytest.mark.parametrize("giu", [
+    "token_count: 12345678",
+    "cookie: 42",
+    "author=Duc authority=x",
+    "--max-old-space-size=4096",
+    "PreventUserIdleSystemSleep named: \"com.apple.audio\"",
+    "/Users/x/Code/agent-video-studio/video_studio/heal.py:120",
+])
+def test_che_KHONG_qua_tay_review_vong_3(giu):
+    assert heal._che(giu, bi_mat=[]) == giu
+
+
+def test_PWD_khong_bi_coi_la_secret():
+    assert heal.gia_tri_bi_mat({"PWD": "/Users/x/Code/agent-video-studio",
+                                "OLDPWD": "/Users/x/Code/agent-marketing"}) == []
+
+
+def test_ghi_CAT_truoc_khi_che(tmp_path, monkeypatch):
+    goi = []
+    monkeypatch.setattr(heal, "_che", lambda t, bi_mat=None: goi.append(len(t)) or t)
+    monkeypatch.setattr(heal, "TRAN_FILE", 1000)
+    heal._ghi(str(tmp_path), "x.txt", "a" * 50_000)
+    assert goi == [1000], "che phải chạy trên phần ĐÃ cắt, không phải toàn bộ"
