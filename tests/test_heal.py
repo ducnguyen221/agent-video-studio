@@ -201,11 +201,21 @@ def test_che_masks_common_secret_shapes():
 
 # ── CLI ────────────────────────────────────────────────────────────────────────────────
 
+def _khong_cham_may_that(monkeypatch):
+    """CLI đi đường thật: chặn `ps`/`pmset`/`log show` (macOS: tới 120 s) và thư mục tạm thật."""
+    def goi(root, *a, **k):
+        d = os.path.join(root, "gia")
+        os.makedirs(d, exist_ok=True)
+        return d
+    monkeypatch.setattr(heal, "diag_bundle", goi)
+    monkeypatch.setattr(heal, "clean_profiles", lambda *a, **k: [])
+
 def test_cli_heal_recovered_json_carries_heal(monkeypatch, capsys, tmp_path):
     pr = Probe("stuck", "ok")
     monkeypatch.setattr(probe, "run_probe", pr)
     monkeypatch.setattr(heal, "list_processes", lambda run=None: [])
     monkeypatch.setattr(heal.time, "sleep", lambda s: None)
+    _khong_cham_may_that(monkeypatch)
     code = probe.main(["--json", "--heal", "--diag-dir", str(tmp_path), "--heal-waits", "0,0"])
     assert code == 0
     out = last_json(capsys.readouterr().out)
@@ -216,6 +226,7 @@ def test_cli_heal_exhausted_is_code_1_with_diag(monkeypatch, capsys, tmp_path):
     monkeypatch.setattr(probe, "run_probe", Probe("stuck"))
     monkeypatch.setattr(heal, "list_processes", lambda run=None: [])
     monkeypatch.setattr(heal.time, "sleep", lambda s: None)
+    _khong_cham_may_that(monkeypatch)
     code = probe.main(["--json", "--heal", "--diag-dir", str(tmp_path), "--heal-waits", "0,0"])
     assert code == contract.ENGINE_ERROR
     out = last_json(capsys.readouterr().out)
