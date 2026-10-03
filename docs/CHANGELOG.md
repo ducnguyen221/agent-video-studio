@@ -32,6 +32,16 @@ Tự chữa render kẹt + chụp chứng cứ (P1-25, Mac mini 02–03/10). Mã
   `Bearer <token>` và `"khoá": "giá trị"` kiểu JSON.
   Vòng 2: profile của chính Chrome mồ côi vừa giết được xoá ngay trong lần chữa đó; `node.exe" -e`
   (Windows) cũng bị loại như `node -e`.
+- **Hai giới hạn còn lại sau review, sửa trọn (04/10):** (1) Windows lọc theo phiên đăng nhập chưa
+  đủ — task "dù user có đăng nhập hay không" chạy ở phiên 0 chung với task của user khác — nên trước
+  khi giết còn đối chiếu SID chủ của từng tiến trình sắp giết với SID của chính mình
+  (`Invoke-CimMethod GetOwnerSid`, chỉ hỏi các pid sắp giết); không đọc được chủ ⇒ không giết gì,
+  có dòng WARN. (2) Che secret ba lớp trên mọi file của gói: theo GIÁ TRỊ (giá trị biến môi trường
+  có tên như secret, dài ≥ 8, đọc trong bộ nhớ chỉ để che), theo TÊN KHOÁ (`khoá=…`, `khoá: …`,
+  `"khoá": "…"`, `'khoá': '…'`, `--khoá …`, khoá chứa từ nhạy cảm ở bất kỳ vị trí nào như
+  `AWS_SECRET_ACCESS_KEY`), theo HÌNH DẠNG (JWT, AWS `AKIA…`, Telegram, GitHub/OpenAI/Slack/Google,
+  hex ≥ 40). Test cài sẵn secret vào env + output probe + output lệnh chụp + dòng lệnh tiến trình
+  rồi khẳng định không file nào của gói chứa chúng.
 - Stderr Chrome riêng (`--enable-logging`) chưa vào gói: HyperFrames không mở cờ Chrome ra ngoài;
   output gộp của HyperFrames ở lần probe hỏng đã có trong `probe-error.txt`.
 

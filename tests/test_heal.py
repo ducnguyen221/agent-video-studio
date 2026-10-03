@@ -337,3 +337,96 @@ def test_thang_xoa_DUNG_profile_cua_chrome_vua_giet(monkeypatch, tmp_path):
         heal.ladder(Probe("stuck"), 1, diag_dir=str(tmp_path / "rs"), waits=(0,), sleep=lambda s: None,
                     kill=lambda pid: None, tmpdir=str(tmp), log=lambda m: None)
     assert not d.exists()
+
+
+# ── điểm 1 (04/10): Windows đối chiếu SID chủ tiến trình trước khi giết ──────────────────
+
+MO_COI_WIN = [
+    {"pid": 500, "ppid": 9999, "name": "chrome-headless-shell.exe", "cmd": "chrome-headless-shell.exe", "tao": 10},
+    {"pid": 600, "ppid": 9998, "name": "chrome-headless-shell.exe", "cmd": "chrome-headless-shell.exe", "tao": 11},
+]
+
+
+def test_windows_chi_giet_tien_trinh_CUA_MINH(monkeypatch):
+    """Task chạy phiên 0 thấy cả Chrome mồ côi của user khác — lọc phiên chưa đủ."""
+    monkeypatch.setattr(heal, "_NT", True)
+    monkeypatch.setattr(heal, "list_processes", lambda run=None, log=None: [dict(p) for p in MO_COI_WIN])
+    killed, logs = [], []
+    ra = heal.kill_orphans([dict(p) for p in MO_COI_WIN], kill=killed.append, log=logs.append,
+                           owner=lambda pids: ("S-ME", {500: "S-ME", 600: "S-KHAC"}))
+    assert killed == [500] and [p["pid"] for p in ra] == [500]
+    assert any("không thuộc user này" in l for l in logs)
+
+
+def test_windows_khong_doc_duoc_chu_thi_KHONG_giet_gi(monkeypatch):
+    monkeypatch.setattr(heal, "_NT", True)
+    monkeypatch.setattr(heal, "list_processes", lambda run=None, log=None: [dict(p) for p in MO_COI_WIN])
+    killed, logs = [], []
+    assert heal.kill_orphans([dict(p) for p in MO_COI_WIN], kill=killed.append, log=logs.append,
+                             owner=lambda pids: (None, {})) == []
+    assert killed == [] and any("KHÔNG giết" in l for l in logs)
+
+
+def test_chu_so_huu_windows_doc_json_va_hong_thi_rong():
+    class R:
+        def __init__(self, out, rc=0):
+            self.returncode, self.stdout, self.stderr = rc, out, b""
+    ok = b'WARNING: x\n{"me":"S-1","sid":{"500":"S-1","600":"S-2"}}'
+    assert heal.chu_so_huu_windows([500, 600], run=lambda *a, **k: R(ok)) == ("S-1", {500: "S-1", 600: "S-2"})
+    assert heal.chu_so_huu_windows([1], run=lambda *a, **k: R(b"rac")) == (None, {})
+    assert heal.chu_so_huu_windows([1], run=lambda *a, **k: R(b"", 1)) == (None, {})
+
+
+# ── điểm 2 (04/10): che secret ba lớp ────────────────────────────────────────────────────
+
+@pytest.mark.parametrize("vao,lo", [
+    ("{'access_token': 'vvvvvvvv'}", "vvvvvvvv"),                       # repr Python
+    ("--token abcdef123 --out x.mp4", "abcdef123"),                    # cờ dòng lệnh
+    ("AWS_SECRET_ACCESS_KEY=zzzzzzzz", "zzzzzzzz"),                    # khoá có tiền tố
+    ("Authorization: Bearer abcdefghijkl", "abcdefghijkl"),
+    ('{"access_token": "ya29.AAAAAAAAAAAAAAAAAAAA"}', "AAAAAAAAAAAA"),
+    ("x-api-key: kkkkkkkk", "kkkkkkkk"),
+    ("refresh_token=rrrrrrrr&x=1", "rrrrrrrr"),
+    ("jwt eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.abcdefghij", "eyJhbGci"),
+    ("AKIAABCDEFGHIJKLMNOP", "AKIAABCDEFGHIJKLMNOP"),
+    ("cookie: sid=ssssssss", "ssssssss"),
+])
+def test_che_cac_dang_secret(vao, lo):
+    assert lo not in heal._che(vao, bi_mat=[])
+
+
+@pytest.mark.parametrize("giu", [
+    "/Users/x/Library/Caches/ms-playwright/chromium-1234/chrome-headless-shell",
+    "Session 257 state=1 author=Duc",
+    "WindowServer: CPU 21.3% coreaudiod 14%",
+])
+def test_che_KHONG_lam_hong_van_ban_chan_doan_binh_thuong(giu):
+    assert heal._che(giu, bi_mat=[]) == giu
+
+
+def test_che_theo_GIA_TRI_bien_moi_truong():
+    bm = heal.gia_tri_bi_mat({"MY_WEIRD_API_KEY": "khongcohinhdangnao99", "PATH": "/usr/bin:/bin",
+                              "SHORT_TOKEN": "1"})
+    assert bm == ["khongcohinhdangnao99"], "chỉ tên như secret, đủ dài; PATH không bị coi là secret"
+    assert "khongcohinhdangnao99" not in heal._che("loi: khongcohinhdangnao99.", bi_mat=bm)
+
+
+def test_goi_chan_doan_KHONG_chua_secret_cai_san(monkeypatch, tmp_path):
+    """Kiểm cả gói: secret cài vào env, output probe và output lệnh chụp — không file nào chứa nó."""
+    monkeypatch.setenv("STUDIO_FAKE_CLIENT_SECRET", "giatribimatthu42xyz")
+    bi_mat = ["giatribimatthu42xyz", "tokenkieuthu77", "1234567:ABCDEFGHIJKLMNOPQRSTUV"]
+
+    def run(argv, **kw):
+        class R:
+            returncode = 0
+            stdout = ("pid name\n1 x --token tokenkieuthu77\nloi giatribimatthu42xyz\n").encode()
+            stderr = b""
+        return R()
+    procs = [{"pid": 7, "ppid": 1, "name": "chrome-headless-shell",
+              "cmd": "chrome-headless-shell --api-key=giatribimatthu42xyz", "tao": None}]
+    d = heal.diag_bundle(str(tmp_path / "rs"), "RENDER_STUCK: x 1234567:ABCDEFGHIJKLMNOPQRSTUV",
+                         "output giatribimatthu42xyz", run=run, tmpdir=str(tmp_path), procs=procs)
+    for f in os.listdir(d):
+        noi_dung = open(os.path.join(d, f), encoding="utf-8").read()
+        for b in bi_mat:
+            assert b not in noi_dung, f"{f} lọt {b}"

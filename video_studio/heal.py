@@ -13,7 +13,7 @@ người khởi động lại máy.
 
 1. Chụp **gói chẩn đoán** vào `<diag-dir>/<YYYYmmdd-HHMMSS>/` (xem `diag_bundle`).
 2. Giết tiến trình Chrome/HyperFrames **mồ côi của chính user** (cha đã chết: POSIX `ppid == 1`,
-   Windows cha không còn sống) — cả cây con của nó. Không đụng tiến trình còn cha: đó có thể là
+   Windows cha không còn sống; Windows đối chiếu SID chủ tiến trình) — cả cây con của nó. Không đụng tiến trình còn cha: đó có thể là
    một lượt dựng khác đang chạy thật.
 3. Xoá thư mục tạm `puppeteer_dev_chrome_profile-*` / `hyperframes*` / `video-studio-probe-*`
    cũ hơn 1 giờ (lượt đang chạy luôn có profile mới hơn thế).
@@ -26,9 +26,10 @@ không chữa cài đặt hỏng.
 
 ## Secret không vào gói
 
-Gói chẩn đoán KHÔNG đọc biến môi trường, không chép `.env`, không ghi dòng lệnh đầy đủ của tiến
+Gói chẩn đoán KHÔNG ghi biến môi trường, không chép `.env`, không ghi dòng lệnh đầy đủ của tiến
 trình nào (dòng lệnh có thể mang token): danh sách tiến trình chỉ có pid · cha · tên chương trình
-· CPU/bộ nhớ · tuổi. Mọi văn bản ghi ra còn đi qua `_che` (che chuỗi có dạng token/khoá).
+· CPU/bộ nhớ · tuổi. Mọi văn bản ghi ra còn đi qua `_che` — ba lớp: giá trị của biến môi trường
+có tên như secret (đọc trong bộ nhớ chỉ để che), tên khoá nhạy cảm, hình dạng token.
 """
 from __future__ import annotations
 
@@ -64,17 +65,46 @@ TRAN_FILE = 5 * 1024 * 1024       # mỗi file trong gói tối đa 5 MB
 
 _NT = os.name == "nt"             # quy ước "mồ côi" theo hệ (test đổi được)
 
-_CHE = re.compile(
-    # khoá=giá trị / "khoá": "giá trị" (JSON) / Authorization: Bearer <token>
-    r"(?i)(\"?[\w-]*(?:token|secret|password|passwd|api[_-]?key|authorization)\"?\s*[=:]\s*\"?)"
-    r"(?:bearer\s+)?[^\s\",}]+"
-    r"|(?i:\bbearer\s+[A-Za-z0-9._~+/=-]{8,})"
-    r"|\b\d{5,}:[A-Za-z0-9_-]{20,}\b"            # token bot Telegram
-    r"|\b(?:sk|ghp|gho|ghs|xox[bp]|ya29)[-_.][A-Za-z0-9_-]{16,}")
+# ── che secret: BA LỚP, chạy trên MỌI văn bản trước khi ghi vào gói ──────────────────────
+# Lớp 1 — theo GIÁ TRỊ: giá trị của biến môi trường có tên trông như secret (đọc trong bộ nhớ,
+#          không ghi ra đâu) bị thay ở mọi chỗ nó xuất hiện. Mẫu nào chưa nghĩ tới cũng không lọt.
+# Lớp 2 — theo TÊN KHOÁ: `khoá=giá trị`, `khoá: giá trị`, `"khoá": "giá trị"`, `'khoá': 'giá trị'`,
+#          cờ dòng lệnh `--khoá giá trị`; khoá CHỨA từ nhạy cảm ở bất kỳ vị trí nào
+#          (`AWS_SECRET_ACCESS_KEY`, `x-api-key`, `refresh_token`…); `Bearer`/`Basic` đi kèm.
+# Lớp 3 — theo HÌNH DẠNG: JWT, khoá AWS, token bot Telegram, token GitHub/OpenAI/Slack/Google,
+#          chuỗi hex ≥ 40 ký tự.
+_TU_NHAY_CAM = (r"(?:token|secret|passw(?:or)?d|pwd|api[_-]?key|access[_-]?key|private[_-]?key"
+                r"|client[_-]?secret|credential|cookie|authorization)")
+_KHOA = r"[\w.-]*" + _TU_NHAY_CAM + r"[\w.-]*"
+_CHE_KV = re.compile(r"(?i)(?P<k>[\"']?" + _KHOA + r"[\"']?\s*[=:]\s*[\"']?(?:(?:bearer|basic)\s+)?)"
+                     r"(?P<v>[^\s\"',;}&]+)")
+_CHE_CO = re.compile(r"(?i)(?P<k>(?<![\w-])--?" + _KHOA + r"\s+)(?P<v>[^\s-]\S*)")
+_CHE_HINH = re.compile(
+    r"(?i:\b(?:bearer|basic)\s+[A-Za-z0-9._~+/=-]{8,})"
+    r"|\beyJ[\w-]{10,}\.[\w-]{10,}\.[\w-]{5,}"                     # JWT
+    r"|\b(?:AKIA|ASIA)[0-9A-Z]{16}\b"                                # khoá AWS
+    r"|\b\d{5,}:[A-Za-z0-9_-]{20,}\b"                                # token bot Telegram
+    r"|\b(?:sk|ghp|gho|ghs|ghu|github_pat|xox[abpr]|ya29)[-_.][A-Za-z0-9_-]{16,}"
+    r"|\b[0-9a-fA-F]{40,}\b")
+_TEN_BIEN_BI_MAT = re.compile(r"(?i)" + _TU_NHAY_CAM)
+GIA_TRI_TOI_THIEU = 8             # giá trị env ngắn hơn ngần này không che (tránh che "1", "true")
 
 
-def _che(s: str) -> str:
-    return _CHE.sub(lambda m: (m.group(1) or "") + "<da-che>", s or "")
+def gia_tri_bi_mat(env=None) -> list[str]:
+    """Giá trị của biến môi trường có TÊN trông như secret, dài trước — chỉ để che, không ghi ra."""
+    env = os.environ if env is None else env
+    ra = {str(v) for k, v in env.items()
+          if _TEN_BIEN_BI_MAT.search(str(k)) and len(str(v or "")) >= GIA_TRI_TOI_THIEU}
+    return sorted(ra, key=len, reverse=True)
+
+
+def _che(s: str, bi_mat=None) -> str:
+    s = s or ""
+    for v in (gia_tri_bi_mat() if bi_mat is None else bi_mat):
+        s = s.replace(v, "<da-che>")
+    s = _CHE_KV.sub(lambda m: m.group("k") + "<da-che>", s)
+    s = _CHE_CO.sub(lambda m: m.group("k") + "<da-che>", s)
+    return _CHE_HINH.sub("<da-che>", s)
 
 
 def _run_out(argv, timeout=CMD_TIMEOUT, run=subprocess.run) -> str | None:
@@ -219,17 +249,57 @@ def find_orphans(procs: list[dict], self_pid: int | None = None, nt: bool | None
     return ra
 
 
-def kill_orphans(procs: list[dict] | None = None, run=subprocess.run, kill=None) -> list[dict]:
+_PS_CHU = ("$me = [Security.Principal.WindowsIdentity]::GetCurrent().User.Value; $sid = @{}; "
+           "foreach ($id in @(__PIDS__)) { $p = Get-CimInstance Win32_Process -Filter \"ProcessId=$id\"; "
+           "if ($p) { try { $o = Invoke-CimMethod -InputObject $p -MethodName GetOwnerSid; "
+           "$sid[[string]$id] = [string]$o.Sid } catch {} } }; "
+           "@{ me = $me; sid = $sid } | ConvertTo-Json -Compress")
+
+
+def chu_so_huu_windows(pids, run=subprocess.run) -> tuple[str | None, dict]:
+    """-> (SID của chính user này, {pid: SID chủ tiến trình}). Hỏng ⇒ (None, {}).
+
+    Chỉ hỏi các pid sắp giết (thường 0–vài cái): `GetOwnerSid` mỗi tiến trình tốn một lượt CIM.
+    """
+    ids = ",".join(str(int(x)) for x in pids)
+    out = _run_out(["powershell", "-NoProfile", "-NonInteractive", "-Command",
+                    _PS_CHU.replace("__PIDS__", ids)], run=run)
+    try:
+        i = (out or "").index("{")
+        data, _ = json.JSONDecoder().raw_decode(out[i:])
+        return (str(data.get("me") or "") or None,
+                {int(k): str(v) for k, v in (data.get("sid") or {}).items() if v})
+    except (ValueError, TypeError, AttributeError):
+        return None, {}
+
+
+def kill_orphans(procs: list[dict] | None = None, run=subprocess.run, kill=None, owner=None,
+                 log=None) -> list[dict]:
     """Giết tiến trình bộ dựng mồ côi của user. -> [{pid, name}] đã gửi lệnh giết. Không ném.
 
     Giết ĐÚNG danh sách đã tính (Windows không `/T`: taskkill tự đi theo ParentProcessId và dính
     đúng lỗi PID cấp lại). Ngay trước khi giết, đọc lại danh sách: pid nào đổi tên/giờ tạo ⇒ bỏ.
+    Windows: lọc theo PHIÊN chưa đủ — task "dù user có đăng nhập hay không" chạy ở phiên 0 chung
+    với task của user khác — nên còn đối chiếu SID chủ tiến trình với SID của chính mình
+    (`owner`, mặc định `chu_so_huu_windows`); không đọc được chủ ⇒ KHÔNG giết. POSIX: `ps -U <uid>`
+    đã chỉ trả tiến trình của user này.
     """
+    log = log or contract.log
     procs = list_processes(run) if procs is None else procs
     nan = find_orphans(procs)
     if not nan:
         return []
     moi = {p["pid"]: p for p in list_processes(run)}
+    if _NT:
+        me, sid = (owner or (lambda ds: chu_so_huu_windows(ds, run)))([p["pid"] for p in nan])
+        if not me:
+            log("[probe] WARN: không đọc được chủ sở hữu tiến trình — KHÔNG giết tiến trình nào")
+            return []
+        la = [p for p in nan if sid.get(p["pid"]) != me]
+        if la:
+            log(f"[probe] bỏ qua {len(la)} tiến trình mồ côi không thuộc user này (hoặc không đọc "
+                f"được chủ): {', '.join(sorted({p['name'] for p in la}))}")
+        nan = [p for p in nan if sid.get(p["pid"]) == me]
     if kill is None:
         def kill(pid):
             if os.name == "nt":
@@ -408,7 +478,7 @@ def ladder(probe_fn, timeout, diag_dir=None, waits=WAITS, sleep=time.sleep, run=
     log(f"[probe] {STUCK} — đã chụp gói chẩn đoán: {diag}")
     log(f"RENDER_DIAG={diag}")
     procs = list_processes(run)
-    giet = kill_orphans(procs, run=run, kill=kill)
+    giet = kill_orphans(procs, run=run, kill=kill, log=log)
     # Tiến trình vừa giết không còn "dùng" profile của nó — bỏ khỏi danh sách trước khi xoá, nếu
     # không chính profile của Chrome mồ côi sẽ được giữ lại (review vòng 2).
     da_giet = {p["pid"] for p in giet}
