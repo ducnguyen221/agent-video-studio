@@ -86,21 +86,23 @@ _KHOA_TRAN = r"[\w.-]{0,40}?" + _TU_NHAY_CAM + r"[\w.-]{0,40}"
 _KHOA = r"(?<![\w.-])" + _KHOA_TRAN       # neo đầu từ: không quay lui giữa một dải chữ dài
 _SEP = r"(?::=|=>|[=:]|%3d)"               # `=` `:` `:=` `=>` `%3D` (mã hoá URL)
 # Giá trị trong nháy: tới đúng nháy ĐÓNG cùng loại (được chứa nháy kia: "it's x"), trần 4096.
-_GT_NHAY = r"(?P<q>[\"'])(?P<vq>(?:(?!(?P=q))[^\n]){1,4096})(?P=q)"
-# Giá trị trần: tới khoảng trắng / nháy / `&` — thà che thừa `,;}` còn hơn để lộ đuôi secret.
-_GT_TRAN = r"(?:(?:bearer|basic|token)\s+)?(?P<v>[^\s\"'&]{1,512})"
-_CHE_KV = re.compile(r"(?i)(?P<k>[\"']?" + _KHOA + r"[\"']?[ \t]{0,8}" + _SEP + r"[ \t]{0,8})"
+_GT_NHAY = (r"\\(?P<q2>[\"'])(?P<vq2>(?:(?!\\(?P=q2))[^\n]){1,4096})\\(?P=q2)"   # {\"k\":\"v\"}
+            r"|(?P<q>[\"'])(?P<vq>(?:\\[^\n]|(?!(?P=q))[^\n\\]){1,4096})(?P=q)")   # "a\"b" — nháy thoát bên trong
+# Giá trị trần: tới khoảng trắng / nháy — thà che thừa `,;}&` còn hơn để lộ đuôi secret.
+_GT_TRAN = r"(?:(?:bearer|basic|token)\s+)?(?P<v>[^\s\"']{1,512})"
+_CHE_KV = re.compile(r"(?i)(?P<k>\\?[\"']?" + _KHOA + r"\\?[\"']?[ \t]{0,8}" + _SEP + r"[ \t]{0,8})"
                      r"(?:" + _GT_NHAY + r"|" + _GT_TRAN + r")")
 _CHE_CO = re.compile(r"(?i)(?P<k>(?<![\w-])--?" + _KHOA_TRAN + r"[ \t]{1,8})(?P<v>[^\s\-][^\s]{0,511})")
-# Header chỉ ở ĐẦU DÒNG (log HTTP): giữa dòng `[com.apple.Authorization:authd] …` không phải header.
-_CHE_HEADER = re.compile(r"(?im)^(?P<k>[ \t>]{0,8}(?:set-cookie|cookie|proxy-authorization|authorization)"
+# Header (cả giữa dòng: `curl -H "Cookie: …"`) che tới HẾT DÒNG; đứng sau `.` thì không phải
+# header (nhãn log macOS `[com.apple.Authorization:authd]`).
+_CHE_HEADER = re.compile(r"(?i)(?P<k>(?<![\w.-])(?:set-cookie|cookie|proxy-authorization|authorization)"
                          r"[ \t]{0,8}:[ \t]{0,8})(?P<v>[^\n]{1,4096})")
 _CHE_URL = re.compile(r"(?i)(?P<k>\b[a-z][a-z0-9+.-]{0,20}://[^/\s:@]{0,256}:)[^@\s/]{1,256}(?=@)")
 # Mọi hình dạng neo bằng `(?<![\w-])` (không phải `\b`): `\b` khớp ngay sau `-`, nên chuỗi kiểu
 # `eyJ-eyJ-…` mở một điểm bắt đầu mỗi 4 ký tự, mỗi điểm quét tới trần (review vòng 4: 4,65 s/MB).
 _CHE_HINH = re.compile(
-    r"-----BEGIN [A-Z ]{0,40}PRIVATE KEY-----(?:[A-Za-z0-9+/=\s:,]|-(?!----)){0,20000}"
-    r"-----END [A-Z ]{0,40}PRIVATE KEY-----"                                # PEM (kể cả Proc-Type:)
+    r"-----BEGIN [A-Z ]{0,40}PRIVATE KEY(?: BLOCK)?-----(?:[A-Za-z0-9+/=\s:,.()]|-(?!----)){0,20000}"
+    r"-----END [A-Z ]{0,40}PRIVATE KEY(?: BLOCK)?-----"                     # PEM/PGP (kể cả Proc-Type:)
     r"|(?i:(?<![\w-])(?:bearer|basic)[ \t]{1,8}[A-Za-z0-9._~+/=-]{8,512})"
     r"|(?<![\w-])eyJ[\w-]{10,2048}\.[\w-]{10,4096}\.[\w-]{5,2048}"          # JWT
     r"|(?<![\w-])(?:AKIA|ASIA)[0-9A-Z]{16}(?![\w-])"                      # khoá AWS
@@ -117,7 +119,11 @@ _TEN_KHONG_BI_MAT = {"PWD", "OLDPWD"}
 GIA_TRI_TOI_THIEU = 8             # giá trị env ngắn hơn ngần này không che (tránh che "1", "true")
 # Giá trị KHÔNG phải secret dù đứng sau tên khoá nhạy cảm (`"auth": true`, `OAuth: disabled`).
 _GT_THUONG = {"true", "false", "null", "none", "nil", "yes", "no", "on", "off", "enabled",
-              "disabled", "undefined", "required", "optional", "<da-che>"}
+              "disabled", "undefined", "required", "optional", "valid", "invalid", "loaded",
+              "missing", "expired", "sha1", "sha256", "sha512", "rsa", "oauth", "oauth2", "basic",
+              "bearer", "password", "<da-che>"}
+# Khoá MẠNH (mật khẩu/secret thật): giá trị KHÔNG BAO GIỜ được miễn che, kể cả toàn số (PIN).
+_KHOA_MANH = re.compile(r"(?i)pass|pwd|secret|private|credential|pin(?![a-z])")
 _DUOI_KHOA = re.compile(r"(?i)[\"'\s]*(?::=|=>|[=:]|%3d)[\"'\s]*$")   # bỏ dấu tách khỏi tên khoá
 # Nhãn hệ con trong log macOS: `[com.apple.Authorization:authd]` — không phải secret.
 _NHAN_LOG = re.compile(r"[a-z][a-z0-9_.-]{0,40}\]")
@@ -142,15 +148,21 @@ def _la_so_dem(v: str) -> bool:
 
 def _che_kv(m) -> str:
     k = m.group("k")
-    ten = _DUOI_KHOA.sub("", k).strip("\"' ").upper()
-    if ten in _TEN_KHONG_BI_MAT:
-        return m.group(0)
+    ten = _DUOI_KHOA.sub("", k).strip("\\\"' ").upper()
+    manh = _KHOA_MANH.search(ten) is not None
+    if m.group("q2"):                                    # {\"k\":\"v\"}
+        return k + "\\" + m.group("q2") + "<da-che>" + "\\" + m.group("q2")
     if m.group("q"):
-        if _la_so_dem(m.group("vq")):
+        if not manh and _la_so_dem(m.group("vq")):
             return m.group(0)
         return k + m.group("q") + "<da-che>" + m.group("q")
     v = m.group("v") or ""
-    if _la_so_dem(v) or (_NHAN_LOG.fullmatch(v) and "." in ten):   # [com.apple.X:authd]
+    # `PWD=/đường/dẫn` (biến shell) giữ; `Pwd=Hunter2` trong chuỗi kết nối ODBC thì che.
+    if ten in _TEN_KHONG_BI_MAT and re.match(r"[/~]|[A-Za-z]:[\\/]", v):
+        return m.group(0)
+    if not manh and _la_so_dem(v):
+        return m.group(0)
+    if ten.startswith("COM.APPLE.") and _NHAN_LOG.fullmatch(v):     # [com.apple.X:authd]
         return m.group(0)
     return m.group(0)[: len(m.group(0)) - len(v)] + "<da-che>"
 
@@ -159,7 +171,6 @@ def _che(s: str, bi_mat=None) -> str:
     s = s or ""
     for v in (gia_tri_bi_mat() if bi_mat is None else bi_mat):
         s = s.replace(v, "<da-che>")
-    s = s.replace('\\"', '"')                 # JSON lồng có thoát `{\"password\":\"x\"}`
     s = _CHE_HINH.sub("<da-che>", s)          # PEM/JWT trước: header bên dưới che tới hết dòng
     s = _CHE_HEADER.sub(lambda m: m.group(0) if _la_so_dem(m.group("v"))
                         else m.group("k") + "<da-che>", s)

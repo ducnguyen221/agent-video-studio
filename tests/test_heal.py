@@ -555,3 +555,56 @@ def test_cat_roi_giua_khoi_PEM_van_che_than_khoa():
     assert heal._che_duoi_pem(b"MIIEbody\n-----END PRIVATE KEY-----\nduoi") == b"<da-che>\nduoi"
     nguyen = b"-----BEGIN PRIVATE KEY-----\nMIIE\n-----END PRIVATE KEY-----"
     assert heal._che_duoi_pem(nguyen) == nguyen, "khối đủ BEGIN/END để _che lo"
+
+
+# ── BẢNG HỒI QUY GỘP 5 vòng review (04/10): mỗi ca từng lọt hoặc từng bị che quá tay ─────
+
+PHAI_CHE = [
+    # vòng 5 — hồi quy của bản sửa che-quá-tay
+    ("Server=db;Uid=sa;Pwd=Hunter2Secret;", "Hunter2Secret"),
+    ("DSN=x;PWD=Hunter2Secret", "Hunter2Secret"),
+    ('curl -H "Cookie: a=1; remember=SECRETVAL"', "SECRETVAL"),
+    ("headers: Cookie: sid=1; session=SECRETVAL", "SECRETVAL"),
+    ('x Authorization: Digest username="u", response="abcSECRET"', "abcSECRET"),
+    ('{"password": "84731920"}', "84731920"),
+    ("password: '84731920'", "84731920"),
+    ('"pin_password": "1234.5678"', "1234.5678"),
+    ("password: 1234.5678", "1234.5678"),
+    ("app.secret=abcdefghijk]", "abcdefghijk"),
+    ("[my.api_token: abcdef123456]", "abcdef123456"),
+    ("password=S3cr&etVal", "etVal"),
+    ('{"password":"ab\\"cdSECRET"}', "cdSECRET"),
+    ("-----BEGIN PGP PRIVATE KEY BLOCK-----\nVersion: GnuPG v2.0.22 (GNU/Linux)\n\nlQOYBFabcdef\n"
+     "-----END PGP PRIVATE KEY BLOCK-----", "lQOYBFabcdef"),
+]
+PHAI_GIU = [
+    "signature: valid",
+    "signature=sha256",
+    "tokenizer: loaded",
+    "x-auth-method: oauth2",
+    "auth_mode=password",
+    'cmd "C:\\dir\\" x',
+    "[com.apple.Authorization:authd] Succeeded authorizing right",
+    "PWD=/Users/x/Code",
+    "token.js:12:3",
+]
+
+
+@pytest.mark.parametrize("vao,lo", PHAI_CHE)
+def test_bang_hoi_quy_phai_che(vao, lo):
+    assert lo not in heal._che(vao, bi_mat=[])
+
+
+@pytest.mark.parametrize("giu", PHAI_GIU)
+def test_bang_hoi_quy_phai_giu(giu):
+    assert heal._che(giu, bi_mat=[]) == giu
+
+
+def test_che_5MB_van_trong_tran():
+    """`_ghi` cắt về 5 MB rồi mới che: 5 MB văn bản hỗn hợp xấu phải xong trong 10 s."""
+    mau = ('token=abc def password: "x\\"y" Cookie: a=1; b=2 eyJ- sk- 1234567: '
+           "-----BEGIN PRIVATE KEY----- aaaa bbbb.cccc --token v https://u:p@h\n")
+    chuoi = (mau * (5_000_000 // len(mau) + 1))[:5_000_000]
+    t0 = time.time()
+    heal._che(chuoi, bi_mat=[])
+    assert time.time() - t0 < 10

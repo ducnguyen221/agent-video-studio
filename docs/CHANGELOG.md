@@ -59,6 +59,14 @@ Tự chữa render kẹt + chụp chứng cứ (P1-25, Mac mini 02–03/10). Mã
   webhook Slack; header `Cookie:`/`Authorization:` chỉ tính ở đầu dòng; không che `true/false/…`,
   `token.js:12:3`, `PWD=`, nhãn log `[com.apple.Authorization:authd]`. Giới hạn đã biết (không
   che): mật khẩu dính liền cờ một chữ (`mysql -pX`), giá trị cờ nằm ở dòng sau (`--token⏎X`).
+- **Review vòng 5 (04/10) — sửa hồi quy của bản chống-che-quá-tay:** `Pwd=…` trong chuỗi kết nối
+  ODBC/SQL Server lại được che (chỉ `PWD=/đường/dẫn` của shell được giữ); `Cookie:`/`Authorization:`
+  giữa dòng (`curl -H "Cookie: …"`) che tới hết dòng; khoá mật khẩu/secret/PIN không bao giờ được miễn
+  che kể cả giá trị toàn số; ngoại lệ nhãn log chỉ cho `com.apple.*`; giá trị trần không dừng ở `&`;
+  giá trị trong nháy hiểu nháy thoát (`"ab\\"cd"`) và JSON lồng thoát mà không sửa nội dung gói; thêm
+  khối PGP private key; không che `signature: valid`, `auth_mode=password`, `tokenizer: loaded`.
+  `tests/test_heal.py` gộp mọi ca của 5 vòng review thành bảng hồi quy PHẢI CHE / PHẢI GIỮ, và đo
+  5 MB văn bản xấu hỗn hợp (< 10 s).
 - Stderr Chrome riêng (`--enable-logging`) chưa vào gói: HyperFrames không mở cờ Chrome ra ngoài;
   output gộp của HyperFrames ở lần probe hỏng đã có trong `probe-error.txt`.
 
