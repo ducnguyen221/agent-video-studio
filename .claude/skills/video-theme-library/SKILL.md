@@ -1,6 +1,6 @@
 ---
 name: video-theme-library
-description: Use BEFORE inventing a layout for any video or slide built with this studio - news recaps, deep dives, shorts, teaching decks, review videos. Classify each beat of the script, look the beat up in docs/THEME-LIBRARY.md, take the highest-tier template that matches the job and aspect ratio, and only compose something new when nothing fits (then add it back to the library). Not for rendering, narration or footage editing.
+description: Use BEFORE inventing a layout for any video or slide built with this studio - news recaps, deep dives, shorts, teaching decks, review videos, infographic video. Mandatory lookup - read the station's theme catalog first (THEME-LIBRARY.md at the station root), else the repo's docs/THEME-LIBRARY.md; classify each beat of the script, take the highest-tier template that matches the job and aspect ratio, and only compose something new when nothing fits (then add it back to the catalog in use). Not for rendering, narration or footage editing.
 ---
 
 # video-theme-library — adapter nguồn
