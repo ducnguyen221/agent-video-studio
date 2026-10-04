@@ -5,6 +5,71 @@ chính nhưng chưa có tag; khi phát hành, mục đó đổi tên thành số
 `pyproject.toml`, `video_studio/__init__.py` cùng ba manifest plugin (`tests/test_version_sync.py`
 kiểm).
 
+## 0.2.7 — 2026-10-04
+
+Tự chữa render kẹt + chụp chứng cứ (P1-25, Mac mini 02–03/10). Mã thoát và JSON của `probe` không
+`--heal` không đổi.
+
+- **`video-studio probe --heal [--diag-dir DIR] [--heal-waits 60,600]`** (`video_studio/heal.py`):
+  lần probe đầu ra `RENDER_STUCK` ⇒ (1) chụp **gói chẩn đoán** vào `DIR/<YYYYmmdd-HHMMSS>/`: top CPU,
+  tiến trình Chrome/HyperFrames + số mồ côi, thư mục tạm của Chrome, lỗi + output của probe; macOS
+  thêm `pmset -g assertions`, `pmset -g therm`, 10 phút `log show` của WindowServer/coreaudiod. Không
+  đọc biến môi trường, không ghi dòng lệnh tiến trình (chỉ tên chương trình), che chuỗi dạng token;
+  (2) giết Chrome/HyperFrames **mồ côi** của user (POSIX `ppid == 1`, Windows cha không còn) cùng cây
+  con — tiến trình còn cha (một lượt dựng khác) không bị đụng; (3) xoá profile tạm
+  `puppeteer_dev_chrome_profile-*` / `hyperframes*` / `video-studio-probe-*` cũ hơn 1 h; (4) chờ
+  60 s → probe lại; (5) chờ 600 s → probe lần cuối. Qua ⇒ mã 0, JSON có `heal` (bước nào qua, đường
+  gói); hết thang ⇒ mã 1 `RENDER_STUCK:` "đã tự chữa … vẫn kẹt — khởi động lại máy" + `diag`. Dòng
+  stderr `RENDER_DIAG=` / `RENDER_HEAL=` cho pipeline đọc. Đo trên Windows: probe khoẻ với `--heal`
+  9,1 s, JSON y như cũ; giả lập kẹt (`--timeout 1 --heal-waits 1,1`) ⇒ gói 5 file, mã 1.
+- **Sau review độc lập (04/10):** chỉ nhận gốc là Chrome headless (chrome-headless-shell, hoặc Chrome
+  `--headless` với profile puppeteer) hoặc node đang `hyperframes … render` — không đụng `hyperframes
+  preview --background`, bộ cập nhật nền `node -e`, Chrome của chrome-devtools MCP; Windows: chỉ tiến
+  trình cùng phiên đăng nhập, chống PID cấp lại bằng giờ tạo (cha sinh sau con = cha đã chết; cây con
+  chỉ nhận con sinh sau cha), `taskkill /F` không `/T`, đọc lại danh sách ngay trước khi giết (đổi
+  tên/giờ tạo ⇒ bỏ); profile tạm chỉ xoá khi mtime MỚI NHẤT trong cây > 1 h và không tiến trình sống
+  nào nhắc tới; danh sách tiến trình đọc hỏng ⇒ dòng WARN (không im lặng "giết 0"); che thêm
+  `Bearer <token>` và `"khoá": "giá trị"` kiểu JSON.
+  Vòng 2: profile của chính Chrome mồ côi vừa giết được xoá ngay trong lần chữa đó; `node.exe" -e`
+  (Windows) cũng bị loại như `node -e`.
+- **Hai giới hạn còn lại sau review, sửa trọn (04/10):** (1) Windows lọc theo phiên đăng nhập chưa
+  đủ — task "dù user có đăng nhập hay không" chạy ở phiên 0 chung với task của user khác — nên trước
+  khi giết còn đối chiếu SID chủ của từng tiến trình sắp giết với SID của chính mình
+  (`Invoke-CimMethod GetOwnerSid`, chỉ hỏi các pid sắp giết); không đọc được chủ ⇒ không giết gì,
+  có dòng WARN. (2) Che secret ba lớp trên mọi file của gói: theo GIÁ TRỊ (giá trị biến môi trường
+  có tên như secret, dài ≥ 8, đọc trong bộ nhớ chỉ để che), theo TÊN KHOÁ (`khoá=…`, `khoá: …`,
+  `"khoá": "…"`, `'khoá': '…'`, `--khoá …`, khoá chứa từ nhạy cảm ở bất kỳ vị trí nào như
+  `AWS_SECRET_ACCESS_KEY`), theo HÌNH DẠNG (JWT, AWS `AKIA…`, Telegram, GitHub/OpenAI/Slack/Google,
+  hex ≥ 40). Test cài sẵn secret vào env + output probe + output lệnh chụp + dòng lệnh tiến trình
+  rồi khẳng định không file nào của gói chứa chúng.
+- **Review vòng 3 (04/10) — viết lại lần nữa:** (a) regex che bản trước quay lui BẬC HAI (40 KB chữ
+  liền 74 s — gói 5 MB treo `--heal`): nay mọi tên khoá neo đầu từ + trần độ dài, giá trị/PEM có
+  trần, văn bản cắt về 5 MB TRƯỚC khi che; test đo 8 chuỗi xấu nhất 1 MB (đo trên Windows ≤ 0,54 s
+  mỗi chuỗi). (b) Tra SID bằng ctypes `OpenProcessToken`/`GetTokenInformation` (đo: ~200 tiến trình
+  trong ~1 s cả liệt kê; bản PowerShell `GetOwnerSid` tốn ~0,5 s mỗi tiến trình ⇒ quá trần từ ~35
+  pid); đọc lại danh sách SAU khi hỏi chủ. (c) Hết lọt: mật khẩu trong URL `scheme://user:pass@`,
+  giá trị trong nháy có dấu cách, header `Cookie:`/`Authorization:` che tới hết dòng, `passphrase`,
+  `auth`, `%3D`, khoá Google `AIza…`, GitLab `glpat-`, `npm_`, khối PEM. (d) Không che quá tay: bỏ
+  `PWD`/`OLDPWD` khỏi danh sách biến secret, số đếm ngắn (`token_count: 123`, `cookie: 42`) giữ nguyên.
+- **Review vòng 4 (04/10):** mọi mẫu hình dạng neo bằng `(?<![\w-])` thay `\b` (`\b` khớp sau `-` ⇒
+  `eyJ-eyJ-…` mất 4,65 s/MB; nay ≤ 0,55 s/MB trên 14 chuỗi đối kháng 1 MB, có test); thêm che:
+  `redis://:pass@`, token Telegram trong URL `/bot123:…`, JSON thoát `{\"password\":…}`, dấu tách
+  `:=`/`=>`, giá trị chứa `,;}`, giá trị trong nháy chứa nháy kia hoặc dài tới 4096, PEM có
+  `Proc-Type:`/`DEK-Info:`, thân PEM khi điểm cắt 5 MB rơi giữa khối, `sig=`, `hf_`/`ghr_`/`xapp-`,
+  webhook Slack; header `Cookie:`/`Authorization:` chỉ tính ở đầu dòng; không che `true/false/…`,
+  `token.js:12:3`, `PWD=`, nhãn log `[com.apple.Authorization:authd]`. Giới hạn đã biết (không
+  che): mật khẩu dính liền cờ một chữ (`mysql -pX`), giá trị cờ nằm ở dòng sau (`--token⏎X`).
+- **Review vòng 5 (04/10) — sửa hồi quy của bản chống-che-quá-tay:** `Pwd=…` trong chuỗi kết nối
+  ODBC/SQL Server lại được che (chỉ `PWD=/đường/dẫn` của shell được giữ); `Cookie:`/`Authorization:`
+  giữa dòng (`curl -H "Cookie: …"`) che tới hết dòng; khoá mật khẩu/secret/PIN không bao giờ được miễn
+  che kể cả giá trị toàn số; ngoại lệ nhãn log chỉ cho `com.apple.*`; giá trị trần không dừng ở `&`;
+  giá trị trong nháy hiểu nháy thoát (`"ab\\"cd"`) và JSON lồng thoát mà không sửa nội dung gói; thêm
+  khối PGP private key; không che `signature: valid`, `auth_mode=password`, `tokenizer: loaded`.
+  `tests/test_heal.py` gộp mọi ca của 5 vòng review thành bảng hồi quy PHẢI CHE / PHẢI GIỮ, và đo
+  5 MB văn bản xấu hỗn hợp (< 10 s).
+- Stderr Chrome riêng (`--enable-logging`) chưa vào gói: HyperFrames không mở cờ Chrome ra ngoài;
+  output gộp của HyperFrames ở lần probe hỏng đã có trong `probe-error.txt`.
+
 ## 0.2.6 — 2026-10-03
 
 Một skill duy nhất cho thư viện theme (bản trùng tên ở bộ skill khác trên máy đã bỏ). Mã engine,

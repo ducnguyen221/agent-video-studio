@@ -15,7 +15,7 @@ TRƯỚC các bước tốn kém.
 
 ## Hợp đồng
 
-    video-studio probe [--timeout 30] [--json]
+    video-studio probe [--timeout 30] [--json] [--heal [--diag-dir DIR] [--heal-waits 60,600]]
 
     0  render thử ra file mp4 → môi trường render dùng được
     1  render thử hỏng. Quá `--timeout` hoặc gặp `Navigation timeout` = **kẹt** (lỗi mở đầu
@@ -23,6 +23,11 @@ TRƯỚC các bước tốn kém.
        HyperFrames + gợi ý `video-studio doctor --hf`
     2  tham số sai
     3  thiếu `npx` (Node)
+
+`--heal` (P1-25): lần đầu ra `RENDER_STUCK` thì chụp gói chẩn đoán vào `--diag-dir/<giờ>/`, giết
+Chrome/HyperFrames mồ côi của user, xoá profile tạm cũ > 1 h, chờ rồi probe lại theo
+`--heal-waits` — qua ở lần nào thì mã 0 (JSON có khoá `heal`), hết thang mới mã 1 `RENDER_STUCK:`
+kèm đường gói (`diag` trong JSON). Chi tiết ở `heal.py`.
 
 Quá giờ thì giết **cả cây** tiến trình (npx → node → các worker Chrome), không chỉ vỏ npx:
 để lại Chrome mồ côi đúng lúc máy đang kẹt là làm nó kẹt thêm.
@@ -42,7 +47,7 @@ import subprocess
 import tempfile
 import time
 
-from . import _env, contract, render
+from . import _env, contract, heal, render
 from .contract import EngineError, StationMissing
 
 DEFAULT_TIMEOUT = 30
@@ -196,9 +201,11 @@ def run_probe(timeout=DEFAULT_TIMEOUT, workdir=None, popen=subprocess.Popen, clo
         hong = p.returncode != 0 or not os.path.isfile(mp4) or os.path.getsize(mp4) == 0
         # Chỉ tính Navigation timeout khi lượt HỎNG: engine thử lại nội bộ rồi qua thì vẫn đạt.
         if hong and NAV_TIMEOUT in text.lower():
-            raise EngineError(
+            e = EngineError(
                 f"{STUCK}: môi trường render kẹt — HyperFrames không mở được trang "
                 f"(Navigation timeout) — {HINT_REBOOT}\n{tail}")
+            e.output = text          # nguyên văn cho gói chẩn đoán (heal.diag_bundle)
+            raise e
         if hong:
             raise EngineError(
                 f"render thử hỏng (mã {p.returncode}) sau {secs}s — chạy `video-studio doctor "
@@ -217,6 +224,15 @@ def main(argv=None):
     ap.add_argument("--timeout", type=int, default=DEFAULT_TIMEOUT,
                     help=f"giây; quá giờ = môi trường kẹt (mặc định {DEFAULT_TIMEOUT})")
     ap.add_argument("--json", action="store_true", help="in một dòng JSON kết quả ra stdout")
+    ap.add_argument("--heal", action="store_true",
+                    help="kẹt thì chụp gói chẩn đoán + tự chữa (giết Chrome/HyperFrames mồ côi, xoá "
+                         "profile tạm cũ, chờ rồi thử lại) trước khi báo RENDER_STUCK")
+    ap.add_argument("--diag-dir", default=None,
+                    help="thư mục gốc của gói chẩn đoán (--heal); mỗi lần kẹt một thư mục con theo giờ")
+    ap.add_argument("--heal-waits", default=",".join(str(x) for x in heal.WAITS),
+                    metavar="GIÂY,GIÂY",
+                    help="giây chờ trước mỗi lần thử lại (--heal; mặc định "
+                         + ",".join(str(x) for x in heal.WAITS) + ")")
     args, code = contract.parse(ap, argv)
     if args is None:
         return code
@@ -228,7 +244,23 @@ def main(argv=None):
         return contract.CONTRACT_ERROR
 
     try:
-        res = run_probe(args.timeout)
+        waits = tuple(int(x) for x in str(args.heal_waits).split(",") if x.strip())
+    except ValueError:
+        waits = ()
+    if args.heal and (not waits or min(waits) < 0):
+        contract.log("--heal-waits phải là các số giây ≥ 0, cách nhau bằng dấu phẩy (vd 60,600)")
+        if args.json:
+            contract.emit({"ok": False, "code": contract.CONTRACT_ERROR,
+                           "error": "--heal-waits không hợp lệ"})
+        return contract.CONTRACT_ERROR
+
+    try:
+        if args.heal:
+            # Tra `run_probe` lúc GỌI (không đóng băng lúc định nghĩa) — test thay được.
+            res = heal.ladder(lambda t: run_probe(t), args.timeout, diag_dir=args.diag_dir,
+                              waits=waits)
+        else:
+            res = run_probe(args.timeout)
     except Exception as e:      # noqa: BLE001 — biên của CLI: mọi lỗi phải thành mã + JSON
         # Hỏng của phép thử là KẾT QUẢ đo, không phải sự cố của chương trình: không in traceback
         # (`contract.run` in nó cho mã 1) — đuôi log runner rồi tin Telegram phải là câu người đọc.
@@ -236,11 +268,16 @@ def main(argv=None):
         msg = str(e) or e.__class__.__name__
         contract.log(f"[probe] LỖI ({code}): {msg}")
         if args.json:
-            contract.emit({"ok": False, "code": code, "error": msg})
+            out = {"ok": False, "code": code, "error": msg}
+            if getattr(e, "diag", None):
+                out["diag"] = e.diag
+            contract.emit(out)
         return code
     return contract.run(lambda _a: _ok(res), args, args.json)
 
 
 def _ok(res):
     contract.log(f"[probe] render thử OK sau {res['seconds']}s (hyperframes {res['hyperframes']})")
+    if "heal" in res and res["heal"] is None:
+        res = {k: v for k, v in res.items() if k != "heal"}   # không kẹt: JSON y như bản cũ
     return res
