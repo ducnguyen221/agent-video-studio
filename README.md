@@ -148,6 +148,11 @@ their own licenses — see `NOTICE`.
 
 ## Acknowledgments
 
+Source snapshots and adoption status live in [`upstream.json`](upstream.json). For FlowKit and
+Hypit idea references, see the [update procedure](docs/UPSTREAM-UPDATES.md): compare a pinned
+baseline with a candidate, map changes to existing skills, review and verify before adopting.
+This is a manual maintenance procedure; `doctor --check-updates` does not monitor these repos.
+
 - [HyperFrames](https://github.com/heygen-com/hyperframes) (Apache-2.0) — the render engine.
 - [video-use](https://github.com/browser-use/video-use) (MIT) — the footage-editing method the
   `edit` helpers are distilled from.

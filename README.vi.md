@@ -141,6 +141,11 @@ của chính chúng — xem `NOTICE`.
 
 ## Ghi công
 
+Snapshot nguồn và trạng thái áp dụng nằm trong [`upstream.json`](upstream.json). Các nguồn ý
+tưởng FlowKit/Hypit có [quy trình cập nhật](docs/UPSTREAM-UPDATES.md): so baseline đã ghim với
+candidate, map về skill hiện có, review và kiểm trước khi nhận thay đổi. Đây là bảo trì thủ
+công; `doctor --check-updates` không theo dõi hai repo này.
+
 - [HyperFrames](https://github.com/heygen-com/hyperframes) (Apache-2.0) — engine render.
 - [video-use](https://github.com/browser-use/video-use) (MIT) — phương pháp cắt footage mà bộ
   helper của `edit` chưng cất từ đó.

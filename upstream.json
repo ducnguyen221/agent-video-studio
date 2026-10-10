@@ -163,6 +163,64 @@
       "license": "MIT",
       "how": "Chung cat ma sang `video_studio/edit/` (6 module) va `skills/video-edit/`. Moi file ghi ro nguon; xem NOTICE."
     },
+    "flowkit-techniques": {
+      "repo": "crisng95/flowkit",
+      "ref": "b09e783481d20bfeaf46f2fbcde08bf2b54c0a2a",
+      "relationship": "research_reference",
+      "status": "roadmap_only",
+      "checked": "2026-10-11",
+      "license": "MIT",
+      "license_url": "https://github.com/crisng95/flowkit/blob/b09e783481d20bfeaf46f2fbcde08bf2b54c0a2a/LICENSE",
+      "upstream_paths": [
+        "skills/fk-scriptwriter.md",
+        "skills/fk-character-bible.md",
+        "skills/fk-camera-guide.md",
+        "skills/fk-cinematic-transitions.md",
+        "skills/fk-gen-refs.md",
+        "skills/fk-sound-design.md",
+        "skills/fk-review-video.md",
+        "LICENSE"
+      ],
+      "local_paths": [],
+      "code_copied": false,
+      "assets_copied": false,
+      "how": "Nguồn nghiên cứu cho lập cảnh, continuity, camera, chuyển cảnh, âm thanh và review. Chưa có module hoặc skill FlowKit được nhập trong đợt này; không tích hợp Google Flow, extension, RPC, provider hoặc workflow điều phối.",
+      "update_guide": "docs/UPSTREAM-UPDATES.md"
+    },
+    "hypit-techniques": {
+      "repo": "hypit-ai/hypit",
+      "ref": "85e01c76716498e6ec5b8bdfb6b374ca67f0195a",
+      "relationship": "idea_reference",
+      "status": "selectively_implemented",
+      "checked": "2026-10-11",
+      "license": "Custom: modified Apache-2.0 with additional conditions",
+      "license_url": "https://github.com/hypit-ai/hypit/blob/85e01c76716498e6ec5b8bdfb6b374ca67f0195a/LICENSE",
+      "upstream_paths": [
+        "skills/hypit/references/creation/reference-video.md",
+        "skills/hypit/references/creation/script-and-time.md",
+        "skills/hypit/references/production/review.md",
+        "skills/hypit/references/production/media.md",
+        "skills/hypit/references/production/runs.md",
+        "skills/hypit/references/production/timing.md",
+        "skills/hypit/references/playbooks/craft/b-roll.md",
+        "skills/hypit/references/playbooks/craft/screen-demonstrations.md",
+        "skills/hypit/references/playbooks/craft/caption-tracking.md",
+        "skills/hypit/references/playbooks/formats/short-drama.md",
+        "packages/narrative-speech-alignment/README.md",
+        "LICENSE"
+      ],
+      "local_paths": [
+        "skills/video-routing/SKILL.md",
+        "skills/video-routing/references/product-profiles.md",
+        "skills/video-routing/references/production-techniques.md",
+        "video_studio/edit/transcribe.py",
+        "video_studio/templates/news/news_video.py"
+      ],
+      "code_copied": false,
+      "assets_copied": false,
+      "how": "Tham khảo ý tưởng, tự viết phần mở rộng: bốn nhóm sản phẩm, chín thẻ kỹ thuật, cache transcript và mapping timing lời chuẩn hóa về chữ hiển thị. Các helper edit hiện hữu vẫn mang nguồn video-use; không đổi nguồn gốc đó. QA dùng chung, asset ledger runtime, timing resolver chung, tracking và backend Hypit chưa triển khai.",
+      "update_guide": "docs/UPSTREAM-UPDATES.md"
+    },
     "vtake-skills": {
       "repo": "notedit/vtake-skills",
       "license": "MIT",

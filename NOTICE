@@ -40,6 +40,21 @@ Phần CHƯNG CẤT từ nguồn ngoài (mã và tài liệu viết lại, khôn
   nên không kéo theo nghĩa vụ nào của Apache-2.0; nó chỉ tuân theo khuôn `hyperframes.json` mà
   engine yêu cầu.
 
+Nguồn ý tưởng/nghiên cứu cho đợt mở rộng sản phẩm và kỹ thuật:
+
+- FlowKit (crisng95/flowkit), commit b09e783481d20bfeaf46f2fbcde08bf2b54c0a2a,
+  MIT, Copyright (c) 2026 tuannguyenhoangit-droid. Nguồn nghiên cứu cho roadmap về
+  lập cảnh, continuity, camera, âm thanh và review; chưa nhập code, skill hoặc asset FlowKit.
+  https://github.com/crisng95/flowkit/blob/b09e783481d20bfeaf46f2fbcde08bf2b54c0a2a/LICENSE
+- Hypit (hypit-ai/hypit), commit 85e01c76716498e6ec5b8bdfb6b374ca67f0195a,
+  Copyright 2026 Hypit.AI. LICENSE tùy chỉnh mô tả Apache-2.0 sửa đổi với điều kiện
+  bổ sung; không ghi nhận đây là Apache-2.0 tiêu chuẩn. Tham khảo ý tưởng cho reference,
+  cache và caption mapping; phần mở rộng tự viết, không chép code/văn bản/asset hoặc dùng
+  backend Hypit. Nguồn video-use của helper edit hiện hữu được giữ nguyên.
+  https://github.com/hypit-ai/hypit/blob/85e01c76716498e6ec5b8bdfb6b374ca67f0195a/LICENSE
+
+Baseline, đích local và quy trình kiểm cập nhật: upstream.json và docs/UPSTREAM-UPDATES.md.
+
 Quy tắc cho các bản sau: mọi phần CHƯNG CẤT từ nguồn ngoài (skill, seed project, helper) phải được
 liệt kê ở đây kèm repo · commit/phiên bản · giấy phép, và phần phỏng theo nguồn Apache-2.0 phải
 kèm LICENSE-APACHE cùng ghi chú "đã sửa" trong chính file đó.
