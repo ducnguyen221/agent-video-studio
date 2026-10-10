@@ -5,6 +5,11 @@ description: Use when an agent must inspect, preview, remove, blur, cover, or cr
 
 # Chỉnh vùng trong video local
 
+Để định tuyến loại sản phẩm và cách báo QA cho đúng tình huống, xem
+[`video-routing`](../video-routing/SKILL.md) và thẻ QA trong
+[`production-techniques.md`](../video-routing/references/production-techniques.md). Recipe đó
+không mở rộng contract `cleanup verify` được mô tả ở đây.
+
 `video-studio cleanup` xử lý trực tiếp bằng FFmpeg. Tác vụ này không cần HyperFrames, Node,
 Chromium hay trạm video. Đọc metadata trước, chọn ROI/phương pháp/thời gian có căn cứ, xem
 preview rồi mới tạo bản giao riêng.

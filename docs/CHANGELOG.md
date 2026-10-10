@@ -7,6 +7,9 @@ kiểm).
 
 ## Chưa phát hành
 
+- Cache transcript theo snapshot bytes nguồn, model/cài đặt ASR và schema; metadata dùng sidecar riêng để pack vẫn chỉ đọc transcript JSON. Mỗi lượt chép source vào ổ tạm, kể cả cache hit; source vượt nửa dung lượng trống của ổ tạm bị từ chối. Model/weights tùy biến chưa rõ luôn miss; batch tên trùng và thư mục cache trỏ ra ngoài work bị từ chối. Transcript cũ thiếu sidecar sẽ được bóc lại, và bản đang có được giữ nếu ASR lỗi hoặc timestamp ASR không hợp lệ.
+- Routing bản tin phân biệt 4 nhóm sản phẩm và 9 thẻ tình huống kỹ thuật để chọn profile, kỹ thuật, skill nhận việc và fallback phù hợp.
+- Caption news/top-story giữ chữ authored và map timing qua text normalize; fallback chỉ nhận ASR span còn đúng nguồn và thứ tự, còn tuần cùng số giữ anchor riêng. API và schema không đổi.
 - Thêm `video-studio cleanup inspect|preview|apply|verify` để chỉnh vùng trong video local bằng
   FFmpeg: delogo, blur, cover và crop; không cần HyperFrames hoặc model GPU.
 - Kiểm ROI, thời gian và profile media trước xử lý; xuất file riêng cùng manifest, kiểm lại hash,

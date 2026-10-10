@@ -50,10 +50,109 @@ def test_week_normalisation_survives(news):
     assert news._tts_normalize("bản tin W24") == "bản tin tuần 24"
 
 
+def test_generic_pronunciation_respects_token_boundaries(news):
+    news.resolve_brand({**MIN, "pronounce": {r"\bXZ\b": "X Z"}})
+    assert news._tts_normalize("AXZ XZ2 XZ") == "AXZ XZ2 X Z"
+
+
 def test_resolving_a_new_brand_clears_the_previous_table(news):
     news.resolve_brand({**MIN, "pronounce": {"abc": "a bê xê"}})
     news.resolve_brand(MIN)
     assert news._tts_normalize("abc") == "abc"
+
+
+def test_authored_caption_uses_span_of_multiword_pronunciation(news, monkeypatch):
+    news.resolve_brand({**MIN, "pronounce": {r"\bXZ\b": "X Z"}})
+    asr = [("before", 1.0, 1.2), ("X", 2.3, 2.5), ("Z", 2.6, 2.9),
+           ("after", 3.0, 3.2)]
+    monkeypatch.setattr(news, "_asr_words", lambda audio, sr: asr)
+
+    words = news._words_from_text([0] * 4000, 1000, "before XZ after")
+
+    assert [word for word, _, _ in words] == ["before", "XZ", "after"]
+    assert words == [("before", 1.0, 1.2), ("XZ", 2.3, 2.9), ("after", 3.0, 3.2)]
+
+
+def test_shared_pronunciation_span_can_overlap_authored_tokens(news, monkeypatch):
+    news.resolve_brand({**MIN, "pronounce": {r"\bXZ YZ\b": "term"}})
+    monkeypatch.setattr(news, "_asr_words", lambda audio, sr: [("term", 2.0, 2.6)])
+
+    words = news._words_from_text([0] * 4000, 1000, "XZ YZ")
+
+    assert words == [("XZ", 2.0, 2.6), ("YZ", 2.0, 2.6)]
+
+
+def test_partial_normalized_match_falls_back_to_legacy_interpolation(news, monkeypatch):
+    news.resolve_brand({**MIN, "pronounce": {r"\bXZ\b": "X Z"}})
+    asr = [("before", 1.0, 1.2), ("X", 2.3, 2.5), ("after", 3.0, 3.2)]
+    monkeypatch.setattr(news, "_asr_words", lambda audio, sr: asr)
+
+    words = news._words_from_text([0] * 4000, 1000, "before XZ after")
+
+    assert words[1] == ("XZ", 1.2, 3.0)
+
+
+@pytest.mark.parametrize("spoken", ["XZ X", "X XZ"])
+def test_normalized_and_authored_matches_do_not_reuse_asr_words(news, monkeypatch, spoken):
+    news.resolve_brand({**MIN, "pronounce": {r"\bXZ\b": "X Z"}})
+    monkeypatch.setattr(news, "_asr_words", lambda audio, sr: [("X", 1.0, 1.2),
+                                                                   ("Z", 1.3, 1.5)])
+
+    words = news._words_from_text([0] * 4000, 1000, spoken)
+
+    assert [word for word, _, _ in words] == spoken.split()
+    assert words[0][2] <= words[1][1]
+
+
+def test_number_split_keeps_authored_display_and_legacy_fallback(news, monkeypatch):
+    news.resolve_brand(MIN)
+    asr = [("up", 1.0, 1.2), ("12", 1.3, 1.5), (".5", 1.5, 1.8),
+           ("%", 1.8, 2.0), ("today", 2.1, 2.4)]
+    monkeypatch.setattr(news, "_asr_words", lambda audio, sr: asr)
+
+    words = news._words_from_text([0] * 3000, 1000, "up 12.5% today")
+
+    assert [word for word, _, _ in words] == ["up", "12.5%", "today"]
+    # 12.5% remains outside the normalization table. Preserve its established gap
+    # interpolation until a separate number-alignment requirement is demonstrated.
+    assert words[1] == ("12.5%", 1.2, 2.1)
+
+
+def test_existing_week_normalization_maps_back_to_one_authored_token(news, monkeypatch):
+    news.resolve_brand(MIN)
+    monkeypatch.setattr(news, "_asr_words", lambda audio, sr: [("tuần", 2.1, 2.4),
+                                                                   ("24", 2.45, 2.8)])
+
+    words = news._words_from_text([0] * 4000, 1000, "W24")
+
+    assert words == [("W24", 2.1, 2.8)]
+
+
+@pytest.mark.parametrize("spoken,number", [("tuần W24", "24"), ("tuan w02", "02")])
+def test_week_prefix_keeps_its_own_asr_span(news, monkeypatch, spoken, number):
+    news.resolve_brand(MIN)
+    monkeypatch.setattr(news, "_asr_words", lambda audio, sr: [("tuần", 1.0, 1.2),
+                                                                   (number, 2.0, 2.2)])
+
+    words = news._words_from_text([0] * 4000, 1000, spoken)
+
+    assert words == [(spoken.split()[0], 1.0, 1.2), (spoken.split()[1], 2.0, 2.2)]
+
+
+def test_empty_pronunciation_and_empty_asr_keep_authored_text(news, monkeypatch):
+    news.resolve_brand({**MIN, "pronounce": {r"\bXZ\b": ""}})
+    monkeypatch.setattr(news, "_asr_words", lambda audio, sr: [("before", 1.0, 1.2),
+                                                                   ("after", 2.0, 2.2)])
+
+    words = news._words_from_text([0] * 3000, 1000, "before XZ after")
+
+    assert [word for word, _, _ in words] == ["before", "XZ", "after"]
+    assert words[1] == ("XZ", 1.2, 2.0)
+
+    monkeypatch.setattr(news, "_asr_words", lambda audio, sr: [])
+    words = news._words_from_text([0] * 3000, 1000, "before XZ after")
+    assert [word for word, _, _ in words] == ["before", "XZ", "after"]
+    assert words[0][1] == 0.0 and words[-1][2] == 3.0
 
 
 # ── project lấy từ trạm, không từ một ổ đĩa cụ thể ──────────────────────────────────────
@@ -169,3 +268,34 @@ def test_ffbin_returns_the_resolved_path_when_the_tool_is_there(news, monkeypatc
     ts = importlib.import_module("video_studio.templates.news.top_story_video")
     monkeypatch.setattr(ts._env, "ffprobe_exe", lambda: "/fake/bin/ffprobe")
     assert ts._ffbin("ffprobe") == "/fake/bin/ffprobe"
+
+
+def test_top_story_short_uses_shared_normalized_caption_mapping(news, monkeypatch, tmp_path):
+    import importlib
+    nv = news
+    ts = importlib.import_module("video_studio.templates.news.top_story_video")
+    nv.resolve_brand({**MIN, "pronounce": {r"\bXZ\b": "X Z"}})
+    asr = [("X", 2.3, 2.5), ("Z", 2.6, 2.9)]
+    monkeypatch.setattr(nv, "_asr_words", lambda audio, sr: asr)
+    monkeypatch.setattr(nv, "asr_drift_warn", lambda *args, **kwargs: None)
+    monkeypatch.setattr(nv, "_synth_long", lambda model, text, prompt: [0] * 4000)
+    monkeypatch.setattr(nv, "_local_filler", lambda *args, **kwargs: None)
+    monkeypatch.setattr(nv, "_broll_image", lambda *args, **kwargs: False)
+    monkeypatch.setattr(ts, "_proj", lambda: str(tmp_path))
+    captured = {}
+    def capture_build(story, blocks, *args):
+        captured["blocks"] = blocks
+        return "html"
+    monkeypatch.setattr(ts, "_build", capture_build)
+    monkeypatch.setattr(ts, "_voice_track", lambda *args: [])
+    monkeypatch.setattr(ts, "_render", lambda *args, **kwargs: "rendered")
+
+    result = ts.make_short(
+        {"headline": "XZ", "intro_short": "XZ", "sections": [
+            {"title": "XZ", "narration_short": "XZ", "media": [{"type": "image", "src": "fixture.png"}]}],
+            "outro_short": "XZ"},
+        "out.mp4", type("Model", (), {"sampling_rate": 1000})(), None, str(tmp_path))
+
+    assert result == "rendered"
+    section = next(block for block in captured["blocks"] if block["kind"] == "sec")
+    assert section["caps_words"] == [("XZ", 2.3, 2.9)]

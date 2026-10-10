@@ -1,0 +1,246 @@
+{
+  "schema_version": 1,
+  "note": "Synthetic routing review fixture. Expected answers are rubric hints for an independent human reviewer, not runtime-evaluation results.",
+  "rubric": "expected.techniques.required lists techniques whose trigger is stated by this brief. optional lists defensible additions, not pass requirements. skips lists techniques whose trigger is absent or whose skip condition applies.",
+  "technique_ids": [
+    "T1",
+    "T2",
+    "T3",
+    "T4",
+    "T5",
+    "T6",
+    "T7",
+    "T8",
+    "T9"
+  ],
+  "briefs": [
+    {
+      "id": "training-real-ui",
+      "brief": "Make a 60-second Vietnamese tutorial so new staff can repeat a three-step setting change. We have a clean screen recording and approved narration. Deliver 16:9; no external services or new tools.",
+      "expected": {
+        "group": "training",
+        "action": "route",
+        "questions": [],
+        "skips": [
+          "T2",
+          "T7",
+          "T8"
+        ],
+        "techniques": {
+          "required": [
+            "T1",
+            "T5"
+          ],
+          "optional": []
+        }
+      }
+    },
+    {
+      "id": "training-static-proof",
+      "brief": "Create a short training insert that teaches what the completed approval screen should look like. We only need learners to recognize the correct final state, not reproduce clicks. A synthetic screenshot, approved copy, audience, duration and 16:9 delivery are provided.",
+      "expected": {
+        "group": "training",
+        "action": "route",
+        "questions": [],
+        "skips": [
+          "T2",
+          "T4",
+          "T7",
+          "T8"
+        ],
+        "techniques": {
+          "required": [
+            "T1",
+            "T5"
+          ],
+          "optional": []
+        }
+      }
+    },
+    {
+      "id": "explainer-repeated-phrase",
+      "brief": "Explain why a queue grows when arrivals exceed service capacity. The approved narration repeats the phrase ‘service capacity’; use a simple diagram and one clearly labeled hypothetical example. Audio is final, 45 seconds, 16:9.",
+      "expected": {
+        "group": "explainer",
+        "action": "route",
+        "questions": [],
+        "skips": [
+          "T2",
+          "T5",
+          "T7",
+          "T8",
+          "T9",
+          "T6"
+        ],
+        "techniques": {
+          "required": [
+            "T1",
+            "T4"
+          ],
+          "optional": []
+        }
+      }
+    },
+    {
+      "id": "news-kpi-pronunciation",
+      "brief": "Produce a 75-second data-news update from the supplied, dated source table and approved script. It includes KPI abbreviations, decimal percentages and units that must remain exact on screen; an existing news template and voice are available. No new analysis is requested.",
+      "expected": {
+        "group": "data-news",
+        "action": "route",
+        "questions": [],
+        "skips": [
+          "T2",
+          "T4",
+          "T5",
+          "T7",
+          "T8"
+        ],
+        "techniques": {
+          "required": [
+            "T1",
+            "T3"
+          ],
+          "optional": []
+        }
+      }
+    },
+    {
+      "id": "news-single-asset-refresh",
+      "brief": "Update yesterday’s synthetic data-news package by replacing one chart with the new local CSV for the same reporting period. Keep the approved script, voice, layout and other assets. Source and usage rights are documented; output remains 16:9.",
+      "expected": {
+        "group": "data-news",
+        "action": "route",
+        "questions": [],
+        "skips": [
+          "T3",
+          "T4",
+          "T5",
+          "T7",
+          "T8",
+          "T9"
+        ],
+        "techniques": {
+          "required": [
+            "T1",
+            "T2"
+          ],
+          "optional": []
+        }
+      }
+    },
+    {
+      "id": "story-three-scenes",
+      "brief": "Make a 50-second fictional three-scene story about one courier returning a lost notebook. The same synthetic character reference and blue bag must persist; use narration, no dialogue or lip-sync. Story beats, audience and 16:9 output are fixed.",
+      "expected": {
+        "group": "character-story",
+        "action": "route",
+        "questions": [],
+        "skips": [
+          "T2",
+          "T3",
+          "T4",
+          "T5",
+          "T8",
+          "T9"
+        ],
+        "techniques": {
+          "required": [
+            "T1",
+            "T7"
+          ],
+          "optional": []
+        }
+      }
+    },
+    {
+      "id": "story-two-speaker-interview",
+      "brief": "Cut a 90-second fictional founder profile from a local two-person interview. Keep both speakers distinguishable in captions; no face tracking data is available. The approved cut outline, source footage, audience and horizontal delivery are supplied.",
+      "expected": {
+        "group": "character-story",
+        "action": "route",
+        "questions": [],
+        "skips": [
+          "T2",
+          "T5",
+          "T9",
+          "T7"
+        ],
+        "techniques": {
+          "required": [
+            "T1",
+            "T8"
+          ],
+          "optional": []
+        }
+      }
+    },
+    {
+      "id": "local-cleanup-logo",
+      "brief": "On this local CFR SDR MP4, preview and cover one visible synthetic logo between 8 and 12 seconds, then export a new file. The pixel ROI, target folder and accepted cover color are known; retain the original. Do not send media anywhere.",
+      "expected": {
+        "group": null,
+        "action": "route-cleanup",
+        "questions": [],
+        "skips": [
+          "T2",
+          "T3",
+          "T4",
+          "T5",
+          "T6",
+          "T7",
+          "T8",
+          "T9"
+        ],
+        "techniques": {
+          "required": [
+            "T1"
+          ],
+          "optional": []
+        }
+      }
+    },
+    {
+      "id": "audio-transition-known",
+      "brief": "Finish the supplied 40-second explainer edit. A reviewer heard that the narration tail is clipped after two cuts and background music masks one sentence. Final audio and video files, audience, mix destination and approved narration are available.",
+      "expected": {
+        "group": "explainer",
+        "action": "route",
+        "questions": [],
+        "skips": [
+          "T2",
+          "T3",
+          "T5",
+          "T7",
+          "T8"
+        ],
+        "techniques": {
+          "required": [
+            "T1",
+            "T9"
+          ],
+          "optional": []
+        }
+      }
+    },
+    {
+      "id": "vague-make-better",
+      "brief": "Make this video more professional. No audience, goal, sample frame, quality complaint, platform or constraint is specified.",
+      "expected": {
+        "group": null,
+        "action": "intake",
+        "questions": [
+          "Who is the viewer and what should they understand or do?",
+          "What feels wrong: clarity, pacing, missing illustration, visual consistency, or something else?",
+          "Which delivery format or constraints must be preserved?"
+        ],
+        "skips": [
+          "all-techniques-until-diagnosis"
+        ],
+        "techniques": {
+          "required": [],
+          "optional": []
+        }
+      }
+    }
+  ]
+}

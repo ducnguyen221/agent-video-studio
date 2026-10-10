@@ -5,6 +5,10 @@ description: Use when cutting real recorded footage into a finished video - talk
 
 # Chỉnh footage quay thật — quy trình qua `video-studio edit`
 
+Khi cần chọn cấu trúc sản phẩm hoặc checklist QA theo tình huống, bắt đầu ở
+[`video-routing`](../video-routing/SKILL.md) và chỉ mở thẻ liên quan trong
+[`production-techniques.md`](../video-routing/references/production-techniques.md).
+
 Phỏng theo `SKILL.md` của `browser-use/video-use` (MIT, © 2026 Browser Use), đọc tại bản vendored
 `92c2b34` — **đã dịch, biên tập và nối vào CLI của repo này**. Giấy phép: xem `NOTICE`.
 

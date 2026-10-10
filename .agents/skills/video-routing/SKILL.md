@@ -1,6 +1,6 @@
 ---
 name: video-routing
-description: Use when an agent must set up, check or drive a HyperFrames video station through the video-studio CLI - installing the engine, laying out or migrating a station, diagnosing a machine that cannot render, or choosing which video-studio command fits a request. Not for writing a composition's HTML/CSS/animation itself or for cutting real footage by hand.
+description: Use when an agent must choose a video product approach, clarify a brief, or set up, check or drive a HyperFrames video station through the video-studio CLI. Covers training, explainers, data news and character stories across engines and styles; not for writing a composition's HTML/CSS/animation or cutting footage by hand.
 ---
 
 # video-routing — adapter nguồn

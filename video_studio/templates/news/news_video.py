@@ -409,12 +409,74 @@ def _words_from_text(audio, sr, spoken):
     def _n(w):
         return re.sub(r"[^\w]", "", w.strip().lower(), flags=re.UNICODE)
 
-    sm = difflib.SequenceMatcher(a=[_n(w) for w in src],
-                                 b=[_n(w[0]) for w in asr], autojunk=False)
     times = [None] * len(src)
-    for i, j, n in sm.get_matching_blocks():
-        for k in range(n):
-            times[i + k] = (asr[j + k][1], asr[j + k][2])
+
+    # Match what TTS receives, then map its spans back to the authored display tokens.
+    # A single authored token can expand to several spoken tokens; a phrase replacement
+    # can also map one spoken token back to several authored tokens.
+    normalized, char_sources = _tts_normalize_with_spans(spoken or "")
+    normalized_tokens = list(re.finditer(r"\S+", normalized))
+    source_tokens = list(re.finditer(r"\S+", spoken or ""))
+    source_to_normalized = [set() for _ in source_tokens]
+    normalized_to_sources = [set() for _ in normalized_tokens]
+    for normalized_index, token_match in enumerate(normalized_tokens):
+        spans = [span for span in char_sources[token_match.start():token_match.end()]
+                 if span[0] < span[1]]
+        if not spans:
+            continue
+        source_start = min(span[0] for span in spans)
+        source_end = max(span[1] for span in spans)
+        for source_index, source_match in enumerate(source_tokens):
+            if source_match.start() < source_end and source_start < source_match.end():
+                source_to_normalized[source_index].add(normalized_index)
+                normalized_to_sources[normalized_index].add(source_index)
+
+    asr_tokens = [_n(word[0]) for word in asr]
+
+    def _match_times(tokens):
+        matcher = difflib.SequenceMatcher(
+            a=[_n(token) for token in tokens], b=asr_tokens, autojunk=False)
+        matched = {}
+        for i, j, size in matcher.get_matching_blocks():
+            for offset in range(size):
+                matched[i + offset] = j + offset
+        return matched
+
+    normalized_matches = _match_times([match.group() for match in normalized_tokens])
+    source_asr_indices = [None] * len(src)
+    for source_index, normalized_indices in enumerate(source_to_normalized):
+        ordered = sorted(normalized_indices)
+        if not ordered or any(index not in normalized_matches for index in ordered):
+            continue
+        asr_indices = [normalized_matches[index] for index in ordered]
+        if asr_indices != list(range(asr_indices[0], asr_indices[0] + len(asr_indices))):
+            continue
+        times[source_index] = (asr[asr_indices[0]][1], asr[asr_indices[-1]][2])
+        source_asr_indices[source_index] = asr_indices
+
+    # Keep the old exact authored-text match as a fallback, but don't let it take an
+    # ASR token owned by another normalized source or cross a mapped anchor.
+    source_matches = _match_times(src)
+    asr_sources = {}
+    for normalized_index, asr_index in normalized_matches.items():
+        asr_sources.setdefault(asr_index, set()).update(
+            normalized_to_sources[normalized_index])
+    fallback_asr_indices = set()
+    for source_index, asr_index in sorted(source_matches.items()):
+        if times[source_index] is not None or asr_index in fallback_asr_indices:
+            continue
+        owners = asr_sources.get(asr_index, set())
+        if owners and source_index not in owners:
+            continue
+        earlier = [max(indices) for indices in source_asr_indices[:source_index] if indices]
+        later = [min(indices) for indices in source_asr_indices[source_index + 1:] if indices]
+        lower_bound = max(earlier) + 1 if earlier else 0
+        upper_bound = min(later) - 1 if later else len(asr) - 1
+        if not lower_bound <= asr_index <= upper_bound:
+            continue
+        times[source_index] = (asr[asr_index][1], asr[asr_index][2])
+        source_asr_indices[source_index] = [asr_index]
+        fallback_asr_indices.add(asr_index)
     if not any(times):
         return _even()
 
@@ -593,11 +655,54 @@ def _tts_normalize(text):
     'W24'/'tuần W24' -> 'tuần 24'; phần còn lại theo bảng `brand.pronounce` của spec — tên
     miền, tên riêng, từ viết tắt của mỗi thương hiệu một khác, engine không đoán hộ.
     """
-    text = _W_TUAN.sub(r"tuần \1", text or "")
-    text = _W_BARE.sub(r"tuần \1", text)
-    for pat, rep in PRONOUNCE.items():
-        text = pat.sub(rep, text)
-    return text
+    return _tts_normalize_with_spans(text or "")[0]
+
+
+def _replace_with_source_spans(text, source_spans, pattern, replacement,
+                               keep_week_parts=False):
+    """Apply one existing normalization rule and retain the original character span."""
+    output = []
+    output_spans = []
+    cursor = 0
+    for match in pattern.finditer(text):
+        output.append(text[cursor:match.start()])
+        output_spans.extend(source_spans[cursor:match.start()])
+        expanded = replacement(match) if callable(replacement) else match.expand(replacement)
+        output.append(expanded)
+        if keep_week_parts:
+            # `_W_TUAN` emits a lexical prefix plus captured digits. Keep their source
+            # characters separate so authored `tuần` and `W24` retain distinct anchors.
+            prefix_length = len("tuần ")
+            output_spans.extend(source_spans[match.start():match.start() + prefix_length])
+            group_start, group_end = match.span(1)
+            output_spans.extend(source_spans[group_start:group_end])
+        else:
+            matched_spans = source_spans[match.start():match.end()]
+            if matched_spans:
+                source_span = (min(span[0] for span in matched_spans),
+                               max(span[1] for span in matched_spans))
+            else:
+                boundary = (source_spans[match.start()][0] if match.start() < len(source_spans)
+                            else (source_spans[-1][1] if source_spans else 0))
+                source_span = (boundary, boundary)
+            output_spans.extend([source_span] * len(expanded))
+        cursor = match.end()
+    output.append(text[cursor:])
+    output_spans.extend(source_spans[cursor:])
+    return "".join(output), output_spans
+
+
+def _tts_normalize_with_spans(text):
+    """Return TTS text plus source-character spans for internal caption timing only."""
+    source_spans = [(index, index + 1) for index in range(len(text))]
+    text, source_spans = _replace_with_source_spans(
+        text, source_spans, _W_TUAN, r"tuần \1", keep_week_parts=True)
+    text, source_spans = _replace_with_source_spans(
+        text, source_spans, _W_BARE, r"tuần \1")
+    for pattern, replacement in PRONOUNCE.items():
+        text, source_spans = _replace_with_source_spans(
+            text, source_spans, pattern, replacement)
+    return text, source_spans
 
 
 def _synth_long(model, text, prompt, max_chunk=240):

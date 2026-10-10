@@ -1,6 +1,6 @@
 ---
 name: video-routing
-description: Use when an agent must set up, check or drive a HyperFrames video station through the video-studio CLI - installing the engine, laying out or migrating a station, diagnosing a machine that cannot render, or choosing which video-studio command fits a request. Not for writing a composition's HTML/CSS/animation itself or for cutting real footage by hand.
+description: Use when an agent must choose a video product approach, clarify a brief, or set up, check or drive a HyperFrames video station through the video-studio CLI. Covers training, explainers, data news and character stories across engines and styles; not for writing a composition's HTML/CSS/animation or cutting footage by hand.
 ---
 
 # Định tuyến việc dựng video qua `video-studio`
@@ -9,6 +9,20 @@ Skill này là **cửa vào**: nó nói việc nào đi lệnh nào, thứ tự 
 người dùng. Mọi lệnh tuân **một hợp đồng**: mã thoát `0` ok · `1` lỗi render (chạy lại được) ·
 `2` gọi/cấu hình sai (sửa rồi mới chạy) · `3` thiếu trạm/công cụ (cài tiếp); có `--json` thì
 dòng cuối stdout là một dòng JSON, log người đọc ở stderr.
+
+## Chọn hướng sản phẩm
+
+Khi yêu cầu bắt đầu từ mục tiêu người xem, hãy đọc
+[`references/product-profiles.md`](references/product-profiles.md) trước khi chọn cách dựng.
+Chọn **một nhóm chính** theo điều người xem cần hiểu hoặc làm; video lai có thể có rubric phụ.
+Engine, phong cách, nền tảng, khung hình và thời lượng không tự quyết nhóm. Reference cũng nêu
+intake gọn và các điểm quyết định cần hỏi.
+
+Khi brief có lỗi chất lượng cụ thể hoặc cần bàn giao output, đọc đúng thẻ trong
+[`references/production-techniques.md`](references/production-techniques.md). Đây là checklist
+để chọn bước phù hợp; skill hiện có vẫn sở hữu việc thực thi. Với footage quay thật đọc
+[`../video-edit/SKILL.md`](../video-edit/SKILL.md); với cleanup vùng trong video đọc
+[`../video-cleanup/SKILL.md`](../video-cleanup/SKILL.md). Không mở mọi thẻ nếu brief không gọi tới.
 
 ## Bước 1 — chọn đúng tiền kiểm
 
