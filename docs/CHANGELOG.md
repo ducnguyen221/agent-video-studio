@@ -5,6 +5,15 @@ chính nhưng chưa có tag; khi phát hành, mục đó đổi tên thành số
 `pyproject.toml`, `video_studio/__init__.py` cùng ba manifest plugin (`tests/test_version_sync.py`
 kiểm).
 
+## Chưa phát hành
+
+- Thêm `video-studio cleanup inspect|preview|apply|verify` để chỉnh vùng trong video local bằng
+  FFmpeg: delogo, blur, cover và crop; không cần HyperFrames hoặc model GPU.
+- Kiểm ROI, thời gian và profile media trước xử lý; xuất file riêng cùng manifest, kiểm lại hash,
+  audio, timing, geometry và màu. Không ghi đè nguồn hoặc output có sẵn.
+- Thêm skill `video-cleanup`, adapter host và hướng dẫn. Phạm vi ban đầu: MP4 SDR/CFR yuv420p;
+  chất lượng vá hình vẫn cần xem lại, không bảo đảm khôi phục nền gốc.
+
 ## 0.2.7 — 2026-10-04
 
 Tự chữa render kẹt + chụp chứng cứ (P1-25, Mac mini 02–03/10). Mã thoát và JSON của `probe` không

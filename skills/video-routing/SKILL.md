@@ -10,10 +10,13 @@ người dùng. Mọi lệnh tuân **một hợp đồng**: mã thoát `0` ok ·
 `2` gọi/cấu hình sai (sửa rồi mới chạy) · `3` thiếu trạm/công cụ (cài tiếp); có `--json` thì
 dòng cuối stdout là một dòng JSON, log người đọc ở stderr.
 
-## Bước 1 — máy đã sẵn chưa: `video-studio doctor`
+## Bước 1 — chọn đúng tiền kiểm
 
-- Chạy `video-studio doctor --json` trước mọi việc khác. Mã `3` ⇒ đọc `errors` + `hint`, hướng
-  dẫn người dùng cài phần thiếu (Node ≥ 22, ffmpeg, trạm). Đừng tự cài thay khi chưa được giao.
+- Các lệnh cần HyperFrames hoặc trạm: chạy `video-studio doctor --json` trước. Mã `3` ⇒ đọc
+  `errors` + `hint`, hướng dẫn người dùng cài phần thiếu (Node ≥ 22, ffmpeg, trạm). Đừng tự cài
+  thay khi chưa được giao.
+- `cleanup` là luồng FFmpeg độc lập; không cần doctor, Node, HyperFrames hay trạm. Nó tự báo mã
+  `3` nếu thiếu ffmpeg/ffprobe.
 - `--offline` khi không được phép gọi mạng (không chạy `npx`/`npm`).
 - `--check-updates` chỉ **báo** bản HyperFrames mới; nâng bản là việc có chủ đích (render hồi quy
   trước, đổi `HYPERFRAMES_VERSION` sau). Không bao giờ dùng `latest`.
@@ -53,6 +56,7 @@ Trạm là nơi chứa project, seed, skill cho agent, nháp, cache — **không
 | Lồng tiếng cho video câm | `video-studio narrate --video <mp4>\|--project <tên> --text\|--file … --out <mp4>` | có |
 | Xem trước project | `video-studio preview [--project <tên\|thư mục>]` | có |
 | Chỉnh footage quay thật | `video-studio edit --footage <dir> --out <dir> [--edl edl.json]` | có |
+| Chỉnh một vùng trong video local | `video-studio cleanup inspect|preview|apply|verify` | có; đọc skill `video-cleanup` |
 | Zip cả trạm | `video-studio backup --out <file>.zip` | có |
 | Chuyển trạm ra ngoài repo | `video-studio migrate --to separate [--station DIR]` | có |
 | Cập nhật bản clone | `video-studio update` | có |
@@ -68,6 +72,8 @@ Lệnh "chưa có" trả mã `2` kèm lời báo — đừng thử lại, báo n
   giao (mỗi câu một giọng khác).
 - **Có footage quay thật**: `edit` → đọc skill `video-edit` trước khi cắt; quy trình là hỏi →
   chốt → dựng, không phải một nút bấm.
+- **Cần xử lý một vùng hoặc logo nhìn thấy trong video đã có**: đọc skill `video-cleanup`; chọn
+  ROI, thời gian và method rõ ràng, xem preview, rồi apply ra file mới và verify manifest.
 - **Sắp chế một layout mới**: đọc skill `video-theme-library` + `docs/THEME-LIBRARY.md` TRƯỚC —
   chọn từ thư viện rồi mới sáng tác.
 - **Người dùng hỏi "đồ của tôi nằm đâu / xoá được không"**: `docs/WORKSPACE.md`.

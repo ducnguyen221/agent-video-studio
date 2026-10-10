@@ -96,3 +96,10 @@ def test_every_command_documented_in_help():
     text = usage()
     for name in COMMANDS:
         assert f"  {name}" in text, name
+
+
+def test_cleanup_is_a_real_command_not_a_placeholder():
+    assert COMMANDS["cleanup"][0] == "video_studio.cleanup"
+    r = run_proc(["cleanup", "--help"])
+    assert r.returncode == 0, r.stderr
+    assert all(action in r.stdout for action in ("inspect", "preview", "apply", "verify"))

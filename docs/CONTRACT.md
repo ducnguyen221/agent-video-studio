@@ -113,6 +113,34 @@ Vì sao bản HyperFrames phải là bản cụ thể: một lịch chạy lúc 
 đêm. Nâng bản là việc **có chủ đích** — `video-studio doctor --check-updates` chỉ báo, không tự
 nâng.
 
+### Cleanup video local
+
+`cleanup` chỉ cần ffmpeg/ffprobe qua `FFMPEG_DIR` hoặc `PATH`; không cần Node, HyperFrames,
+Chromium hay trạm. `--out` là thư mục nhận file; `--name` là tên trần, mặc định `preview.mp4`
+cho preview và `cleaned.mp4` cho apply/verify. Output và manifest không ghi đè file đã có.
+
+```powershell
+video-studio cleanup inspect --input input.mp4 --json
+video-studio cleanup preview --input input.mp4 --out .\preview --name preview.mp4 `
+  --method delogo --roi 536,290,76,40 --start 0 --end 4 --json
+video-studio cleanup apply --input input.mp4 --out .\cleaned --name cleaned.mp4 `
+  --method delogo --roi 536,290,76,40 --start 0 --end 4 --json
+video-studio cleanup verify --input input.mp4 --out .\cleaned --name cleaned.mp4 --json
+```
+
+ROI là `x,y,width,height` nguyên pixel, gốc ở trên trái; cả bốn giá trị phải chẵn để giữ đúng
+vị trí trên chroma 4:2:0; `delogo` cần cách mép khung ít nhất 1 pixel. `--start`/`--end` là
+giây tính từ đầu video, `0 <= start < end <= duration`. Phase 1 nhận MP4 SDR `yuv420p`, CFR đã xác minh bằng
+PTS của toàn bộ frame, rotation metadata bằng 0 và stream start time đo được. HDR, VFR, rotation
+và format chưa hỗ trợ trả mã 2 trước render. Thiếu ffmpeg/ffprobe trả mã 3; lỗi FFmpeg trả mã 1.
+
+Các method là `delogo` (nội suy pixel lân cận, không bảo đảm nền gốc), `blur` và `cover` (che,
+không khôi phục nền), `crop` (bỏ vùng ngoài ROI trên toàn video và đổi geometry; tọa độ/size
+phải chẵn). Input không bị sửa. Apply tạo `<output>.cleanup.json` chứa hash và tham số. Verify
+đọc hash, probe, CFR/PTS, frame count/rate, audio packet/configuration, thời lượng, AV start
+offset, geometry và color metadata từ hai file hiện tại. `technical_checks` PASS không đồng
+nghĩa `visual_review` PASS; trạng thái hình/tiếng vẫn `NOT_CHECKED` tới khi có người xem clip.
+
 ### 3.1 Đầu ra KHÔNG giống nhau giữa các hệ điều hành — và phép chứng minh tương đương chỉ đúng trên Windows
 
 Engine này **không** hứa cùng một spec cho ra cùng một byte trên mọi máy. Hai giới hạn phải

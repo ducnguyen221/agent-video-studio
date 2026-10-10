@@ -1,6 +1,6 @@
 ---
 title: Agent guide
-summary: How an agent drives this studio end to end - check the machine, lay out a station, render from a spec, narrate, preview, and cut real footage - with the failure modes that matter.
+summary: How an agent drives this studio end to end - check the machine, lay out a station, render from a spec, narrate, preview, edit existing footage, and clean up a region - with the failure modes that matter.
 audience: agents (and humans reading over their shoulder)
 ---
 
@@ -22,16 +22,20 @@ thành **mã thoát có nghĩa** thay vì traceback.
 | 0 | xong | — |
 | 1 | engine/render hỏng giữa chừng | chạy lại có thể qua; đọc log stderr |
 | 2 | gọi sai / cấu hình sai | **sửa rồi mới chạy lại** — chạy lại y nguyên là vô ích |
-| 3 | thiếu trạm hoặc công cụ | cài tiếp; `video-studio doctor` chỉ đúng thứ còn thiếu |
+| 3 | thiếu trạm hoặc công cụ | cài tiếp; dùng `doctor` cho HyperFrames/trạm, còn `cleanup` báo riêng ffmpeg/ffprobe |
 
 Có `--json` thì **dòng cuối stdout** là một dòng JSON; mọi log người đọc nằm ở stderr. Gọi từ
 PowerShell thì đọc `$LASTEXITCODE`, **đừng** `2>&1` (PS 5.1 biến mỗi dòng stderr thành lỗi và
 `$?` thành `False` dù mã thoát là 0).
 
-## B. Thứ tự an toàn
+## B. Chọn đúng tiền kiểm
 
 ```
-video-studio doctor --json          # máy đủ chưa (node ≥ 22, ffmpeg, Chromium, font, trạm)
+# Chỉ sửa một vùng trong video local: không cần HyperFrames, Node, Chromium hay trạm
+video-studio cleanup inspect --input input.mp4 --json
+
+# Các lệnh dựng cần engine/station:
+video-studio doctor --json          # node ≥ 22, ffmpeg, Chromium, font, trạm
 video-studio init --station <trạm>  # dựng trạm (xem docs/WORKSPACE.md cho hai chế độ)
 video-studio render …               # spec JSON → video theo template
 video-studio narrate …              # video câm + lời dẫn → video có giọng
@@ -80,7 +84,29 @@ video-studio preview --project demo [--port 5173]
 Chạy tới khi Ctrl+C; **đừng gọi trong lịch chạy tự động**. Nó dùng **đúng bản engine đã ghim** —
 soi bằng một bản khác là soi một video khác.
 
-## F. Cắt footage quay thật: `edit`
+## F. Chỉnh một vùng trong video đã có: `cleanup`
+
+```powershell
+video-studio cleanup inspect --input input.mp4 --json
+video-studio cleanup preview --input input.mp4 --out .\preview --name preview.mp4 `
+  --method delogo --roi 536,290,76,40 --start 0 --end 4 --json
+video-studio cleanup apply --input input.mp4 --out .\cleaned --name cleaned.mp4 `
+  --method delogo --roi 536,290,76,40 --start 0 --end 4 --json
+video-studio cleanup verify --input input.mp4 --out .\cleaned --name cleaned.mp4 --json
+```
+
+ROI là `x,y,width,height` pixel từ góc trên trái; cả bốn giá trị cần chẵn để giữ đúng vị trí
+trên chroma 4:2:0. `delogo` cần lề ít nhất một pixel với cạnh khung. `--start`/`--end` tính theo
+giây từ đầu video. Các method: `delogo` nội suy lân cận, `blur` làm mờ, `cover` che màu đặc, `crop` bỏ phần
+ngoài ROI và đổi kích thước cả video. Che hoặc crop không khôi phục nền. Apply không ghi đè file
+có sẵn và tạo sidecar `<tên.mp4>.cleanup.json`.
+
+Phase 1 chỉ nhận MP4 SDR `yuv420p`, CFR đã quét PTS, không rotation metadata, có start time đo
+được. HDR, VFR, rotation và pixel format khác bị từ chối. Audio được copy packet và kiểm hash;
+verify đo lại hai file hiện tại. `technical_checks` phải PASS; `visual_review` và `overall` vẫn
+`NOT_CHECKED` cho tới khi người xem kiểm video và tiếng. Chi tiết: skill `video-cleanup`.
+
+## G. Cắt footage quay thật: `edit`
 
 ```
 video-studio edit --footage <thư mục quay> --out <thư mục ra>            # bóc lời + gom cụm
@@ -90,7 +116,7 @@ video-studio edit --footage … --out … --edl edl.json --build-subtitles   # d
 Không có `edl.json` thì lệnh **dừng ở bước gom cụm** và in bước tiếp theo: đọc `takes_packed.md`,
 chọn đoạn, viết EDL. Quy trình đầy đủ + luật cứng: skill `video-edit`.
 
-## G. Biến môi trường
+## H. Biến môi trường
 
 | Biến | Nghĩa |
 |---|---|
@@ -103,7 +129,7 @@ chọn đoạn, viết EDL. Quy trình đầy đủ + luật cứng: skill `vide
 | `VOICE_STATION` | trạm giọng (lồng tiếng, filler); tên cũ `OMNIVOICE_DIR` trỏ thư mục engine |
 | `VIDEO_STUDIO_REPO` | chỉ thẳng bản clone repo (khi không cài `-e`) |
 
-## H. Bốn chỗ hay hỏng
+## I. Bốn chỗ hay hỏng
 
 1. **Bản engine trôi.** `latest` làm lượt render đêm nay khác lượt tuần sau mà không ai đổi gì.
    Ở đây bản trôi bị từ chối ngay ở tầng cấu hình; nâng bản là việc có chủ đích: render hồi quy
@@ -114,7 +140,7 @@ chọn đoạn, viết EDL. Quy trình đầy đủ + luật cứng: skill `vide
    Windows còn làm vỡ filtergraph của ffmpeg.
 4. **Quên `brand` trong spec.** Mã 2 — đúng như thiết kế.
 
-## I. Nâng bản engine
+## J. Nâng bản engine
 
 ```
 video-studio doctor --check-updates --json     # chỉ báo, không bao giờ tự nâng

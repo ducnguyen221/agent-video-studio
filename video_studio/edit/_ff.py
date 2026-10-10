@@ -122,12 +122,30 @@ class Probe:
         self.path = str(path)
         streams = data.get("streams") or []
         v = next((s for s in streams if s.get("codec_type") == "video"), {})
+        self.video_codec = str(v.get("codec_name") or "")
+        self.pix_fmt = str(v.get("pix_fmt") or "")
+        self.color_transfer = str(v.get("color_transfer") or "")
+        self.color_primaries = str(v.get("color_primaries") or "")
+        self.color_space = str(v.get("color_space") or "")
+        self.color_range = str(v.get("color_range") or "")
+        self.avg_frame_rate = str(v.get("avg_frame_rate") or "")
+        self.r_frame_rate = str(v.get("r_frame_rate") or "")
         self.width = int(v.get("width") or 0)
         self.height = int(v.get("height") or 0)
+        try:
+            self.video_start_time = float(v.get("start_time"))
+        except (TypeError, ValueError):
+            self.video_start_time = None
         self.rotation = _rotation_of(v)
         self.fps = _fps_of(v)
         self.hdr = str(v.get("color_transfer") or "") in HDR_TRANSFERS
         self.audio = [s for s in streams if s.get("codec_type") == "audio"]
+        self.audio_start_times = []
+        for stream in self.audio:
+            try:
+                self.audio_start_times.append(float(stream.get("start_time")))
+            except (TypeError, ValueError):
+                self.audio_start_times.append(None)
         try:
             self.duration = float((data.get("format") or {}).get("duration"))
         except (TypeError, ValueError):

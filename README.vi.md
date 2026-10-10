@@ -8,7 +8,7 @@ Python cài được với một lệnh duy nhất, `video-studio`.
 
 > **Trạng thái: v0.2.6.** Bản này có bố cục trạm, lệnh kiểm máy, công cụ di trú,
 > họ template bản tin, lồng tiếng, xem trước, chỉnh footage, và `export` / `import` để mang dữ
-> liệu trạm sang máy khác. Mọi lệnh trong bảng dưới đều đã có mã thật.
+> liệu trạm sang máy khác, cùng tính năng cleanup video local. Mọi lệnh trong bảng dưới đều đã có mã thật.
 
 **Đây là một năng lực thêm, không phải một mảnh của bộ nào phải cài đủ.** Repo này đứng một
 mình: cài khi bạn cần dựng video, và chỉ khi đó. Một quy trình sản xuất nội dung (ví dụ
@@ -28,6 +28,7 @@ câm vẫn chạy, chỉ là không lồng tiếng được. Không có thứ t�
 | `video-studio narrate` | video câm (hoặc cả một project, render trước) + lời dẫn → một MP4 hoàn chỉnh có giọng và nhạc nền tuỳ chọn, qua trạm giọng. |
 | `video-studio preview` | Mở studio xem trước của HyperFrames cho một project — bằng **đúng bản đã ghim**, nên thứ bạn soi chính là thứ sẽ render. |
 | `video-studio edit` | Cắt footage quay thật: bóc lời tại máy, gom cụm thành markdown đọc được, rồi dựng theo EDL kèm chỉnh màu, overlay, phụ đề và chuẩn âm lượng. Helper chưng cất từ `video-use` (MIT); cũng gọi được bản upstream đã cài ở trạm. |
+| `video-studio cleanup` | Đọc metadata video local, xem trước và áp dụng chỉnh sửa ROI theo thời gian (`delogo`, blur, che màu đặc hoặc crop cả khung); sau đó kiểm hash, timing, audio và geometry qua manifest. Dùng FFmpeg độc lập, không cần HyperFrames hay trạm. |
 | `video-studio export` / `import` | Đóng gói trạm thành zip và bung vào máy khác. `--personal` chỉ lấy tài sản của project (`projects/*/assets`) cộng đúng những thư mục bạn kể tên bằng `--include`; nháp, cache, venv và cây git không bao giờ vào gói. `import` mặc định **không đè**, có `--dry-run` và `--overwrite`. |
 | `video-studio backup` / `migrate` / `update` | Zip cả trạm; chuyển trạm `embedded` ra ngoài repo; cập nhật bản clone (không bao giờ xoá gì). |
 | `video-studio uninstall` | Chỉ gỡ thứ bộ cài đã đặt — liên kết repo → trạm, skill bản cũ đã chép (nếu chưa sửa), `.env` chưa điền, hook pre-commit của chính nó — và dời chúng vào nhật ký của trạm thay vì xoá. Trạm và mọi project giữ nguyên. `--dry-run` in kế hoạch. |
@@ -93,8 +94,8 @@ Hướng dẫn từng bước cho người dùng: [GUIDE.vi.md](GUIDE.vi.md).
 
 ## Skill cho agent
 
-`skills/` có **24 skill**: ba skill của chính repo này (`video-routing`, `video-edit`,
-`video-theme-library`) và **21 skill chưng cất từ bộ skill hiện hành của HyperFrames**
+`skills/` có **25 skill**: bốn skill của chính repo này (`video-routing`, `video-edit`,
+`video-cleanup`, `video-theme-library`) và **21 skill chưng cất từ bộ skill hiện hành của HyperFrames**
 (`skills/hyperframes/`). Bộ 21 này là bản **đã dịch sang tiếng Việt, rút gọn và biên tập lại** từ
 `skills/<tên>/SKILL.md` của upstream tại một tag cụ thể — frontmatter giữ tiếng Anh vì đó là thứ
 harness đọc để định tuyến. Không file nhị phân nào của upstream (font, nhạc, ảnh) được chép vào
@@ -103,7 +104,7 @@ harness đọc để định tuyến. Không file nhị phân nào của upstrea
 
 Skill **không** được chép vào trạm. Gốc repo có một adapter nhỏ cho mỗi skill ở `.claude/skills/`
 (Claude Code) và `.agents/skills/` (Codex, Antigravity): adapter chỉ mang `name` + `description`
-của skill và trỏ agent về bản gốc trong `skills/`. Mở thư mục repo trong host là thấy đủ 24 skill;
+của skill và trỏ agent về bản gốc trong `skills/`. Mở thư mục repo trong host là thấy đủ 25 skill;
 `git pull` là có nội dung skill mới. Thêm, xoá hay đổi mô tả skill thì chạy
 `python scripts/build_host_adapters.py`; `tests/test_host_adapters.py` đỏ khi adapter lệch nguồn.
 Trạm dựng bằng bản cũ còn bản chép cùng `skills-lock.json`: `init --station DIR --migrate` **gỡ**

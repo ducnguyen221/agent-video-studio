@@ -413,8 +413,8 @@
         </a>
       </div>
       <ul class="facts reveal" style="--d:240ms">
-        <li><b class="num" data-to="11">11</b> lệnh</li>
-        <li class="m"><b class="num" data-to="24">24</b> skill cho agent</li>
+        <li><b class="num" data-to="12">12</b> lệnh</li>
+        <li class="m"><b class="num" data-to="25">25</b> skill cho agent</li>
         <li><b class="num" data-to="4">4</b> template bản tin</li>
         <li><b class="num" data-to="670">670</b> test</li>
         <li>phiên bản <b>v0.2.7</b></li>
@@ -603,9 +603,9 @@
     </div>
 
     <div class="note warn reveal">
-      <p><strong>24 skill = 3 skill của chính repo này + 21 skill chưng cất từ upstream.</strong>
-        Ba skill riêng là <code class="inline">video-routing</code>, <code class="inline">video-edit</code>,
-        <code class="inline">video-theme-library</code>. Hai mươi mốt skill còn lại là bản <b>đã dịch
+      <p><strong>25 skill = 4 skill của chính repo này + 21 skill chưng cất từ upstream.</strong>
+        Bốn skill riêng là <code class="inline">video-routing</code>, <code class="inline">video-edit</code>,
+        <code class="inline">video-theme-library</code> và <code class="inline">video-cleanup</code>. Hai mươi mốt skill còn lại là bản <b>đã dịch
         sang tiếng Việt, rút gọn và biên tập lại</b> từ bộ skill của HyperFrames tại một tag cụ thể —
         frontmatter giữ tiếng Anh vì đó là thứ harness đọc để định tuyến.</p>
       <p><b>Không</b> file nhị phân nào của upstream (font, nhạc, ảnh) được chép vào đây, và thư mục
@@ -617,7 +617,7 @@
     <p class="prose reveal">Skill <b>không</b> được chép vào trạm. Gốc repo có một adapter nhỏ cho
       mỗi skill ở <code class="inline">.claude/skills</code> (Claude Code) và
       <code class="inline">.agents/skills</code> (Codex, Antigravity), trỏ agent về bản gốc trong
-      <code class="inline">skills/</code> — mở thư mục repo là thấy đủ 24 skill, <code>git pull</code>
+      <code class="inline">skills/</code> — mở thư mục repo là thấy đủ 25 skill, <code>git pull</code>
       là có bản mới. Trạm dựng bằng bản cũ còn bản chép thì <code class="inline">init --migrate</code>
       gỡ chúng — bản cũ được lưu vào nhật ký, nên <code class="inline">init --undo</code> trả lại được.</p>
   </div>
@@ -728,6 +728,7 @@
           <tr><td class="lbl m">render</td><td>spec JSON → video theo template (<code>news</code> | <code>news-weekly</code> | <code>topstory</code> | <code>repo-today</code>)</td></tr>
           <tr><td class="lbl">probe</td><td>render thử một trang tí hon (≤ 30 s, không tài nguyên ngoài): môi trường render kẹt thì báo ngay, kèm gợi ý khởi động lại máy; <code>--heal</code> chụp gói chẩn đoán và tự chữa (giết Chrome mồ côi, xoá profile tạm cũ, thử lại) trước khi chịu thua</td></tr>
           <tr><td class="lbl">edit</td><td>chỉnh footage thật theo transcript</td></tr>
+          <tr><td class="lbl">cleanup</td><td>preview và sửa ROI theo thời gian bằng FFmpeg: delogo, blur, che màu hoặc crop; kiểm tra hash, audio và timing</td></tr>
           <tr><td class="lbl">preview</td><td>xem trước một project bằng đúng bản engine đã ghim</td></tr>
           <tr><td class="lbl m">narrate</td><td>video câm + lời dẫn → MP4 có giọng (qua trạm giọng)</td></tr>
           <tr><td class="lbl">export</td><td>đóng gói trạm (hoặc <code>--personal</code>: tài sản project) để chuyển máy</td></tr>
