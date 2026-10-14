@@ -156,3 +156,7 @@ This is a manual maintenance procedure; `doctor --check-updates` does not monito
 - [HyperFrames](https://github.com/heygen-com/hyperframes) (Apache-2.0) — the render engine.
 - [video-use](https://github.com/browser-use/video-use) (MIT) — the footage-editing method the
   `edit` helpers are distilled from.
+
+## 🤝 ACD Ecosystem Integration
+
+Khai báo vai của repo trong hệ thống nhiều repo ACD (Role, Upstream, Downstream, Bundles, Handoff) tại [ECOSYSTEM.md](ECOSYSTEM.md).
