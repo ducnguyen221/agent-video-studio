@@ -5,7 +5,7 @@ chính nhưng chưa có tag; khi phát hành, mục đó đổi tên thành số
 `pyproject.toml`, `video_studio/__init__.py` cùng ba manifest plugin (`tests/test_version_sync.py`
 kiểm).
 
-## Chưa phát hành
+## 0.2.8 — 2026-10-14
 
 - Ghi nguồn nghiên cứu FlowKit và ý tưởng Hypit trong `upstream.json`/NOTICE: baseline đầy đủ,
   license tại snapshot, phạm vi theo dõi và đích local. Thêm quy trình bảo trì thủ công tại
