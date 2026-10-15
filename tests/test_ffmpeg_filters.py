@@ -2,7 +2,7 @@
 
 `brew install ffmpeg` (Homebrew core) đã bỏ libfreetype + libass ⇒ không có `drawtext`,
 `subtitles`, `ass`. `doctor` cũ chỉ hỏi có lệnh `ffmpeg` nên báo PASS, rồi `edit` đốt phụ đề
-và runner truyện của marketing-studio chết ở bước cuối. Ba cổng:
+và runner truyện của marketing-team chết ở bước cuối. Ba cổng:
 
     · `doctor` có dòng `ffmpeg-filters` (WARN khi thiếu — render bản tin không cần);
     · `edit` chặn bằng mã 3 TRƯỚC khi cắt/ghép khi cần `subtitles` mà ffmpeg không có;

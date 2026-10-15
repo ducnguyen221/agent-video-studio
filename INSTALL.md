@@ -112,9 +112,9 @@ brew install --cask font-inter
 
 **ffmpeg trên Mac phải là `ffmpeg-full`, không phải `ffmpeg`.** Bản `ffmpeg` của Homebrew core
 đã bỏ libfreetype và libass, nên không có `drawtext`, `subtitles`, `ass`: `edit` đốt phụ đề hỏng,
-và runner truyện của marketing-studio chết ở bước dựng video sau hàng giờ đọc (Mac mini,
+và runner truyện của marketing-team chết ở bước dựng video sau hàng giờ đọc (Mac mini,
 01/10/2026). `ffmpeg-full` là **keg-only** — Homebrew không link nó vào `/opt/homebrew/bin`.
-Không cần tự thêm vào `PATH`: `video-studio` (và marketing-studio) tự dò
+Không cần tự thêm vào `PATH`: `video-studio` (và marketing-team) tự dò
 `/opt/homebrew/opt/ffmpeg-full/bin` TRƯỚC `PATH`. Muốn trỏ chỗ khác thì đặt `FFMPEG_DIR`. Kiểm:
 `video-studio doctor` có dòng `[PASS] ffmpeg-filters drawtext, subtitles, ass`.
 

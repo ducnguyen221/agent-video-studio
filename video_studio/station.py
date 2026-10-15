@@ -51,7 +51,7 @@ MODES = _env.MODES                        # hợp đồng F17 — một nguồn 
 SECRET_DIR_NAME = "video-studio"          # ~/.secret/<tên> khi chạy chế độ separate
 # Giá trị này ĐI VÀO studio.local.json, nên nó phải là ASCII và là một đường dẫn thật: một
 # chuỗi mô tả có dấu đọc bằng công cụ khác encoding sẽ hiện ra rác, và không ai dán nó vào
-# đâu được. Cùng khuôn với `agent-marketing-studio` và `agent-voice-studio`.
+# đâu được. Cùng khuôn với `agent-marketing-team` và `agent-voice-studio`.
 SECRET_STORE = f"~/.secret/{SECRET_DIR_NAME}"
 LEGACY_PROJECTS = ("news", "topstory")
 SKILL_TOOLS = (".claude/skills", ".agents/skills")

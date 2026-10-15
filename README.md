@@ -13,7 +13,7 @@ with one CLI, `video-studio`.
 
 **This is an added capability, not one piece of a suite you must install whole.** The
 repository stands alone: install it when you need to build video, and only then. A content
-pipeline (for example `agent-marketing-studio`) *can* call it through the shared contract —
+pipeline (for example `agent-marketing-team`) *can* call it through the shared contract —
 exit code plus a final JSON line on stdout — when it is present, but that pipeline runs fine
 without it and says plainly that the video capability is missing rather than failing mid-run.
 The **voice** station (`agent-voice-studio`) is the same: without it, silent renders still

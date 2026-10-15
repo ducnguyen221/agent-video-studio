@@ -12,7 +12,7 @@ Python cài được với một lệnh duy nhất, `video-studio`.
 
 **Đây là một năng lực thêm, không phải một mảnh của bộ nào phải cài đủ.** Repo này đứng một
 mình: cài khi bạn cần dựng video, và chỉ khi đó. Một quy trình sản xuất nội dung (ví dụ
-`agent-marketing-studio`) *gọi được* nó qua hợp đồng mã thoát + dòng JSON cuối stdout nếu nó có
+`agent-marketing-team`) *gọi được* nó qua hợp đồng mã thoát + dòng JSON cuối stdout nếu nó có
 mặt — nhưng quy trình đó chạy bình thường khi bạn chưa cài, và nói rõ là đang thiếu năng lực
 video thay vì nổ giữa chừng. Trạm **giọng** (`agent-voice-studio`) cũng vậy: thiếu nó thì render
 câm vẫn chạy, chỉ là không lồng tiếng được. Không có thứ tự cài bắt buộc, không có "bộ ba".

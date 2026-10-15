@@ -61,7 +61,7 @@ WORKSPACE = "workspace"
 STATION_FILE = "station.json"
 ENV_FILE = ".env"
 ENV_EXAMPLE = ".env.example"
-# Hợp đồng F17 — tên chế độ dùng chung với `agent-marketing-studio`, `agent-voice-studio`.
+# Hợp đồng F17 — tên chế độ dùng chung với `agent-marketing-team`, `agent-voice-studio`.
 MODES = ("embedded", "separate")
 
 # Ba tên KHÔNG BAO GIỜ được đọc từ `<repo>/.env`, vì cả ba đều quay ngược lại chính cái đã
@@ -361,7 +361,7 @@ def npm_exe():
 # mini 01/10/2026). Keg phải thắng PATH, nếu không máy có cả hai bản sẽ dùng bản thiếu bộ lọc.
 _KEG_FFMPEG_FULL = ("/opt/homebrew/opt/ffmpeg-full/bin", "/usr/local/opt/ffmpeg-full/bin")
 # Bộ lọc chữ: `subtitles` (đốt phụ đề — `edit`), `drawtext`/`ass` (chữ/phụ đề ASS — runner
-# truyện của marketing-studio dùng chung ffmpeg này).
+# truyện của marketing-team dùng chung ffmpeg này).
 TEXT_FILTERS = ("drawtext", "subtitles", "ass")
 _FILTER_LINE = re.compile(r"^\s*[A-Z.|]{2,4}\s+([A-Za-z0-9_]+)\s+\S+->\S+", re.M)
 
