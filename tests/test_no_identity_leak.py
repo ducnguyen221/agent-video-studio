@@ -51,6 +51,18 @@ PATTERNS = {
     "duong-may-posix": r"/(?:home|Users)/[a-z][a-z0-9_-]+/",
 }
 
+# Email: cấm mọi địa chỉ ở mọi file, trừ ĐÚNG địa chỉ liên hệ của tác giả (chủ dự án chủ động
+# công khai) với số lần chính xác từng file. Dựng bằng ghép chuỗi để file này không tự chứa nó.
+MAU_EMAIL = re.compile(r"[\w.+-]+@(?:gmail|outlook|hotmail|yahoo|icloud)\.com", re.I)
+EMAIL_TG = "ducng" + "uyen.ams" + "@" + "gmail" + ".com"
+EMAIL_ALLOW = {
+    ".claude-plugin/marketplace.json": 2,
+    ".claude-plugin/plugin.json": 1,
+    ".codex-plugin/plugin.json": 1,
+    "README.md": 1,
+    "README.vi.md": 1,
+}
+
 # (file, khoá) → số lần tối đa được phép. Lý do bên cạnh.
 ALLOW = {
     # Ghi công tác giả + địa chỉ repo công khai: đúng chỗ, là điều kiện của license.
@@ -179,6 +191,45 @@ def test_no_identity_leak():
     over = {k: n for k, n in count_hits().items() if n > ALLOW.get(k, 0)}
     assert over == {}, "rò danh tính / vượt số miễn trừ: " + ", ".join(
         f"{f} [{k}] {n} > {ALLOW.get((f, k), 0)}" for (f, k), n in sorted(over.items()))
+
+
+def email_violations(rel, text):
+    """Email lạ: cấm ở mọi file. Email của tác giả: phải đúng số lần ghi cho file đó
+    (thừa lẫn thiếu đều đỏ)."""
+    found = [m.lower() for m in MAU_EMAIL.findall(text)]
+    mine = found.count(EMAIL_TG)
+    other = len(found) - mine
+    out = []
+    if other:
+        out.append(f"{rel}: {other} địa chỉ email không phải của tác giả")
+    want = EMAIL_ALLOW.get(rel, 0)
+    if mine != want:
+        out.append(f"{rel}: email tác giả x{mine}, kỳ vọng x{want}")
+    return out
+
+
+def test_no_foreign_email():
+    bad = []
+    for rel, p in repo_files():
+        try:
+            bad += email_violations(rel, p.read_text(encoding="utf-8"))
+        except UnicodeDecodeError:
+            continue
+    seen = {rel for rel, _ in repo_files()}
+    bad += [f"{rel}: file miễn trừ email không còn" for rel in EMAIL_ALLOW if rel not in seen]
+    assert bad == [], "email trong repo public: " + "; ".join(bad)
+
+
+@pytest.mark.parametrize("rel", sorted(EMAIL_ALLOW))
+def test_email_gate_mutations(rel):
+    """Đột biến: đổi email tác giả thành email lạ, hoặc thêm lần thứ hai, thì cổng phải ĐỎ."""
+    text = (ROOT / rel).read_text(encoding="utf-8")
+    stranger = "stran" + "ger" + "@" + "gmail" + ".com"
+    assert email_violations(rel, text) == [], "bản thật phải xanh"
+    assert email_violations(rel, text.replace(EMAIL_TG, stranger)), "đổi sang email lạ mà cổng vẫn xanh"
+    assert email_violations(rel, text + "\n" + EMAIL_TG), "thêm lần thứ hai mà cổng vẫn xanh"
+    assert email_violations(rel, text + "\n" + stranger), "thêm email lạ cạnh email thật mà cổng vẫn xanh"
+    assert email_violations("docs/other.md", EMAIL_TG), "email tác giả ở file không được miễn phải đỏ"
 
 
 def test_allowlist_is_exact():
