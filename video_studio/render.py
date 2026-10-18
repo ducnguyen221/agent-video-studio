@@ -2,7 +2,7 @@
 
 Hai việc:
 
-1. **Vỏ bọc npx.** Bản `.tts` cũ có SÁU chỗ dựng lại cùng một lệnh render, mỗi chỗ một
+1. **Vỏ bọc npx.** Bản pipeline cũ có SÁU chỗ dựng lại cùng một lệnh render, mỗi chỗ một
    `timeout`, và chỗ nào cũng cho tiến trình con chạy QUA SHELL. Đưa một argv list qua shell
    là bẫy hai đầu: trên POSIX chỉ phần tử ĐẦU được chạy (mọi tham số rơi mất), còn trên
    Windows thì tham số đi qua bộ tách chuỗi của `cmd.exe`. Ở đây chỉ còn một hàm, không bao

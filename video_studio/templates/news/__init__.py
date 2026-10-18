@@ -5,7 +5,7 @@ Bốn hàm dưới đây là chỗ `video-studio render` gọi vào. Chúng nh�
 
     [{"kind": "long"|"short", "path": "<file>", "duration": <giây|None>}, …]
 
-Chưng cất từ bộ script bản tin chạy thật trong pipeline `.tts`. Ba khác biệt có chủ đích so
+Chưng cất từ bộ script bản tin chạy thật trong pipeline đời cũ. Ba khác biệt có chủ đích so
 với bản gốc:
 
 * **Thương hiệu đến từ spec.** Bản gốc mang sẵn tên thương hiệu và tên miền trong mã, nên

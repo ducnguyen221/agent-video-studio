@@ -15,7 +15,7 @@ cần thêm bốn khối là chạy được:
       "date", "display_date", "week", "range", "verdict", "repo", "scenes", "epi"
     }
 
-Vì sao `brand` BẮT BUỘC: bản `.tts` cũ có sẵn tên thương hiệu và tên miền ngay trong mã, nên
+Vì sao `brand` BẮT BUỘC: bản pipeline cũ có sẵn tên thương hiệu và tên miền ngay trong mã, nên
 quên khai brand vẫn ra video — mang danh tính của người khác. Ở đây thiếu `brand` là **mã 2**
 (hợp đồng sai), không có đường lùi im lặng.
 

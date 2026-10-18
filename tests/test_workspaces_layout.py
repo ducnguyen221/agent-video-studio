@@ -115,7 +115,10 @@ def test_migrate_moves_the_new_layout(repo, tmp_path):
 #: `$HOME/.x`. Đứng sau một ký tự chữ (vd `args.video`, `module.voice`) thì không tính.
 HIDDEN = re.compile(r"(?<![\w])\.(video|voice|marketing)(?![\w-])")
 SKIP_DIRS = {".git", ".venv", "venv", "node_modules", "__pycache__", ".pytest_cache", ".worktrees",
-             ".tmp", "workspaces", "workspace", "out", "work", "scratch", "cache"}
+             ".tmp"}
+#: Dữ liệu người dùng/nháp chỉ bị bỏ qua Ở GỐC repo — `templates/workspace/` (cây mẫu chép vào trạm
+#: người dùng) vẫn phải được quét.
+ROOT_SKIP_DIRS = {"workspaces", "workspace", "out", "work", "scratch", "cache"}
 SKIP_FILES = {"tests/test_workspaces_layout.py", ".env", "studio.local.json"}
 BINARY = (".png", ".jpg", ".jpeg", ".webp", ".gif", ".woff", ".woff2", ".ttf", ".mp4", ".mov", ".mp3",
           ".wav", ".zip", ".pt", ".onnx", ".safetensors", ".pyc")
@@ -124,7 +127,8 @@ BINARY = (".png", ".jpg", ".jpeg", ".webp", ".gif", ".woff", ".woff2", ".ttf", "
 def _walk_text_files(root):
     """Duyệt bằng `os.walk` (không cần git: bản `git archive`/wheel cũng được quét)."""
     for dp, dn, fn in os.walk(root):
-        dn[:] = sorted(d for d in dn if d not in SKIP_DIRS)
+        at_root = Path(dp) == Path(root)
+        dn[:] = sorted(d for d in dn if d not in SKIP_DIRS and not (at_root and d in ROOT_SKIP_DIRS))
         for name in sorted(fn):
             p = Path(dp) / name
             rel = p.relative_to(root).as_posix()
@@ -166,6 +170,22 @@ def test_the_scanner_catches_an_injected_string_without_git(tmp_path, name, form
     assert _hidden_hits(tmp_path)[0] == []
     (tmp_path / "video_studio" / "m0.py").write_text("# " + form.format(n=name) + "\n", encoding="utf-8")
     assert _hidden_hits(tmp_path)[0] == ["video_studio/m0.py:1"]
+
+
+def test_the_scanner_covers_the_template_tree_but_not_root_level_user_data(tmp_path):
+    form = "~/." + "video"
+    (tmp_path / "templates" / "workspace").mkdir(parents=True)
+    (tmp_path / "templates" / "workspace" / "README.md").write_text(form + "\n", encoding="utf-8")
+    assert _hidden_hits(tmp_path)[0] == ["templates/workspace/README.md:1"]
+    (tmp_path / "templates" / "workspace" / "README.md").write_text("sạch\n", encoding="utf-8")
+    (tmp_path / "workspace").mkdir()
+    (tmp_path / "workspace" / "note.txt").write_text(form + "\n", encoding="utf-8")   # dữ liệu người dùng
+    assert _hidden_hits(tmp_path)[0] == []
+
+
+def test_the_real_template_tree_is_scanned():
+    names = [rel for rel, _t in _walk_text_files(ROOT) if rel.startswith("templates/workspace/")]
+    assert names, "cây mẫu `templates/workspace/` phải nằm trong phạm vi quét"
 
 
 def test_attribute_access_is_not_mistaken_for_a_hidden_folder(tmp_path):
@@ -230,6 +250,19 @@ def test_a_relative_workspace_station_path_goes_through_the_shared_resolution(
     assert not [ln for ln in capsys.readouterr().err.splitlines() if "bố cục cũ" in ln]   # một lần
 
 
+def test_an_absolute_path_named_workspace_is_not_mistaken_for_the_embedded_name(repo, tmp_path):
+    """Trên POSIX `/workspace` là đường tuyệt đối thật; chỉ tên TƯƠNG ĐỐI không có dấu phân cách
+    mới là tên trạm nhúng."""
+    (repo / "studio.local.json").write_text(
+        json.dumps({"mode": "embedded", "station_path": "/workspace"}), encoding="utf-8")
+    sp = "/workspace"
+    expect = sp if os.path.isabs(sp) else os.path.abspath(os.path.join(str(repo), sp))
+    assert _env.resolve_station() == (expect, "studio.local.json")
+    (repo / "studio.local.json").write_text(
+        json.dumps({"mode": "embedded", "station_path": "workspace/"}), encoding="utf-8")
+    assert _env.resolve_station()[1] == "workspaces"          # có dấu / cuối vẫn là tên tương đối
+
+
 def test_a_separate_config_or_an_other_path_is_still_trusted(repo, tmp_path):
     _old(repo)
     (repo / "studio.local.json").write_text(
@@ -261,6 +294,31 @@ def test_migrate_uses_the_resolved_embedded_station_when_both_exist(repo, tmp_pa
     target = tmp_path / "ngoai"
     station.migrate_to_separate(str(target))
     assert (target / "station.json").is_file() and old.is_dir() and not new.exists()
+
+
+OLD_DATA = "Có dữ liệu cũ ở nơi khác? Dùng `--station <đường>`"
+
+
+def test_every_missing_station_message_points_to_the_station_flag(repo, tmp_path):
+    """Điều kiện phát hành: người có dữ liệu cũ ở nơi khác được chỉ cách trỏ vào nó, KHÔNG nêu tên
+    thư mục ẩn nào."""
+    from video_studio import doctor, projects
+    from video_studio.contract import StationMissing
+    gone = str(tmp_path / "khong-co")
+    assert OLD_DATA in _env.UNSET_HINT
+    msgs = []
+    for call in (lambda: projects.ensure("news", station=gone),
+                 lambda: station.backup(str(tmp_path / "o.zip"), station=gone),
+                 lambda: station.export(str(tmp_path / "o.zip"), station=gone)):
+        with pytest.raises(StationMissing) as e:
+            call()
+        msgs.append(str(e.value))
+    check = [c for c in doctor.station_checks(gone, "workspaces") if c["name"] == "station"][0]
+    msgs.append(check["hint"])
+    msgs.append(doctor.station_checks(None, "unset")[0]["hint"])
+    for m in msgs:
+        assert OLD_DATA in m, m
+        assert not HIDDEN.search(m), m
 
 
 def test_the_helper_for_the_hidden_folder_is_gone():

@@ -309,6 +309,23 @@ def test_doctor_hints_init_when_opcos_station_unused(machine, tmp_path, monkeypa
     assert "init --mode separate --station" in c["hint"] and str(st) in c["hint"]
 
 
+def test_doctor_does_not_nag_about_the_opcos_station_when_embedded_was_chosen(
+        machine, tmp_path, monkeypatch, capsys):
+    """Người dùng ĐÃ chọn embedded (studio.local.json) thì một trạm OpcOS tình cờ có mặt không phải
+    là việc cần cảnh báo "chưa được chọn"; chưa chọn gì thì vẫn nhắc (test liền trên)."""
+    repo = tmp_path / "repo"
+    (repo / "video_studio").mkdir(parents=True)
+    (repo / "pyproject.toml").write_text("", encoding="utf-8")
+    (repo / "studio.local.json").write_text('{"mode": "embedded", "station_path": "workspaces"}',
+                                            encoding="utf-8")
+    (repo / "workspaces").mkdir()
+    monkeypatch.setenv("VIDEO_STUDIO_REPO", str(repo))
+    _opcos_var(tmp_path, monkeypatch)
+    rc, out, _ = run(["--json"], capsys)
+    assert not any(c["name"] == "opcos-station" for c in last_json(out)["checks"])
+    assert doctor.opcos_station_check("workspaces") == []
+
+
 def test_doctor_silent_when_station_env_set(machine, good_station, tmp_path, monkeypatch, capsys):
     _opcos_var(tmp_path, monkeypatch)
     rc, out, _ = run(["--json"], capsys)

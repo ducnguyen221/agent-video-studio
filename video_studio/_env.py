@@ -323,8 +323,9 @@ def resolve_station():
         # Chế độ embedded: `station_path` tương đối `workspace`/`workspaces` do `init` đời trước ghi
         # KHÔNG được tin như một chuỗi — đi qua tầng nhúng chung (workspaces trước, workspace cũ có
         # dấu trạm sau + nhắc), nếu không thì đổi tên thư mục là mất trạm và có cả hai thì thắng nhầm.
-        if sp and cfg.get("mode") != "separate" and \
-                sp.replace("\\", "/").strip("/") in (OLD_WORKSPACE, WORKSPACE):
+        flat = sp.replace("\\", "/")
+        if sp and cfg.get("mode") != "separate" and not os.path.isabs(sp) \
+                and not flat.startswith("/") and flat.rstrip("/") in (OLD_WORKSPACE, WORKSPACE):
             sp = ""
         if sp:
             sp = os.path.expanduser(sp)
@@ -339,8 +340,12 @@ def resolve_station():
     return None, "unset"
 
 
+#: Câu chung cho mọi thông báo "chưa có trạm" (mã 3) và `doctor`: không nêu tên thư mục nào.
+OLD_DATA_HINT = "Có dữ liệu cũ ở nơi khác? Dùng `--station <đường>`."
+
 UNSET_HINT = ("chưa chọn trạm video: bản cài này không có repo để đặt workspaces/ — đặt biến "
-              "VIDEO_STATION=<thư mục trạm> hoặc chạy `video-studio init --station <thư mục>`")
+              "VIDEO_STATION=<thư mục trạm> hoặc chạy `video-studio init --station <thư mục>`. "
+              + OLD_DATA_HINT)
 
 
 def init_command(st):

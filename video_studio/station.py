@@ -924,7 +924,7 @@ def backup(out_path, station=None):
     """Zip cả trạm (trừ nháp/cache/venv). -> dict."""
     st = _env._expand(station) if station else _env.station_dir()
     if not os.path.isdir(st):
-        raise StationMissing(f"không có trạm video: {st}")
+        raise StationMissing(f"không có trạm video: {st}. {_env.OLD_DATA_HINT}")
     files = backup_files(st)
     out_path = _env._expand(out_path)
     os.makedirs(os.path.dirname(out_path) or ".", exist_ok=True)
@@ -979,7 +979,7 @@ def export(out_path, station=None, personal=False, include=()):
     """Đóng gói trạm (hoặc chỉ phần cá nhân) thành một zip mang theo manifest. -> dict."""
     st = _env._expand(station) if station else _env.station_dir()
     if not os.path.isdir(st):
-        raise StationMissing(f"không có trạm video: {st}")
+        raise StationMissing(f"không có trạm video: {st}. {_env.OLD_DATA_HINT}")
     files = personal_files(st, include) if personal else backup_files(st)
     out_path = _env._expand(out_path)
     os.makedirs(os.path.dirname(out_path) or ".", exist_ok=True)

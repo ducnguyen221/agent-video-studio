@@ -4,7 +4,7 @@ Một "project HyperFrames" = ba file cấu hình (`package.json`, `hyperframes.
 + một `index.html` do template sinh ra mỗi lần render. Repo không giữ project nào: mọi project
 sống trong trạm, dưới `<trạm>/projects/<tên>/`.
 
-Bản `.tts` đời cũ neo đường cứng vào một thư mục ẩn ở thư mục cá nhân (tên `news` và `demo` bên dưới) ngay trong template.
+Bản pipeline đời cũ neo đường cứng vào một thư mục ẩn ở thư mục cá nhân (tên `news` và `demo` bên dưới) ngay trong template.
 Ở đây template gọi `projects.ensure("news")`: chỗ đặt do `_env` quyết, seed cấu hình lấy từ
 `<trạm>/demo/` đúng như `_ensure_project()` cũ vẫn làm (chép một lần, không đè bản người dùng
 đã sửa).
@@ -57,7 +57,7 @@ def ensure(name, station=None):
     st = _env._expand(station) if station else _env.station_dir()
     if not os.path.isdir(st):
         raise StationMissing(
-            f"chưa có trạm video ở {st} — chạy: {_env.init_command(st)}")
+            f"chưa có trạm video ở {st} — chạy: {_env.init_command(st)}. {_env.OLD_DATA_HINT}")
     seed = seed_dir(station)
     os.makedirs(proj, exist_ok=True)
     for fn in CONFIG_FILES:

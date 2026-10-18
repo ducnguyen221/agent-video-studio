@@ -219,7 +219,7 @@ def station_checks(st, src):
         # Bản cài wheel, không biến: không có tầng mặc định nào để đoán.
         return [_check("station", False, f"(chưa chọn — {src})", hint=_env.UNSET_HINT)]
     hint = ("chưa có trạm video — `video-studio init` (mặc định tạo workspaces/ trong repo; "
-            "trạm ngoài: đặt VIDEO_STATION hoặc `init --station DIR`)")
+            "trạm ngoài: đặt VIDEO_STATION hoặc `init --station DIR`). " + _env.OLD_DATA_HINT)
     out = [_check("station", os.path.isdir(st), f"{st} ({src})", hint=hint)]
     if _env.env("VIDEO_ROOT") and not _env.env("VIDEO_STATION"):
         out.append(_check("env-name", False, "VIDEO_ROOT", level="warn",
@@ -252,9 +252,13 @@ def station_checks(st, src):
 
 def opcos_station_check(src):
     """Nhắc (không bao giờ đỏ) về `OPCOS_WORKSPACES`: biến chỉ được ĐỌC ở đây và ở `init`,
-    resolver không dùng nó. Vắng biến ⇒ không in gì."""
+    resolver không dùng nó. Vắng biến ⇒ không in gì. Người dùng ĐÃ chọn embedded (studio.local.json)
+    thì cũng không in gì: chọn rồi mà vẫn bị nhắc "chưa được chọn" là cảnh báo sai."""
     base = _env.opcos_base()
     if not base:
+        return []
+    repo = _env.repo_root()
+    if repo and _env.local_config(repo).get("mode") == "embedded":
         return []
     path = os.path.normpath(os.path.join(base, "video"))
     if not _env.has_marker(path):

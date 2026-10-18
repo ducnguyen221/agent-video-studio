@@ -21,7 +21,8 @@ chạy. Không có "bộ" nào phải cài đủ.
 | **`embedded`** — gọn trong repo (**mặc định, khuyến nghị cho người mới**) | `<repo>/workspaces/` | `<repo>/.env` | một máy, "mở một folder là thấy hết" |
 | **`separate`** — trạm ngoài repo | nơi bạn chọn (vd `<OPCOS_WORKSPACES>/video`) | cấp user; bí mật ở `~/.secret/video-studio/` | nhiều máy, repo public của chính bạn, nhiều repo dùng chung một trạm |
 
-`video-studio init` hỏi bạn chọn (Enter = `embedded`) và ghi lựa chọn vào
+`video-studio init` hỏi bạn chọn (Enter = `embedded`; riêng khi đã đặt `OPCOS_WORKSPACES` thì Enter = `separate` ở
+`<biến>/video`, có hỏi xác nhận/đổi) và ghi lựa chọn vào
 `<repo>/studio.local.json`. **Không hỏi** trong ba trường hợp:
 
 - `--station DIR` — bạn chỉ thẳng trạm ⇒ `separate`.

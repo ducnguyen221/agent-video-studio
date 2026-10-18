@@ -1,7 +1,7 @@
 """Cổng HỢP ĐỒNG DỮ LIỆU: spec `schema_version=1` của `video-studio render`.
 
 Điều quan trọng nhất ở đây là một câu: **thiếu `brand` thì phải HỎNG**, mã 2, chứ không được
-lùi về một thương hiệu mặc định. Bản `.tts` cũ có tên thương hiệu và tên miền ngay trong mã,
+lùi về một thương hiệu mặc định. Bản pipeline cũ có tên thương hiệu và tên miền ngay trong mã,
 nên "quên khai" vẫn ra video — và video đó mang danh tính của người khác. Test dưới đây là chỗ
 giữ cho lỗi ấy không quay lại.
 """
