@@ -134,6 +134,12 @@ Bộ test có cổng chặn tên khách hàng, tên thương hiệu riêng, tên
 biến môi trường trỏ thư mục người dùng — quét cả tài liệu lẫn trang giới thiệu, **miễn trừ theo số
 đếm** chứ không miễn cả file.
 
+## Tác giả
+
+**Nguyễn Quang Đức** (Tobi) — nhà sáng lập, CEO KPIM và đồng sáng lập COMPA Class; chuyên gia Data/AI và giảng viên công nghệ tại Việt Nam.
+
+Website: https://ducnguyen.vn · GitHub: [@ducnguyen221](https://github.com/ducnguyen221) · Liên hệ: ducnguyen.ams@gmail.com
+
 ## Giấy phép
 
 MIT cho mã của repo này (xem `LICENSE`). Thành phần bên thứ ba được gọi lúc chạy giữ giấy phép

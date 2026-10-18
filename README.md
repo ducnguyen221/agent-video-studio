@@ -141,6 +141,12 @@ A test gate blocks customer names, private brand names, voice profile names, mac
 home-directory environment variables — across the docs and the website page too, **allowed by
 count** rather than by exempting whole files.
 
+## Author
+
+**Nguyễn Quang Đức** (Tobi) — founder and CEO of KPIM and co-founder of COMPA Class; Data/AI practitioner and instructor in Vietnam.
+
+Website: https://ducnguyen.vn · GitHub: [@ducnguyen221](https://github.com/ducnguyen221) · Contact: ducnguyen.ams@gmail.com
+
 ## License
 
 MIT for this repository's code (see `LICENSE`). Third-party components called at runtime keep

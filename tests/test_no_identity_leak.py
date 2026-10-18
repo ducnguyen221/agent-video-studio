@@ -61,15 +61,31 @@ ALLOW = {
     (".claude-plugin/marketplace.json", "mien"): 2,
     (".claude-plugin/plugin.json", "mien"): 1,
     (".codex-plugin/plugin.json", "mien"): 1,
-    ("LICENSE", "tac-gia"): 1,
+    # Tên đầy đủ, email, website tác giả: chủ dự án chủ động công khai (18/10) ở khối author/owner
+    # của manifest, chủ bản quyền LICENSE/NOTICE và mục Author/Tác giả của README. Đếm chính xác
+    # từng file: tên/email ở file khác, hay thêm một lần ở đây, vẫn đỏ.
+    (".claude-plugin/marketplace.json", "ten-nguoi"): 2,
+    (".claude-plugin/plugin.json", "ten-nguoi"): 1,
+    (".codex-plugin/plugin.json", "ten-nguoi"): 1,
+    ("LICENSE", "ten-nguoi"): 1,
+    ("NOTICE", "ten-nguoi"): 2,
+    ("NOTICE", "brand-a"): 1,
+    ("NOTICE", "mien"): 1,
+    ("README.md", "ten-nguoi"): 1,
+    ("README.md", "brand-a"): 1,
+    ("README.md", "brand-b"): 1,
+    ("README.vi.md", "ten-nguoi"): 1,
+    ("README.vi.md", "brand-a"): 1,
+    ("README.vi.md", "brand-b"): 1,
     ("NOTICE", "tac-gia"): 1,
     # +2: URL repo và URL INSTALL.md trong prompt cài đặt chép từ INSTALL.md.
-    ("README.md", "tac-gia"): 5,
-    ("README.vi.md", "tac-gia"): 5,
+    # +4 mỗi README: mục Author/Tác giả (website, GitHub, email) — chủ dự án chủ động công khai (18/10).
+    ("README.md", "tac-gia"): 9,
+    ("README.vi.md", "tac-gia"): 9,
     # Liên kết tới trang giới thiệu công khai của chính repo này, ở đầu README và
     # trong danh sách tài liệu — cùng loại với `author.url` của manifest.
-    ("README.md", "mien"): 2,
-    ("README.vi.md", "mien"): 2,
+    ("README.md", "mien"): 3,       # +1: website trong mục Author
+    ("README.vi.md", "mien"): 3,    # +1: website trong mục Tác giả
     # Trang giới thiệu công khai (GitHub Pages): địa chỉ kho mã, tài liệu và các trang cùng họ
     # là NỘI DUNG của trang, không phải rò rỉ. Vẫn khoá theo số đếm: thêm một liên kết là đỏ,
     # nên không ai nhét được đường dẫn máy hay tên thật vào đây mà không bị nhìn thấy.

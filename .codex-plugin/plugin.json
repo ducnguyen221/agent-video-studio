@@ -3,7 +3,8 @@
   "version": "0.2.8",
   "description": "A video-production engine an AI agent drives end to end: lay out a video station, check the machine for Node, a pinned HyperFrames build, Chromium, ffmpeg and fonts, migrate an older station safely, and call one CLI with fixed exit codes and a JSON result line.",
   "author": {
-    "name": "Duc Nguyen",
+    "name": "Nguyễn Quang Đức",
+    "email": "ducnguyen.ams@gmail.com",
     "url": "https://ducnguyen.vn"
   },
   "homepage": "https://github.com/ducnguyen221/agent-video-studio",
