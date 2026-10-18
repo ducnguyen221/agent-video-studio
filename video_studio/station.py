@@ -16,11 +16,13 @@ chứa mã và skill. Skill KHÔNG được chép vào trạm: host đọc chún
     separate   trạm ngoài repo (thư mục do người dùng chọn; không có tên mặc định) — cho người dùng nhiều máy, repo public của
                chính mình, nhiều repo chia sẻ trạm.
 
-`--station DIR` = separate, không hỏi. Máy đã CHỌN trạm ngoài (VIDEO_STATION / VIDEO_ROOT đã
+`--station DIR` = separate, không hỏi. `--mode separate` thiếu `--station` thì hỏi đường (gợi ý
+`<OPCOS_WORKSPACES>/video`; không có người: dùng gợi ý hoặc mã 2) — không có đường mặc định. Máy đã CHỌN trạm ngoài (VIDEO_STATION / VIDEO_ROOT đã
 đặt, hoặc studio.local.json ghi separate) ⇒ dùng trạm đó, KHÔNG hỏi, KHÔNG BAO GIỜ tạo
 workspace/. `~/.video` chỉ tình cờ mang dấu trạm (station.json, projects/, hay seed demo/ đời
-cũ) ⇒ KHÔNG tự nhận: hỏi người dùng; `--yes` hay không có người thì dừng mã 2 — nhận nó phải
-bằng `--mode separate`, `--station DIR` hoặc `--migrate`.
+cũ) ⇒ KHÔNG tự nhận: có người thì hỏi ba đường (trạm mới · trạm cũ · dừng); `--yes` hay không có
+người thì dùng trạm mới và in một dòng nêu trạm cũ — nhận nó phải bằng `--station DIR`,
+`--migrate` hoặc câu trả lời [2] (`--mode separate` không nhận nó).
 
 Kỷ luật thi hành:
 - Lập KẾ HOẠCH trọn vẹn và kiểm xung đột TRƯỚC khi ghi byte nào; xung đột ⇒ mã 2, không đụng gì.
@@ -158,64 +160,76 @@ def detect_external():
         return _env._expand(_env.env("VIDEO_STATION")), "biến VIDEO_STATION đã đặt", True
     if _env.env("VIDEO_ROOT"):
         return _env._expand(_env.env("VIDEO_ROOT")), "biến VIDEO_ROOT (tên cũ) đã đặt", True
-    home = _env.default_station()
+    home = _env.legacy_station()
     if _env.has_marker(home):
         return home, "~/.video đã là một trạm (station.json, projects/ hoặc seed demo/ đời cũ)", False
     return None
 
 
-ADOPT_TABLE = """\
-Máy này ĐÃ CÓ một trạm video: {path}
-({why}). Chưa ai chọn dùng trạm đó cho bản clone này.
+LEGACY_TABLE = """\
+Máy này có một trạm video CŨ ở {old}
+({why}). Nó KHÔNG được tự nhận.
 
-  [1] dùng trạm có sẵn đó (separate) — project cũ còn nguyên; mọi render sau này ghi vào đó,
-      kể cả khi nó đang là trạm của lịch chạy thật.
-  [2] dừng lại — muốn trạm mới trong repo (embedded, <repo>/workspace/) thì dời hoặc đổi tên
-      trạm cũ trước; giữ cả hai là hai nguồn sự thật cho một repo.
+  [1] dùng trạm mới: {new} ({kind})
+      — trạm cũ để nguyên, không đụng tới.
+  [2] nhận trạm cũ: {old} (separate)
+      — project cũ còn nguyên; mọi render sau này ghi vào đó, kể cả khi nó đang là trạm của
+        lịch chạy thật.
+  [3] dừng lại — muốn gom về trạm mới thì tự dời hoặc đổi tên trạm cũ rồi chạy lại.
 
-Không trả lời gì = [2]. Chạy không có người: {run1} là [1].
+Không trả lời gì = [3].
 """
 
 
-def _ask_adopt_console(prompt):
+def _ask_legacy_console(prompt):
     contract.log(prompt)
-    sys.stderr.write("Chọn [1/2] (Enter = 2, dừng): ")
+    sys.stderr.write("Chọn [1/2/3] (Enter = 3, dừng): ")
     sys.stderr.flush()
     return input()
 
 
-def _adopt_or_stop(ext, yes, ask, non_interactive, opcos=None):
-    """`~/.video` mang dấu trạm nhưng chưa ai chọn nó ⇒ HỎI người dùng; không có người thì dừng.
+def _legacy_note(old):
+    return (f"trạm video cũ ở {old} được GIỮ NGUYÊN và không tự nhận; muốn dùng nó: "
+            f"chạy lại với --station {old}")
 
-    Lượt cài trên Mac (29/09): `init --yes` nhận âm thầm một `~/.video` có sẵn, và mọi render
-    thử sau đó ghi vào trạm đó. `--yes` nghĩa là "nhận khuyến nghị = embedded", không phải
-    "nhận bất cứ trạm nào tình cờ nằm ở home".
+
+def _new_station(repo):
+    """Trạm mới mà `init` dựng khi không ai chọn gì khác: `<OPCOS_WORKSPACES>/video` (tuyệt đối)
+    nếu biến đã đặt, không thì embedded `<repo>/workspace/`. -> (chế độ, đường, nhãn)."""
+    base = _env.opcos_base()
+    if base:
+        return "separate", os.path.abspath(os.path.join(base, "video")), "separate, theo OPCOS_WORKSPACES"
+    if not repo or not os.path.isdir(repo):
+        raise ContractError("chế độ embedded cần chạy từ bản clone repo (pip install -e <repo>); "
+                            "bản cài wheel chỉ dùng được separate (--station DIR).")
+    return "embedded", os.path.join(repo, _env.WORKSPACE), "embedded, trong repo"
+
+
+def _legacy_choice(ext, yes, ask, non_interactive, repo):
+    """Có trạm cũ dưới home mang dấu mà chưa ai chọn nó ⇒ KHÔNG BAO GIỜ tự nhận.
+
+    Có người: hỏi ba đường ([1] trạm mới · [2] nhận trạm cũ · [3] dừng). `--yes`, không tương
+    tác hay không có terminal: dùng trạm mới và in MỘT dòng nêu trạm cũ cùng cách nhận nó.
+    (Lượt cài trên Mac: `init --yes` từng nhận âm thầm một `~/.video` có sẵn.)
     """
-    path, why = ext[0], ext[1]
-    # Có trạm OpcOS thì `--mode separate` lấy trạm OpcOS (xem `choose_mode`); trạm ở home phải
-    # chỉ đích danh bằng `--station`.
-    run1 = f"`--station {path}`" if opcos else "`--mode separate` (hoặc `--station DIR`)"
-    table = ADOPT_TABLE.format(path=path, why=why, run1=run1)
-    if opcos:
-        table += (f"\nLưu ý: OPCOS_WORKSPACES cũng có một trạm video: {opcos}. Muốn dùng trạm "
-                  "đó thay vì trạm ở home: chạy lại với --mode separate.\n")
-    use_home = (f"--station {path} (dùng trạm ở home; --mode separate sẽ lấy trạm OpcOS {opcos})"
-                if opcos else "--mode separate (dùng trạm có sẵn) hoặc --station DIR")
-    stop = ("máy đã có trạm video ở {p} ({w}) mà chưa ai chọn dùng nó; {lead}KHÔNG tự nhận. "
-            "Agent: hỏi người dùng, rồi chạy lại với " + use_home.replace("{", "{{").replace("}", "}}")
-            + "; muốn trạm trong repo (embedded) thì dời/đổi tên trạm cũ trước.")
-    if yes or non_interactive or (ask is None and not _stdin_is_tty()):
-        contract.log(table)
-        lead = "--yes nghĩa là embedded (<repo>/workspace/) nên " if yes else ""
-        raise ContractError(stop.format(p=path, w=why, lead=lead))
-    ask = ask or _ask_adopt_console
+    old, why = ext[0], ext[1]
+    mode, path, kind = _new_station(repo)
+    interactive = not yes and not non_interactive and (ask is not None or _stdin_is_tty())
+    if not interactive:
+        contract.log(_legacy_note(old))
+        return mode, path, f"trạm mới ({kind}); trạm cũ {old} giữ nguyên"
+    table = LEGACY_TABLE.format(old=old, why=why, new=path, kind=kind)
     try:
-        ans = (ask(table) or "").strip().lower()
+        ans = ((ask or _ask_legacy_console)(table) or "").strip().lower()
     except EOFError:
-        raise ContractError(stop.format(p=path, w=why, lead="không đọc được lựa chọn, "))
-    if ans in ("1", "separate"):
-        return "separate", path, f"người dùng chọn dùng trạm có sẵn — {why}"
-    raise ContractError(stop.format(p=path, w=why, lead="đã dừng theo lựa chọn, "))
+        ans = ""
+    if ans == "1":
+        return mode, path, f"người dùng chọn trạm mới ({kind}); trạm cũ {old} giữ nguyên"
+    if ans == "2":
+        return "separate", old, f"người dùng chọn nhận trạm cũ — {why}"
+    raise ContractError(
+        f"đã dừng: máy có trạm video cũ ở {old} và chưa ai chọn dùng nó. Muốn gom về trạm mới thì "
+        f"dời hoặc đổi tên trạm cũ rồi chạy lại; muốn nhận nó: --station {old}.")
 
 
 def _stdin_is_tty():
@@ -249,10 +263,12 @@ def choose_mode(station=None, mode=None, yes=False, ask=None, non_interactive=Fa
 
     Trạm ngoài có hai loại: ĐÃ CHỌN (biến VIDEO_STATION/VIDEO_ROOT, hoặc studio.local.json ghi
     `separate`) thì dùng luôn, không hỏi — máy chạy lịch không đổi hành vi. CHỈ PHÁT HIỆN
-    (`~/.video` mang dấu trạm) thì chỉ nhận khi người dùng nói rõ: `--mode separate`,
-    `--migrate`, hoặc trả lời [1] ở câu hỏi; `--yes` và chạy không người ⇒ mã 2.
+    (`~/.video` mang dấu trạm) thì chỉ nhận khi người dùng nói rõ: `--station`, `--migrate`,
+    hoặc trả lời [2] ở câu hỏi ba đường; `--yes` và chạy không người ⇒ trạm mới + một dòng nêu
+    trạm cũ (xem `_legacy_choice`). `--mode separate` KHÔNG nhận nó (xem `_pick_separate_path`).
     """
     repo = _env.repo_root()
+    user_ask = ask
     if station:
         return "separate", _env._expand(station), "--station"
     ext = detect_external()
@@ -268,19 +284,18 @@ def choose_mode(station=None, mode=None, yes=False, ask=None, non_interactive=Fa
     if not mode and prev == "separate" and local.get("station_path"):
         return "separate", _env.resolve_station()[0], "studio.local.json (lần chọn trước)"
     if ext:
-        if mode == "separate" or migrate:
-            flag = "--mode separate" if mode == "separate" else "--migrate"
-            oc = _env.opcos_station()
-            if mode == "separate" and oc:
-                # Đường mặc định của `--mode separate` là trạm OpcOS, kể cả khi
-                # `~/.video` cũng mang dấu (trạm ở home chỉ còn là thứ được nhận ra để hỏi).
-                return "separate", os.path.abspath(oc), f"{flag} — trạm OpcOS: {oc}"
-            return "separate", ext[0], f"{flag} — nhận trạm có sẵn: {ext[1]}"
+        if migrate:
+            # `--migrate` là ý định tường minh nhận trạm cũ.
+            return "separate", ext[0], f"--migrate — nhận trạm có sẵn: {ext[1]}"
         if mode == "embedded":
             raise ContractError(
                 f"máy đã có trạm video ngoài ({ext[1]}: {ext[0]}); tạo thêm workspace/ sẽ thành "
-                "hai nguồn sự thật. Dùng trạm đó (--mode separate) hoặc dời/đổi tên trạm cũ trước.")
-        return _adopt_or_stop(ext, yes, ask, non_interactive, opcos=_env.opcos_station())
+                "hai nguồn sự thật. Dùng trạm đó (--station DIR) hoặc dời/đổi tên trạm cũ trước.")
+        if mode == "separate":
+            # `--mode separate` KHÔNG nhận trạm cũ: nhận nó chỉ qua --station, --migrate hay [2].
+            contract.log(_legacy_note(ext[0]))
+            return _pick_separate_path("--mode separate", user_ask, non_interactive)
+        return _legacy_choice(ext, yes, user_ask, non_interactive, repo)
     if not mode:
         if prev in MODES:
             mode, why = prev, "studio.local.json (lần chọn trước)"
@@ -329,10 +344,39 @@ def choose_mode(station=None, mode=None, yes=False, ask=None, non_interactive=Fa
             raise ContractError("chế độ embedded cần chạy từ bản clone repo (pip install -e <repo>); "
                                 "bản cài wheel chỉ dùng được separate (--station DIR).")
         return "embedded", os.path.join(repo, _env.WORKSPACE), why
-    oc = _env.opcos_station()
-    if oc and (explicit or not prev):
-        return "separate", os.path.abspath(oc), (why + " — trạm OpcOS") if explicit else why
-    return "separate", _env.default_station(), why
+    return _pick_separate_path(why, user_ask, non_interactive)
+
+
+def _pick_separate_path(why, ask, non_interactive):
+    """`separate` mà chưa có `--station`: KHÔNG có đường mặc định ngầm. Gợi ý (nếu biến có) là
+    `<OPCOS_WORKSPACES>/video` tuyệt đối. Có người ⇒ hỏi (Enter nhận gợi ý; không gợi ý thì Enter
+    rỗng = dừng). Không có người ⇒ có gợi ý thì dùng luôn (biến đã đặt là tường minh) và nói ra
+    một dòng; không có thì mã 2 đòi `--station`."""
+    base = _env.opcos_base()
+    suggest = os.path.abspath(os.path.join(base, "video")) if base else None
+    if ask is None and (non_interactive or not _stdin_is_tty()):
+        if suggest:
+            contract.log(f"trạm separate: dùng {suggest} (theo OPCOS_WORKSPACES); đổi bằng --station DIR.")
+            return "separate", suggest, f"{why} — theo OPCOS_WORKSPACES"
+        raise ContractError(
+            "chọn separate mà chưa có đường trạm: --station DIR là bắt buộc khi chạy không "
+            "tương tác. Agent: hỏi người dùng muốn đặt trạm ở đâu rồi chạy lại với --station.")
+    q = "Đặt trạm video (separate) ở đâu?\n"
+    if suggest:
+        q += f"  Gợi ý: {suggest}  (OPCOS_WORKSPACES đã đặt) — Enter để nhận, hoặc gõ đường khác.\n"
+    else:
+        q += "  Chưa có gợi ý (OPCOS_WORKSPACES chưa đặt) — gõ đường thư mục, Enter rỗng để dừng.\n"
+    try:
+        ans = ((ask or _ask_console_text)(q) or "").strip()
+    except EOFError:
+        raise ContractError("không đọc được câu trả lời (stdin không có người): --station DIR là "
+                            "bắt buộc khi chạy không tương tác.")
+    if not ans:
+        if not suggest:
+            raise ContractError("chưa chọn nơi đặt trạm — chạy lại và gõ đường, hoặc truyền "
+                                "--station DIR.")
+        ans = suggest
+    return "separate", _env._expand(ans), f"{why} — người dùng chọn đường"
 
 
 # ── lập kế hoạch ───────────────────────────────────────────────────────────────────────
@@ -1170,16 +1214,17 @@ def migrate_to_separate(target=None, ask=None, non_interactive=False):
         raise ContractError(f"đích {target} nằm trong trạm đang dời ({ws}) — chọn chỗ ngoài repo")
     if os.path.exists(target) and os.listdir(target):
         raise ContractError(f"thư mục đích không rỗng: {target} — chọn chỗ khác (--station)")
-    if asked:
-        _confirm_migrate(ws, target, ask or _ask_console_text, non_interactive)
-    # `.env` phải đi theo, và phải được kiểm TRƯỚC khi dời byte nào. Bỏ nó lại trong repo là
-    # kiểu hỏng tệ nhất: file vẫn nằm đó, vẫn đọc được bằng mắt, nhưng `_env.env()` thôi
-    # không nạp nó nữa (chế độ đã là `separate`) — cấu hình ngừng có tác dụng trong im lặng.
+    # `.env` phải đi theo, và phải được kiểm TRƯỚC khi dời byte nào (và trước câu y/N, để người
+    # dùng không trả lời y rồi mới nghe "không dời được"). Bỏ nó lại trong repo là kiểu hỏng tệ
+    # nhất: file vẫn nằm đó, vẫn đọc được bằng mắt, nhưng `_env.env()` thôi không nạp nó nữa
+    # (chế độ đã là `separate`) — cấu hình ngừng có tác dụng trong im lặng.
     env_file = os.path.join(repo, _env.ENV_FILE)
     sec = os.path.join(os.path.expanduser("~"), ".secret", SECRET_DIR_NAME)
     moved_env = os.path.join(sec, _env.ENV_FILE) if os.path.isfile(env_file) else None
     if moved_env and os.path.exists(moved_env):
         raise ContractError(f"{moved_env} đã có — gộp tay rồi xoá {env_file}, sau đó chạy lại")
+    if asked:
+        _confirm_migrate(ws, target, ask or _ask_console_text, non_interactive)
     if os.path.isdir(target):
         os.rmdir(target)
     os.makedirs(os.path.dirname(target) or ".", exist_ok=True)

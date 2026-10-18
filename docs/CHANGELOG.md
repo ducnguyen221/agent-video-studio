@@ -7,6 +7,18 @@ kiểm).
 
 ## Chưa phát hành
 
+- `video-studio init --mode separate` không còn rơi về `~/.video` khi thiếu `--station`: có
+  `OPCOS_WORKSPACES` thì gợi ý `<biến>/video` (tuyệt đối) và hỏi nhận/đổi; không có biến thì hỏi
+  đường (Enter rỗng = dừng). Không có người trả lời: có biến thì dùng luôn đường đó và in một
+  dòng, không có biến thì thoát mã 2 đòi `--station`. `~/.video` chỉ còn là trạm cũ để nhận ra
+  và quyết định. Hàm nội bộ `default_station()` đổi tên `legacy_station()`.
+- `init` không bao giờ tự nhận trạm cũ dưới home (`~/.video` mang dấu), kể cả với `--mode separate`.
+  Có người thì hỏi ba đường (trạm mới · nhận trạm cũ · dừng); `--yes`, `--non-interactive` hay không
+  có terminal thì dùng trạm mới (embedded, hoặc `<OPCOS_WORKSPACES>/video` nếu biến đã đặt) và in
+  một dòng nêu trạm cũ cùng `--station <đường>` để nhận nó. Trước đây các ca này trả mã 2 hoặc nhận
+  luôn trạm cũ. Nhận trạm cũ chỉ qua `--station`, `--migrate` hoặc câu trả lời [2].
+- Đường dán có cặp ngoặc kép bao quanh (`"C:\\x"`, kiểu "Copy as path" của Windows) được bóc ngoặc ở
+  mọi chỗ nhập đường; `migrate` kiểm `.env` trong kho secret trước câu y/N thay vì sau.
 - `video-studio migrate --to separate` hỏi nơi dời thay vì tự dời vào `~/.video`: gợi ý
   `<OPCOS_WORKSPACES>/video` nếu biến đã đặt, hiện đường tuyệt đối đích cùng số file/dung lượng
   rồi xin xác nhận y/N. Không có người trả lời (`--non-interactive`, hoặc không có terminal) thì

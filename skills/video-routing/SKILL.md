@@ -43,8 +43,8 @@ Trạm là nơi chứa project, seed, skill cho agent, nháp, cache — **không
    `studio.local.json` ghi `separate`): `init` dùng trạm đó, không hỏi. Vẫn nên truyền
    `--station <đường>` **tường minh** để không bao giờ dựng nhầm `workspace/`.
    `~/.video` chỉ tình cờ có `station.json`, `projects/` hay seed `demo/` đời cũ thì `init`
-   **không** tự nhận: `--yes` hay chạy không người ⇒ mã 2. Hỏi người dùng, rồi chạy lại với
-   `--mode separate` (dùng trạm đó), `--station DIR` hoặc `--migrate`.
+   **không** tự nhận: `--yes` hay chạy không người ⇒ dùng trạm mới và in một dòng nêu trạm cũ.
+   Muốn dùng trạm cũ: hỏi người dùng, rồi chạy lại với `--station DIR` hoặc `--migrate`.
 2. **Người dùng mới**: trình bảng hai lựa chọn (`init` in sẵn khi không có người trả lời) —
    `embedded` (gọn trong repo, **khuyến nghị**) hay `separate` (trạm ngoài, cho người rành kỹ
    thuật / nhiều máy). **Chờ người dùng chọn**, rồi chạy lại với `--mode …`, `--yes` (= embedded)

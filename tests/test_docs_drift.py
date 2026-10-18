@@ -141,8 +141,8 @@ STALE_DOCS = ("README.md", "README.vi.md", "GUIDE.md", "GUIDE.vi.md", "START-HER
               "INSTALL.md", "docs/INSTALL.md", "docs/WORKSPACE.md", "skills/video-routing/SKILL.md",
               "docs/index.html", "docs/install/index.html")
 # (câu sai, vì sao sai). Từ 0.2.2 `init` KHÔNG tự nhận `~/.video` có sẵn: `--yes` = embedded,
-# trạm cũ chỉ được nhận qua `--mode separate` / `--station` / `--migrate` hoặc câu trả lời [1];
-# không có người thì mã 2 (`station.py::_adopt_or_stop`). Câu cũ dạy agent chờ một lượt nhận
+# trạm cũ chỉ được nhận qua `--station` / `--migrate` hoặc câu trả lời [2];
+# không có người thì dùng trạm mới (`station.py::_legacy_choice`). Câu cũ dạy agent chờ một lượt nhận
 # trạm im lặng không còn tồn tại — đúng kiểu lỗi của lượt cài Mac 29/09.
 STALE_CLAIMS = (
     ("detects it and does not ask", "init không tự nhận trạm cũ từ 0.2.2"),

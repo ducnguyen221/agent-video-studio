@@ -82,10 +82,15 @@ hộ bạn.
 ```
 video-studio init                            # trình bảng hai lựa chọn rồi chờ bạn chọn
 video-studio init --yes                      # nhận khuyến nghị (embedded), không hỏi
-video-studio init --mode separate            # chọn thẳng chế độ, không hỏi
+video-studio init --mode separate            # chọn thẳng chế độ; thiếu đường trạm thì hỏi đường (xem dưới)
 video-studio init --station <thư mục trạm>  # hoặc chỉ thẳng một trạm (= separate, không hỏi)
 video-studio init --non-interactive --yes    # CI / lịch chạy: không hỏi và không đoán
 ```
+
+`separate` **không có đường trạm mặc định**: thiếu `--station`, `init` gợi ý `<OPCOS_WORKSPACES>/video`
+(đường tuyệt đối) nếu biến đã đặt và hỏi bạn nhận hay đổi; chưa đặt biến thì hỏi đường (Enter rỗng
+= dừng). Chạy không có người: có biến thì dùng luôn đường đó và in một dòng; không có biến thì
+thoát **mã 2** đòi `--station DIR`.
 
 **`embedded` là mặc định và là khuyến nghị**: trạm ở `<repo>/workspace/`, biến cấu hình ở
 `<repo>/.env`, bấm Enter là xong, không phải đặt biến môi trường nào. Chọn `separate` khi bạn
@@ -94,9 +99,9 @@ tích rồi khuyến nghị**, không hỏi trống.
 
 `init` **chỉ bỏ qua câu hỏi khi trạm đã được chọn**. Máy đã đặt biến `VIDEO_STATION`/`VIDEO_ROOT`
 (hoặc `studio.local.json` đã ghi `separate`) thì bản trần dùng trạm đó và nói rõ lý do. `~/.video`
-chỉ tình cờ mang dấu trạm thì **không** tự nhận: `init` hỏi; với `--yes` hay khi không có người trả
-lời, nó in đường trạm cũ rồi thoát **mã 2** — nhận trạm đó phải bằng `--mode separate`,
-`--station <thư mục>` hoặc `--migrate`. Xin `embedded` khi máy đã có trạm ngoài là **lỗi mã 2**
+chỉ tình cờ mang dấu trạm thì **không** tự nhận: `init` hỏi ba đường ([1] trạm mới, [2] nhận trạm
+cũ, [3] dừng); với `--yes` hay khi không có người trả lời, nó dùng trạm mới và in một dòng nêu
+trạm cũ — nhận trạm đó phải bằng `--station <thư mục>`, `--migrate` hoặc trả lời [2]. Xin `embedded` khi máy đã có trạm ngoài là **lỗi mã 2**
 ("hai nguồn sự thật") chứ không phải một cảnh báo — muốn dựng trạm trong repo thì gỡ biến hoặc
 dời trạm cũ trước.
 

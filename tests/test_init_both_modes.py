@@ -42,9 +42,10 @@ def test_enter_means_embedded(repo):
     assert mode == "embedded" and st == str(repo / "workspace") and why == "người dùng chọn"
 
 
-def test_two_means_separate(repo):
-    mode, st, _why = station.choose_mode(ask=_ask("2"))
-    assert mode == "separate" and st == _env.default_station()
+def test_two_means_separate_and_then_asks_for_the_path(repo, tmp_path):
+    answers = iter(["2", str(tmp_path / "ngoai")])
+    mode, st, _why = station.choose_mode(ask=lambda p: next(answers))
+    assert mode == "separate" and st == str(tmp_path / "ngoai")
 
 
 def test_station_flag_is_separate_without_asking(repo, tmp_path):
@@ -78,20 +79,20 @@ def _home_station(tmp_path, monkeypatch, legacy=True):
 
 def test_a_legacy_home_station_is_recognised_and_asked_about(repo, tmp_path, monkeypatch):
     """Trạm đời cũ chưa có station.json vẫn phải được nhận ra (M8) — nhưng nhận ra là để HỎI,
-    không phải để tự dùng: trả lời [1] mới thành separate."""
+    không phải để tự dùng: chỉ trả lời [2] mới thành separate ở home."""
     home_st = _home_station(tmp_path, monkeypatch)
     asked = []
-    mode, st, why = station.choose_mode(ask=lambda p: asked.append(p) or "1")
-    assert mode == "separate" and st == str(home_st) and "trạm có sẵn" in why
-    assert asked and str(home_st) in asked[0] and "[2]" in asked[0]
+    mode, st, why = station.choose_mode(ask=lambda p: asked.append(p) or "2")
+    assert mode == "separate" and st == str(home_st) and "trạm cũ" in why
+    assert asked and str(home_st) in asked[0] and "[3]" in asked[0]
 
 
-@pytest.mark.parametrize("answer", ["", "2", "khong"])
+@pytest.mark.parametrize("answer", ["", "3", "khong"])
 def test_home_station_not_confirmed_stops_without_writing(answer, repo, tmp_path, monkeypatch):
-    _home_station(tmp_path, monkeypatch)
+    home_st = _home_station(tmp_path, monkeypatch)
     with pytest.raises(ContractError) as e:
         station.choose_mode(ask=lambda p: answer)
-    assert "--mode separate" in str(e.value)
+    assert str(home_st) in str(e.value)
     assert not (repo / "workspace").exists()
 
 
@@ -99,28 +100,32 @@ def test_home_station_not_confirmed_stops_without_writing(answer, repo, tmp_path
     (["--yes"], True), (["--yes"], False), (["--non-interactive", "--yes"], False),
     ([], False), (["--non-interactive"], True)])
 def test_yes_never_silently_adopts_a_home_station(argv, tty, repo, tmp_path, monkeypatch, capsys):
-    """Sự cố lượt Mac 29/09: `init --yes` nhận âm thầm `~/.video` có sẵn. `--yes` = embedded;
-    gặp trạm ở home thì mã 2, in bảng, không ghi byte nào — kể cả vào trạm có sẵn đó."""
+    """Sự cố lượt Mac 29/09: `init --yes` nhận âm thầm `~/.video` có sẵn. Nay: không có người
+    hỏi thì dùng trạm MỚI (embedded) và in một dòng nêu trạm cũ; trạm cũ không bị đụng byte nào."""
     home_st = _home_station(tmp_path, monkeypatch, legacy=False)
     before = sorted(p.name for p in home_st.rglob("*"))
     monkeypatch.setattr(station, "_stdin_is_tty", lambda: tty)
-    assert station.init_main(argv) == 2
+    assert station.init_main(argv) == 0
     err = capsys.readouterr().err
-    assert str(home_st) in err and "--mode separate" in err
-    assert not (repo / "workspace").exists()
-    assert not (repo / "studio.local.json").exists()
+    assert str(home_st) in err and f"--station {home_st}" in err
+    assert (repo / "workspace" / "station.json").is_file()
     assert sorted(p.name for p in home_st.rglob("*")) == before
 
 
-@pytest.mark.parametrize("argv,reason", [(["--mode", "separate"], "--mode separate"),
-                                         (["--migrate", "--dry-run"], "--migrate")])
-def test_explicit_flag_adopts_the_home_station(argv, reason, repo, tmp_path, monkeypatch, capsys):
+def test_migrate_flag_adopts_the_home_station(repo, tmp_path, monkeypatch, capsys):
     home_st = _home_station(tmp_path, monkeypatch)
     monkeypatch.setattr(station, "_stdin_is_tty", lambda: False)
-    assert station.init_main(argv + ["--non-interactive", "--json"]) == 0
+    assert station.init_main(["--migrate", "--dry-run", "--non-interactive", "--json"]) == 0
     res = json.loads(capsys.readouterr().out.strip().splitlines()[-1])
     assert res["mode"] == "separate" and res["station"] == str(home_st)
-    assert reason in res["reason"]
+    assert "--migrate" in res["reason"]
+
+
+def test_mode_separate_does_not_adopt_the_home_station(repo, tmp_path, monkeypatch, capsys):
+    _home_station(tmp_path, monkeypatch)
+    monkeypatch.setattr(station, "_stdin_is_tty", lambda: False)
+    assert station.init_main(["--mode", "separate", "--non-interactive"]) == 2
+    assert not (repo / "studio.local.json").exists()
 
 
 def test_embedded_on_a_machine_with_a_home_station_is_refused(repo, tmp_path, monkeypatch):
@@ -220,11 +225,12 @@ def test_init_mode_separate_defaults_to_opcos_station_and_writes_absolute_path(
 
 def test_init_interactive_proposes_opcos_station(repo, tmp_path, monkeypatch):
     st = _opcos(tmp_path, monkeypatch)
-    asked = []
-    mode, path, why = station.choose_mode(ask=lambda p: asked.append(p) or "2")
+    asked, answers = [], iter(["2", ""])
+    mode, path, why = station.choose_mode(ask=lambda p: asked.append(p) or next(answers))
     assert (mode, path) == ("separate", os.path.abspath(str(st)))
     assert "OPCOS_WORKSPACES" in asked[0] and str(st) in asked[0]
-    assert "trạm OpcOS" in why
+    assert str(st) in asked[1]                   # câu thứ hai: xác nhận đường
+    assert "OPCOS_WORKSPACES" in why
     mode, path, _ = station.choose_mode(ask=lambda p: "1")
     assert mode == "embedded" and path == str(repo / "workspace")
 
@@ -259,53 +265,53 @@ def test_init_yes_ignores_opcos_dir_without_marker(repo, tmp_path, monkeypatch):
 
 def test_init_prev_separate_without_path_not_flipped_to_opcos(repo, tmp_path, monkeypatch):
     """`studio.local.json` đã ghi `separate` (không `station_path`) và không `--mode`: lựa chọn đã
-    ghi thắng, trạm OpcOS không được chen vào — đường mặc định vẫn là `~/.video`."""
+    ghi thắng (không hỏi lại chế độ); thiếu đường thì hỏi đường chứ không rơi về `~/.video`."""
     _opcos(tmp_path, monkeypatch)
     (repo / "studio.local.json").write_text(json.dumps({"mode": "separate"}), encoding="utf-8")
-    mode, path, why = station.choose_mode(ask=lambda p: pytest.fail("đã chọn rồi thì đừng hỏi"))
-    assert (mode, path) == ("separate", _env.default_station()) and "studio.local.json" in why
+    other = tmp_path / "khac"
+    asked = []
+    mode, path, why = station.choose_mode(ask=lambda p: asked.append(p) or str(other))
+    assert (mode, path) == ("separate", str(other)) and "studio.local.json" in why
+    assert len(asked) == 1 and "Đặt trạm" in asked[0]    # chỉ câu hỏi đường, không hỏi chế độ
 
 
 def test_mode_separate_prefers_opcos_over_a_marked_home_station(repo, tmp_path, monkeypatch):
     """Có cả `~/.video` mang dấu lẫn trạm OpcOS mang dấu ⇒ `--mode separate` lấy trạm
-    OpcOS; `--migrate` vẫn là trạm ở home; câu hỏi tương tác nhắc trạm OpcOS."""
+    OpcOS (không bao giờ trạm cũ); `--migrate` vẫn là trạm ở home."""
     _home_station(tmp_path, monkeypatch)
     st = _opcos(tmp_path, monkeypatch)
-    mode, path, why = station.choose_mode(mode="separate")
-    assert (mode, path) == ("separate", os.path.abspath(str(st))) and "trạm OpcOS" in why
+    mode, path, _why = station.choose_mode(mode="separate")
+    assert (mode, path) == ("separate", os.path.abspath(str(st)))
     _mode, path, _why = station.choose_mode(migrate=True)
-    assert path == str(_env.default_station())
-    asked = []
-    with pytest.raises(ContractError):
-        station.choose_mode(ask=lambda p: asked.append(p) or "2")
-    assert str(st) in asked[0] and "--mode separate" in asked[0]
+    assert path == str(_env.legacy_station())
 
 
-def test_guidance_points_home_choice_to_station_flag_when_opcos_exists(repo, tmp_path, monkeypatch):
-    """Có trạm OpcOS: lựa chọn [1] (trạm ở home) phải bảo `--station <đường home>`, không phải
-    `--mode separate` (vì `--mode separate` giờ lấy trạm OpcOS)."""
+def test_three_way_question_offers_the_opcos_station_and_the_home_station(
+        repo, tmp_path, monkeypatch):
     home_st = _home_station(tmp_path, monkeypatch)
-    _opcos(tmp_path, monkeypatch)
+    st = _opcos(tmp_path, monkeypatch)
     asked = []
-    with pytest.raises(ContractError) as e:
-        station.choose_mode(ask=lambda p: asked.append(p) or "2")
-    for text in (asked[0], str(e.value)):
-        assert f"--station {home_st}" in text
-        assert "--mode separate (dùng trạm có sẵn)" not in text
+    mode, path, _why = station.choose_mode(ask=lambda p: asked.append(p) or "1")
+    assert (mode, path) == ("separate", os.path.abspath(str(st)))
+    assert os.path.abspath(str(st)) in asked[0] and str(home_st) in asked[0]
 
 
-def test_non_interactive_table_mentions_opcos_station(repo, tmp_path, monkeypatch, capsys):
+def test_non_interactive_with_a_legacy_station_and_opcos_uses_opcos(
+        repo, tmp_path, monkeypatch, capsys):
+    home_st = _home_station(tmp_path, monkeypatch)
     st = _opcos(tmp_path, monkeypatch)
     monkeypatch.setattr(station, "_stdin_is_tty", lambda: False)
-    assert station.init_main([]) == 2
-    assert str(st) in capsys.readouterr().err
+    assert station.init_main(["--non-interactive", "--json"]) == 0
+    cap = capsys.readouterr()
+    assert json.loads(cap.out.strip().splitlines()[-1])["station"] == os.path.abspath(str(st))
+    assert f"--station {home_st}" in cap.err
 
 
 def test_init_without_opcos_var_unchanged(repo, tmp_path, monkeypatch):
     home_st = _home_station(tmp_path, monkeypatch)
-    with pytest.raises(ContractError):
-        station.choose_mode(yes=True)
-    mode, st, _ = station.choose_mode(mode="separate")
+    mode, st, _ = station.choose_mode(yes=True)
+    assert (mode, st) == ("embedded", str(repo / "workspace"))
+    mode, st, _ = station.choose_mode(migrate=True)
     assert (mode, st) == ("separate", str(home_st))
     assert _env.opcos_station() is None
 

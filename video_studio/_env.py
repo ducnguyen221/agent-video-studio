@@ -98,6 +98,10 @@ def env(name):
 
 
 def _expand(p):
+    # Bóc cặp ngoặc kép/đơn bao quanh (đường dán từ "Copy as path" của Windows có dạng "C:\x").
+    p = p.strip()
+    if len(p) >= 2 and p[0] == p[-1] and p[0] in "\"'":
+        p = p[1:-1].strip()
     return os.path.abspath(os.path.expanduser(p))
 
 
@@ -217,11 +221,11 @@ def read_env_file(repo=None):
     return out
 
 
-def default_station():
+def legacy_station():
     """`~/.video` — CHỈ còn là trạm đời cũ cần quyết định/di chuyển: nơi `init` nhận ra nó để
-    không dựng trạm thứ hai, và chỗ rơi cuối của `init --mode separate` khi không có
-    `--station`/OPCOS_WORKSPACES. `migrate` KHÔNG dùng nó (luôn hỏi nơi dời). Nó KHÔNG là tầng
-    cuối của `resolve_station()`: không đặt gì ⇒ `<repo>/workspace/`."""
+    không dựng trạm thứ hai. KHÔNG phải đường mặc định của bất cứ lệnh nào: `init --mode
+    separate` và `migrate` đều hỏi đường (hoặc đòi `--station`). Nó cũng KHÔNG là tầng cuối của
+    `resolve_station()`: không đặt gì ⇒ `<repo>/workspace/`."""
     return os.path.join(os.path.expanduser("~"), ".video")
 
 

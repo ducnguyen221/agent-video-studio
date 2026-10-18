@@ -30,11 +30,10 @@ nothing: it names what is missing and how to install it.
 
 A station that was already chosen — the `VIDEO_STATION` variable, or an earlier `separate` choice
 saved in `studio.local.json` — is used as before, without asking. An older station that merely
-sits at `~/.video` is **not** adopted on its own: `init` shows two options and asks. With `--yes`
-(which always means embedded) or with nobody to answer, it prints the options and exits with code
-2, writing nothing. To use that old station run `init --mode separate` (or `--station DIR`, or
-`--migrate` for an old layout); to get a fresh station in the repo, move or rename the old one
-first.
+sits at `~/.video` is **not** adopted on its own: `init` shows three options (new station, old
+station, stop) and asks. With `--yes` or with nobody to answer, it uses the new station and prints
+one line naming the old one, which it leaves untouched. To use the old station run `init --station
+DIR` (or answer [2], or `--migrate` for an old layout).
 
 ## 4. Adopt an existing station
 

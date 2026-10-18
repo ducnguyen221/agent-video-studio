@@ -133,3 +133,24 @@ def test_cli_with_station_moves_without_asking(repo, tmp_path):
 def test_the_help_does_not_promise_the_hidden_default(capsys):
     assert station.migrate_main(["--help"]) == 0
     assert ".video" not in capsys.readouterr().out
+
+
+def test_a_pasted_quoted_destination_is_unquoted(repo, tmp_path):
+    target = tmp_path / "co dau cach"
+    res = station.migrate_to_separate(ask=_script(f'"{target}"', "y"))
+    assert res["station"] == str(target) and (target / "projects" / "news" / "meta.json").is_file()
+
+
+def test_an_existing_secret_env_is_reported_before_the_y_n_question(repo, tmp_path, monkeypatch):
+    """Không để người dùng trả lời y rồi mới nghe ".env đã có": kiểm xong trước khi xin y/N."""
+    home = tmp_path / "home"
+    (home / ".secret" / station.SECRET_DIR_NAME).mkdir(parents=True)
+    (home / ".secret" / station.SECRET_DIR_NAME / ".env").write_text("x=1\n", encoding="utf-8")
+    monkeypatch.setenv("USERPROFILE", str(home))
+    monkeypatch.setenv("HOME", str(home))
+    (repo / ".env").write_text("A=1\n", encoding="utf-8")
+    ask = _script(str(tmp_path / "ngoai"), "y")
+    with pytest.raises(ContractError, match="đã có"):
+        station.migrate_to_separate(ask=ask)
+    assert len(ask.seen) == 1                    # chỉ câu hỏi đường; chưa tới câu y/N
+    assert (repo / "workspace").is_dir()

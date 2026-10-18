@@ -249,11 +249,11 @@ video-studio init --station <thư mục trạm ngoài repo>
   mới chạy thật; kế hoạch đó gồm cả việc gỡ bản skill mà bản cũ đã chép vào trạm.
 
 **Máy đã có trạm video từ trước** (`~/.video` mang dấu trạm, chưa đặt biến nào): `init` **không**
-tự nhận trạm đó. Với `--yes` hay khi không có người trả lời, nó in đường trạm cũ cùng hai lựa chọn
-rồi thoát **mã 2**, không ghi gì. Trình cho người dùng rồi chạy lại đúng lựa chọn của họ:
-`--mode separate` (dùng trạm cũ — mọi render sau đó ghi vào đó, kể cả khi nó là trạm của lịch chạy
-thật) hoặc `--station <thư mục>`; muốn trạm mới trong repo thì người dùng tự dời hoặc đổi tên trạm
-cũ trước. Máy đã đặt `VIDEO_STATION` (máy chạy lịch) thì `init` dùng trạm đó như trước, không hỏi.
+tự nhận trạm đó. Có người thì nó hỏi ba đường ([1] trạm mới, [2] nhận trạm cũ, [3] dừng). Với
+`--yes` hay khi không có người trả lời, nó dùng trạm mới (embedded, hoặc `<OPCOS_WORKSPACES>/video`)
+và in một dòng nêu trạm cũ; trạm cũ không bị đụng tới. Muốn dùng trạm cũ — mọi render sau đó ghi
+vào đó, kể cả khi nó là trạm của lịch chạy thật — thì người dùng nói rõ, rồi chạy lại với
+`--station <thư mục>` (hoặc `--migrate` cho bố cục cũ). Máy đã đặt `VIDEO_STATION` (máy chạy lịch) thì `init` dùng trạm đó như trước, không hỏi.
 
 `init` không chép skill vào trạm: host đọc skill từ repo qua adapter `.claude/skills` /
 `.agents/skills` ở gốc repo, nên mở **thư mục repo** là đủ ([hosts/README.md](hosts/README.md)).

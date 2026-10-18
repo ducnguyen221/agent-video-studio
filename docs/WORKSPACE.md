@@ -29,9 +29,15 @@ chạy. Không có "bộ" nào phải cài đủ.
   `studio.local.json` đã ghi `separate` ⇒ dùng trạm đó, và **không bao giờ** tạo `workspace/`.
   Hai trạm cho một repo là hai nguồn sự thật, và cái sai chỉ lộ ra khi bạn "mất" một project.
   (`~/.video` chỉ tình cờ có `station.json`, `projects/` hay seed `demo/` đời cũ thì **không**
-  thuộc trường hợp này: `init` hỏi bạn có dùng nó không; `--yes` hay chạy không người thì dừng
-  mã 2 — nhận nó bằng `--mode separate`, `--station <thư mục>` hoặc `--migrate`.)
-- `--mode embedded|separate`, hoặc `--yes` (= nhận khuyến nghị `embedded`).
+  thuộc trường hợp này và **không bao giờ** được tự nhận: có người thì `init` hỏi ba đường —
+  [1] dùng trạm mới, [2] nhận trạm cũ, [3] dừng; `--yes` hay chạy không người thì dùng trạm mới
+  (embedded, hoặc `<OPCOS_WORKSPACES>/video` nếu biến đã đặt) và in một dòng nêu trạm cũ. Nhận
+  trạm cũ chỉ bằng `--station <thư mục>`, `--migrate` hoặc trả lời [2]; `--mode separate` không
+  nhận nó.)
+- `--mode embedded|separate`, hoặc `--yes` (= nhận khuyến nghị `embedded`). (`separate` mà thiếu
+  `--station` thì không hỏi chế độ nữa mà hỏi **đường trạm**: gợi ý `<OPCOS_WORKSPACES>/video` nếu
+  biến đã đặt, không thì gõ tay; không có người thì dùng đường gợi ý hoặc dừng mã 2 đòi `--station`.
+  Không còn đường mặc định nào ở `~/.video`.)
 
 Chạy không có người trả lời (agent, script, lịch) mà chưa chọn ⇒ `init` in bảng lựa chọn rồi
 thoát **mã 2**, chưa ghi byte nào. **Agent cài phải trình bảng đó cho người dùng và chờ họ

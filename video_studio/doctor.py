@@ -275,7 +275,7 @@ def two_sources_check():
     others = [n for n in ("VIDEO_STATION", "VIDEO_ROOT") if _env.env(n)]
     if _env.local_config(repo).get("mode") == "separate":
         others.append("studio.local.json=separate")
-    if _env.has_marker(_env.default_station()):
+    if _env.has_marker(_env.legacy_station()):
         others.append("~/.video")
     out = [_check("two-sources", not others, f"{ws} + {', '.join(others)}" if others else ws,
                   hint="hai nguồn sự thật cho một repo: giữ MỘT trạm — gộp dữ liệu rồi xoá "
