@@ -5,6 +5,12 @@ chính nhưng chưa có tag; khi phát hành, mục đó đổi tên thành số
 `pyproject.toml`, `video_studio/__init__.py` cùng ba manifest plugin (`tests/test_version_sync.py`
 kiểm).
 
+## 0.3.0 — 2026-10-18
+
+- Station contract không còn fallback ẩn `~/.<station>`: trạm phải được chọn tường minh.
+- `init` gợi ý (tuỳ chọn) trạm `workspaces` dùng chung.
+- Thêm thông tin tác giả vào metadata và ghi chú tác giả.
+
 ## 0.2.8 — 2026-10-14
 
 - Ghi nguồn nghiên cứu FlowKit và ý tưởng Hypit trong `upstream.json`/NOTICE: baseline đầy đủ,
