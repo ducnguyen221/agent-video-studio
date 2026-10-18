@@ -218,8 +218,9 @@ def read_env_file(repo=None):
 
 
 def default_station():
-    """`~/.video` — CHỈ còn là (1) chỗ gợi ý khi người dùng chọn `separate` mà không nói đường,
-    và (2) nơi nhận ra trạm đời cũ để `init` không dựng trạm thứ hai. Nó KHÔNG còn là tầng
+    """`~/.video` — CHỈ còn là trạm đời cũ cần quyết định/di chuyển: nơi `init` nhận ra nó để
+    không dựng trạm thứ hai, và chỗ rơi cuối của `init --mode separate` khi không có
+    `--station`/OPCOS_WORKSPACES. `migrate` KHÔNG dùng nó (luôn hỏi nơi dời). Nó KHÔNG là tầng
     cuối của `resolve_station()`: không đặt gì ⇒ `<repo>/workspace/`."""
     return os.path.join(os.path.expanduser("~"), ".video")
 

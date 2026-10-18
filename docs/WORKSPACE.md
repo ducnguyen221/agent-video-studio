@@ -19,7 +19,7 @@ chạy. Không có "bộ" nào phải cài đủ.
 | Chế độ | Trạm | Biến cấu hình | Dành cho |
 |---|---|---|---|
 | **`embedded`** — gọn trong repo (**mặc định, khuyến nghị cho người mới**) | `<repo>/workspace/` | `<repo>/.env` | một máy, "mở một folder là thấy hết" |
-| **`separate`** — trạm ngoài repo | `~/.video` (hoặc nơi bạn chọn) | cấp user; bí mật ở `~/.secret/video-studio/` | nhiều máy, repo public của chính bạn, nhiều repo dùng chung một trạm |
+| **`separate`** — trạm ngoài repo | nơi bạn chọn (vd `<OPCOS_WORKSPACES>/video`) | cấp user; bí mật ở `~/.secret/video-studio/` | nhiều máy, repo public của chính bạn, nhiều repo dùng chung một trạm |
 
 `video-studio init` hỏi bạn chọn (Enter = `embedded`) và ghi lựa chọn vào
 `<repo>/studio.local.json`. **Không hỏi** trong ba trường hợp:
@@ -80,8 +80,8 @@ cách người dùng `embedded` nối hai năng lực lại mà không phải đ
 Không đặt gì thì trạm là `<repo>/workspace/` — **kể cả trước khi `init` tạo nó** (lệnh cần trạm
 sẽ báo mã 3 và chỉ `video-studio init`). Không có tầng đoán thư mục ở home: máy dùng trạm ngoài
 thì chọn nó tường minh bằng `VIDEO_STATION` hoặc `video-studio init --station DIR` (ghi vào
-`studio.local.json`). `~/.video` chỉ còn là chỗ gợi ý khi bạn chọn `separate` mà không nói đường,
-và là nơi `init` nhận ra trạm đời cũ để không dựng thêm trạm thứ hai.
+`studio.local.json`). `~/.video` chỉ còn là trạm đời cũ cần quyết định/di chuyển: `init` nhận ra nó để không dựng
+thêm trạm thứ hai. `migrate --to separate` không đoán nơi dời: thiếu `--station` thì hỏi.
 
 `<repo>` là bản clone đã `pip install -e` (hoặc đặt `VIDEO_STUDIO_REPO`). Bản cài wheel không có
 repo — chỉ dùng được `separate`, và không đặt `VIDEO_STATION` thì mọi lệnh cần trạm dừng mã 3.
@@ -172,7 +172,10 @@ video-studio update                           # git pull --ff-only trên bản c
 video-studio doctor --json                    # trong đó có kiểm hai nguồn sự thật + hai lớp rào
 ```
 
-`migrate --to separate` kiểm **mọi** điều kiện trước khi dời byte nào (đích phải trống, repo phải
+`migrate --to separate` **hỏi nơi dời** khi thiếu `--station` (gợi ý `<OPCOS_WORKSPACES>/video`
+nếu biến đã đặt; hiện đường tuyệt đối đích + số file/dung lượng rồi xin xác nhận y/N). Chạy
+không tương tác (`--non-interactive`, hoặc không có terminal) thì `--station DIR` là bắt buộc,
+thiếu thì thoát mã 2. Nó kiểm **mọi** điều kiện trước khi dời byte nào (đích phải trống, repo phải
 đang ở chế độ embedded, `~/.secret/video-studio/.env` chưa có sẵn một bản khác); cùng ổ đĩa thì
 dời bằng `rename` (hỏng thì hỏng sạch), khác ổ thì chép → đối chiếu sha256 từng file → mới xoá
 nguồn. `<repo>/.env` đi theo sang kho secret, không bị bỏ lại.

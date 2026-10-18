@@ -25,7 +25,7 @@ nothing: it names what is missing and how to install it.
 - **embedded** (recommended for new users) — the station is `workspace/` inside the repo, ignored
   by git. One folder holds everything. Do not delete the repo folder to reinstall: your projects
   live there.
-- **separate** — the station has its own folder (default `~/.video`). Suits several machines or a
+- **separate** — the station has its own folder, which you choose (for example `<OPCOS_WORKSPACES>/video`). Suits several machines or a
   repo that is your own public one. Set `VIDEO_STATION` so every other tool finds it.
 
 A station that was already chosen — the `VIDEO_STATION` variable, or an earlier `separate` choice
@@ -71,7 +71,7 @@ mistake.
 
 ```
 video-studio backup --out backup.zip      # zips the station, minus scratch and cache
-video-studio migrate --to separate        # moves an embedded station out of the repo
+video-studio migrate --to separate        # moves an embedded station out of the repo; asks where (needs --station without a terminal)
 video-studio update                       # git pull --ff-only, never cleans
 ```
 

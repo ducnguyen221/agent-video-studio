@@ -13,7 +13,7 @@ chứa mã và skill. Skill KHÔNG được chép vào trạm: host đọc chún
 
     embedded   trạm = <repo>/workspace/ (gitignore) — "mở một folder là thấy hết". Mặc định và
                là khuyến nghị cho người dùng mới.
-    separate   trạm ngoài repo (mặc định ~/.video) — cho người dùng nhiều máy, repo public của
+    separate   trạm ngoài repo (thư mục do người dùng chọn; không có tên mặc định) — cho người dùng nhiều máy, repo public của
                chính mình, nhiều repo chia sẻ trạm.
 
 `--station DIR` = separate, không hỏi. Máy đã CHỌN trạm ngoài (VIDEO_STATION / VIDEO_ROOT đã
@@ -78,7 +78,7 @@ Chọn chỗ đặt TRẠM VIDEO (nơi chứa project đang dựng, seed, nháp,
               `video-studio update`; và nhớ `video-studio backup`.
       Chọn khi: một máy, muốn dùng được ngay, không rành kỹ thuật.
 
-  [2] separate — trạm ngoài repo (mặc định ~/.video)
+  [2] separate — trạm ngoài repo (thư mục bạn tự chọn, vd workspace/video)
       Là gì : trạm ở thư mục riêng; bí mật ở kho secret của máy ({kho}).
       Lợi   : repo luôn sạch (an toàn khi repo là bản public của chính bạn); nhiều máy /
               nhiều repo dùng chung một trạm; cập nhật repo không đụng dữ liệu.
@@ -228,6 +228,13 @@ def _stdin_is_tty():
 def _ask_console(prompt):
     contract.log(prompt)
     sys.stderr.write("Chọn [1/2] (Enter = 1, embedded): ")
+    sys.stderr.flush()
+    return input()
+
+
+def _ask_console_text(prompt):
+    contract.log(prompt)
+    sys.stderr.write("> ")
     sys.stderr.flush()
     return input()
 
@@ -1090,12 +1097,64 @@ def _move_file(src, dst):
         os.remove(src)
 
 
-def migrate_to_separate(target=None):
+def _human_size(n):
+    for unit in ("B", "KB", "MB", "GB"):
+        if n < 1024 or unit == "GB":
+            return f"{n:.0f} {unit}" if unit == "B" else f"{n:.1f} {unit}"
+        n /= 1024
+
+
+def _ask_migrate_target(ws, ask, non_interactive):
+    """Hỏi nơi dời trạm. Gợi ý (KHÔNG tự nhận): `<OPCOS_WORKSPACES>/video` nếu biến có; không có
+    biến thì không gợi ý và người dùng phải gõ đường. Trả đường tuyệt đối."""
+    if ask is None:
+        if non_interactive or not _stdin_is_tty():
+            raise ContractError(
+                "không có người để hỏi nơi dời trạm: --station DIR là bắt buộc khi chạy không "
+                "tương tác (vd `video-studio migrate --to separate --station <thư-mục-đích>`). "
+                "Agent: hỏi người dùng muốn dời trạm đi đâu rồi chạy lại với --station.")
+        ask = _ask_console_text
+    base = _env.opcos_base()
+    suggest = os.path.abspath(os.path.join(base, "video")) if base else None
+    q = f"Dời trạm video ({ws}) đi đâu?\n"
+    if suggest:
+        q += f"  Gợi ý: {suggest}  (OPCOS_WORKSPACES đã đặt) — Enter để nhận, hoặc gõ đường khác.\n"
+    else:
+        q += "  Chưa có gợi ý (OPCOS_WORKSPACES chưa đặt) — gõ đường thư mục đích.\n"
+    try:
+        ans = (ask(q) or "").strip()
+    except EOFError:
+        raise ContractError("không đọc được câu trả lời (stdin không có người): --station DIR là "
+                            "bắt buộc khi chạy không tương tác.")
+    if not ans:
+        if not suggest:
+            raise ContractError("chưa chọn nơi dời trạm — chạy lại và gõ đường đích, hoặc truyền "
+                                "--station DIR.")
+        ans = suggest
+    return _env._expand(ans)
+
+
+def _confirm_migrate(ws, target, ask, non_interactive):
+    files = _files(ws)
+    size = sum(os.path.getsize(os.path.join(ws, *r.split("/"))) for r in files)
+    q = (f"Sẽ dời {len(files)} file ({_human_size(size)}) từ {ws}\n"
+         f"  đến: {target}\n  Dời không? [y/N]: ")
+    try:
+        ans = (ask(q) or "").strip().lower()
+    except EOFError:
+        ans = ""
+    if ans not in ("y", "yes", "có", "co"):
+        raise ContractError("đã huỷ — chưa dời gì. Muốn dời: chạy lại và trả lời y, hoặc "
+                            "truyền --station DIR.")
+
+
+def migrate_to_separate(target=None, ask=None, non_interactive=False):
     """Chuyển trạm `embedded` (<repo>/workspace/) ra ngoài repo.
 
-    Kiểm mọi điều kiện TRƯỚC khi dời byte nào: đích phải trống, repo phải đang ở chế độ
-    embedded. Dời bằng `os.rename` khi cùng ổ (hỏng thì hỏng sạch), khác ổ thì chép → đối
-    chiếu sha256 → mới xoá nguồn.
+    Không có `target` ⇒ HỎI nơi dời rồi xin xác nhận y/N (không có người ⇒ mã 2); không còn
+    đường mặc định ngầm. Kiểm mọi điều kiện TRƯỚC khi dời byte nào: đích phải trống, repo phải
+    đang ở chế độ embedded. Dời bằng `os.rename` khi cùng ổ (hỏng thì hỏng sạch), khác ổ thì
+    chép → đối chiếu sha256 → mới xoá nguồn.
     """
     repo = _env.repo_root()
     if not repo:
@@ -1104,9 +1163,15 @@ def migrate_to_separate(target=None):
     ws = os.path.join(repo, _env.WORKSPACE)
     if not os.path.isdir(ws):
         raise ContractError(f"không có {ws} — máy này không ở chế độ embedded")
-    target = _env._expand(target) if target else _env.default_station()
+    asked = not target
+    target = _env._expand(target) if target else _ask_migrate_target(ws, ask, non_interactive)
+    wsn, tn = os.path.normcase(os.path.abspath(ws)), os.path.normcase(target)
+    if tn == wsn or tn.startswith(wsn + os.sep):
+        raise ContractError(f"đích {target} nằm trong trạm đang dời ({ws}) — chọn chỗ ngoài repo")
     if os.path.exists(target) and os.listdir(target):
         raise ContractError(f"thư mục đích không rỗng: {target} — chọn chỗ khác (--station)")
+    if asked:
+        _confirm_migrate(ws, target, ask or _ask_console_text, non_interactive)
     # `.env` phải đi theo, và phải được kiểm TRƯỚC khi dời byte nào. Bỏ nó lại trong repo là
     # kiểu hỏng tệ nhất: file vẫn nằm đó, vẫn đọc được bằng mắt, nhưng `_env.env()` thôi
     # không nạp nó nữa (chế độ đã là `separate`) — cấu hình ngừng có tác dụng trong im lặng.
@@ -1224,14 +1289,17 @@ def migrate_main(argv=None):
     ap = argparse.ArgumentParser(prog="video-studio migrate",
                                  description="Chuyển trạm embedded (workspace/) ra ngoài repo.")
     ap.add_argument("--to", required=True, choices=["separate"])
-    ap.add_argument("--station", help="đích (mặc định ~/.video)")
+    ap.add_argument("--station", help="thư mục đích. Thiếu thì HỎI (gợi ý <OPCOS_WORKSPACES>/video "
+                                      "nếu biến đã đặt); chạy không tương tác thì bắt buộc")
+    ap.add_argument("--non-interactive", action="store_true",
+                    help="không có ai trả lời: KHÔNG hỏi — thiếu --station thì dừng với mã 2")
     ap.add_argument("--json", action="store_true")
     args, code = contract.parse(ap, argv)
     if args is None:
         return code
 
     def fn(a):
-        res = migrate_to_separate(a.station)
+        res = migrate_to_separate(a.station, non_interactive=a.non_interactive)
         contract.log(f"[migrate] trạm giờ ở {res['station']} — đặt VIDEO_STATION trỏ vào đó "
                      "để mọi công cụ khác thấy")
         return res

@@ -72,7 +72,7 @@ Trạm là nơi chứa project, seed, skill cho agent, nháp, cache — **không
 | Chỉnh footage quay thật | `video-studio edit --footage <dir> --out <dir> [--edl edl.json]` | có |
 | Chỉnh một vùng trong video local | `video-studio cleanup inspect|preview|apply|verify` | có; đọc skill `video-cleanup` |
 | Zip cả trạm | `video-studio backup --out <file>.zip` | có |
-| Chuyển trạm ra ngoài repo | `video-studio migrate --to separate [--station DIR]` | có |
+| Chuyển trạm ra ngoài repo | `video-studio migrate --to separate [--station DIR]` (thiếu `--station` thì hỏi nơi dời; agent không có terminal phải hỏi người dùng rồi truyền `--station`) | có |
 | Cập nhật bản clone | `video-studio update` | có |
 | Đóng gói / nhập dữ liệu cá nhân | `video-studio export` · `import` | chưa có trong bản này |
 

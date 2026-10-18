@@ -24,7 +24,7 @@ cài gì: nó chỉ ra thứ còn thiếu và cách cài.
 
 - **embedded** (khuyến nghị cho người mới) — trạm nằm ở `workspace/` trong repo, git bỏ qua. Mở
   một folder là thấy hết. Đừng xoá folder repo để cài lại: project của bạn nằm trong đó.
-- **separate** — trạm ở thư mục riêng (mặc định `~/.video`). Hợp khi dùng nhiều máy hoặc repo là
+- **separate** — trạm ở thư mục riêng do bạn chọn (vd `<OPCOS_WORKSPACES>/video`). Hợp khi dùng nhiều máy hoặc repo là
   public của chính bạn. Đặt biến `VIDEO_STATION` trỏ vào trạm để mọi công cụ khác thấy.
 
 Trạm **đã được chọn** từ trước — biến `VIDEO_STATION`, hoặc lựa chọn `separate` đã ghi trong
@@ -67,7 +67,7 @@ Lồng tiếng cần **repo giọng (`agent-voice-studio`, clone cạnh repo nà
 
 ```
 video-studio backup --out sao-luu.zip          # zip cả trạm, trừ nháp và cache
-video-studio migrate --to separate             # chuyển trạm embedded ra ngoài repo
+video-studio migrate --to separate             # chuyển trạm embedded ra ngoài repo; hỏi nơi dời (không có terminal thì cần --station)
 video-studio update                            # git pull --ff-only, không bao giờ xoá gì
 ```
 

@@ -5,6 +5,13 @@ chính nhưng chưa có tag; khi phát hành, mục đó đổi tên thành số
 `pyproject.toml`, `video_studio/__init__.py` cùng ba manifest plugin (`tests/test_version_sync.py`
 kiểm).
 
+## Chưa phát hành
+
+- `video-studio migrate --to separate` hỏi nơi dời thay vì tự dời vào `~/.video`: gợi ý
+  `<OPCOS_WORKSPACES>/video` nếu biến đã đặt, hiện đường tuyệt đối đích cùng số file/dung lượng
+  rồi xin xác nhận y/N. Không có người trả lời (`--non-interactive`, hoặc không có terminal) thì
+  `--station DIR` là bắt buộc, thiếu thì thoát mã 2. Đích nằm trong trạm đang dời bị từ chối.
+
 ## 0.3.0 — 2026-10-18
 
 - Station contract không còn fallback ẩn `~/.<station>`: trạm phải được chọn tường minh.
