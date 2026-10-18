@@ -250,8 +250,8 @@ video-studio init --station <thư mục trạm ngoài repo>
 
 **Máy đã có trạm video từ trước** (`~/.video` mang dấu trạm, chưa đặt biến nào): `init` **không**
 tự nhận trạm đó. Có người thì nó hỏi ba đường ([1] trạm mới, [2] nhận trạm cũ, [3] dừng). Với
-`--yes` hay khi không có người trả lời, nó dùng trạm mới (embedded, hoặc `<OPCOS_WORKSPACES>/video`)
-và in một dòng nêu trạm cũ; trạm cũ không bị đụng tới. Muốn dùng trạm cũ — mọi render sau đó ghi
+`--yes` nó không hỏi: dùng trạm mới embedded `<repo>/workspace` và in một dòng nêu trạm cũ (trạm cũ
+không bị đụng tới); `--non-interactive` thiếu `--yes`/`--mode` thì thoát mã 2. Muốn dùng trạm cũ — mọi render sau đó ghi
 vào đó, kể cả khi nó là trạm của lịch chạy thật — thì người dùng nói rõ, rồi chạy lại với
 `--station <thư mục>` (hoặc `--migrate` cho bố cục cũ). Máy đã đặt `VIDEO_STATION` (máy chạy lịch) thì `init` dùng trạm đó như trước, không hỏi.
 

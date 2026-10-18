@@ -30,9 +30,10 @@ chạy. Không có "bộ" nào phải cài đủ.
   Hai trạm cho một repo là hai nguồn sự thật, và cái sai chỉ lộ ra khi bạn "mất" một project.
   (`~/.video` chỉ tình cờ có `station.json`, `projects/` hay seed `demo/` đời cũ thì **không**
   thuộc trường hợp này và **không bao giờ** được tự nhận: có người thì `init` hỏi ba đường —
-  [1] dùng trạm mới, [2] nhận trạm cũ, [3] dừng; `--yes` hay chạy không người thì dùng trạm mới
-  (embedded, hoặc `<OPCOS_WORKSPACES>/video` nếu biến đã đặt) và in một dòng nêu trạm cũ. Nhận
-  trạm cũ chỉ bằng `--station <thư mục>`, `--migrate` hoặc trả lời [2]; `--mode separate` không
+  [1] dùng trạm mới (Enter; `<OPCOS_WORKSPACES>/video` nếu biến đã đặt, không thì
+  `<repo>/workspace`), [2] nhận trạm cũ, [3] dừng; `--yes` không bao giờ hỏi: dùng trạm mới
+  embedded `<repo>/workspace` và in một dòng nêu trạm cũ; `--non-interactive` thiếu `--yes` và
+  `--mode` thì thoát mã 2. Nhận trạm cũ chỉ bằng `--station <thư mục>`, `--migrate` hoặc trả lời [2]; `--mode separate` không
   nhận nó.)
 - `--mode embedded|separate`, hoặc `--yes` (= nhận khuyến nghị `embedded`). (`separate` mà thiếu
   `--station` thì không hỏi chế độ nữa mà hỏi **đường trạm**: gợi ý `<OPCOS_WORKSPACES>/video` nếu

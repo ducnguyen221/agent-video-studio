@@ -87,7 +87,7 @@ def test_a_legacy_home_station_is_recognised_and_asked_about(repo, tmp_path, mon
     assert asked and str(home_st) in asked[0] and "[3]" in asked[0]
 
 
-@pytest.mark.parametrize("answer", ["", "3", "khong"])
+@pytest.mark.parametrize("answer", ["3", "khong"])
 def test_home_station_not_confirmed_stops_without_writing(answer, repo, tmp_path, monkeypatch):
     home_st = _home_station(tmp_path, monkeypatch)
     with pytest.raises(ContractError) as e:
@@ -96,9 +96,18 @@ def test_home_station_not_confirmed_stops_without_writing(answer, repo, tmp_path
     assert not (repo / "workspace").exists()
 
 
+@pytest.mark.parametrize("argv,tty", [([], False), (["--non-interactive"], True)])
+def test_no_yes_and_nobody_to_ask_with_a_home_station_exits_2(argv, tty, repo, tmp_path,
+                                                              monkeypatch, capsys):
+    home_st = _home_station(tmp_path, monkeypatch, legacy=False)
+    monkeypatch.setattr(station, "_stdin_is_tty", lambda: tty)
+    assert station.init_main(argv) == 2
+    assert f"--station {home_st}" in capsys.readouterr().err
+    assert not (repo / "workspace").exists()
+
+
 @pytest.mark.parametrize("argv,tty", [
-    (["--yes"], True), (["--yes"], False), (["--non-interactive", "--yes"], False),
-    ([], False), (["--non-interactive"], True)])
+    (["--yes"], True), (["--yes"], False), (["--non-interactive", "--yes"], False)])
 def test_yes_never_silently_adopts_a_home_station(argv, tty, repo, tmp_path, monkeypatch, capsys):
     """Sự cố lượt Mac 29/09: `init --yes` nhận âm thầm `~/.video` có sẵn. Nay: không có người
     hỏi thì dùng trạm MỚI (embedded) và in một dòng nêu trạm cũ; trạm cũ không bị đụng byte nào."""
@@ -290,20 +299,20 @@ def test_three_way_question_offers_the_opcos_station_and_the_home_station(
         repo, tmp_path, monkeypatch):
     home_st = _home_station(tmp_path, monkeypatch)
     st = _opcos(tmp_path, monkeypatch)
-    asked = []
-    mode, path, _why = station.choose_mode(ask=lambda p: asked.append(p) or "1")
+    asked, answers = [], iter(["1", ""])
+    mode, path, _why = station.choose_mode(ask=lambda p: asked.append(p) or next(answers))
     assert (mode, path) == ("separate", os.path.abspath(str(st)))
     assert os.path.abspath(str(st)) in asked[0] and str(home_st) in asked[0]
 
 
-def test_non_interactive_with_a_legacy_station_and_opcos_uses_opcos(
+def test_yes_with_a_legacy_station_and_opcos_is_embedded_and_names_the_old_station(
         repo, tmp_path, monkeypatch, capsys):
     home_st = _home_station(tmp_path, monkeypatch)
-    st = _opcos(tmp_path, monkeypatch)
+    _opcos(tmp_path, monkeypatch)
     monkeypatch.setattr(station, "_stdin_is_tty", lambda: False)
-    assert station.init_main(["--non-interactive", "--json"]) == 0
+    assert station.init_main(["--non-interactive", "--yes", "--json"]) == 0
     cap = capsys.readouterr()
-    assert json.loads(cap.out.strip().splitlines()[-1])["station"] == os.path.abspath(str(st))
+    assert json.loads(cap.out.strip().splitlines()[-1])["station"] == str(repo / "workspace")
     assert f"--station {home_st}" in cap.err
 
 

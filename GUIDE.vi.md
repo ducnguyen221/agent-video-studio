@@ -30,7 +30,8 @@ cài gì: nó chỉ ra thứ còn thiếu và cách cài.
 Trạm **đã được chọn** từ trước — biến `VIDEO_STATION`, hoặc lựa chọn `separate` đã ghi trong
 `studio.local.json` — thì `init` dùng tiếp như cũ, không hỏi. Trạm cũ chỉ tình cờ nằm ở `~/.video`
 thì `init` **không** tự nhận: nó trình ba lựa chọn (trạm mới, trạm cũ, dừng) và hỏi. Với `--yes`
-hoặc khi không có người trả lời, nó dùng trạm mới và in một dòng nêu trạm cũ, không đụng tới nó.
+nó không hỏi: dùng trạm mới embedded và in một dòng nêu trạm cũ, không đụng tới nó; `--non-interactive`
+thiếu `--yes`/`--mode` thì thoát mã 2.
 Muốn dùng trạm cũ đó thì chạy `init --station DIR` (hoặc trả lời [2], hoặc `--migrate` với bố cục
 cũ).
 

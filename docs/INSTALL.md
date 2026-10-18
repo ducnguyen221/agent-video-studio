@@ -100,8 +100,8 @@ tích rồi khuyến nghị**, không hỏi trống.
 `init` **chỉ bỏ qua câu hỏi khi trạm đã được chọn**. Máy đã đặt biến `VIDEO_STATION`/`VIDEO_ROOT`
 (hoặc `studio.local.json` đã ghi `separate`) thì bản trần dùng trạm đó và nói rõ lý do. `~/.video`
 chỉ tình cờ mang dấu trạm thì **không** tự nhận: `init` hỏi ba đường ([1] trạm mới, [2] nhận trạm
-cũ, [3] dừng); với `--yes` hay khi không có người trả lời, nó dùng trạm mới và in một dòng nêu
-trạm cũ — nhận trạm đó phải bằng `--station <thư mục>`, `--migrate` hoặc trả lời [2]. Xin `embedded` khi máy đã có trạm ngoài là **lỗi mã 2**
+cũ, [3] dừng; Enter = [1]); với `--yes` nó không hỏi, dùng trạm mới embedded và in một dòng nêu
+trạm cũ; `--non-interactive` thiếu `--yes`/`--mode` thì thoát mã 2 — nhận trạm đó phải bằng `--station <thư mục>`, `--migrate` hoặc trả lời [2]. Xin `embedded` khi máy đã có trạm ngoài là **lỗi mã 2**
 ("hai nguồn sự thật") chứ không phải một cảnh báo — muốn dựng trạm trong repo thì gỡ biến hoặc
 dời trạm cũ trước.
 

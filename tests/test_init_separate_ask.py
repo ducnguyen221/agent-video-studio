@@ -174,22 +174,27 @@ def test_mode_separate_with_a_legacy_station_and_no_variable_never_returns_it(
     assert station.choose_mode(migrate=True)[1] == str(old)           # --migrate là ý định tường minh
 
 
-@pytest.mark.parametrize("kwargs", [{"yes": True}, {"non_interactive": True}, {}])
-def test_no_one_to_ask_uses_the_new_station_and_says_so_once(
-        kwargs, repo, tmp_path, monkeypatch, capsys):
+def test_yes_uses_the_new_station_and_says_so_once(repo, tmp_path, monkeypatch, capsys):
     old = _legacy(tmp_path, monkeypatch)
-    mode, path, _why = station.choose_mode(**kwargs)
+    mode, path, _why = station.choose_mode(yes=True)
     assert (mode, path) == ("embedded", str(repo / "workspace"))
     err = capsys.readouterr().err
     lines = [ln for ln in err.splitlines() if str(old) in ln]
     assert len(lines) == 1 and f"--station {old}" in lines[0]
 
 
-def test_no_one_to_ask_with_the_variable_uses_workspaces_video(repo, tmp_path, monkeypatch):
+def test_yes_with_the_variable_and_a_legacy_station_is_still_embedded(repo, tmp_path, monkeypatch):
     _legacy(tmp_path, monkeypatch)
     monkeypatch.setenv("OPCOS_WORKSPACES", str(tmp_path / "ws"))
     mode, path, _why = station.choose_mode(yes=True)
-    assert (mode, path) == ("separate", os.path.abspath(str(tmp_path / "ws" / "video")))
+    assert (mode, path) == ("embedded", str(repo / "workspace"))
+
+
+@pytest.mark.parametrize("kwargs", [{"non_interactive": True}, {}])
+def test_no_one_to_ask_and_no_yes_with_a_legacy_station_exits_2(kwargs, repo, tmp_path, monkeypatch):
+    _legacy(tmp_path, monkeypatch)
+    with pytest.raises(ContractError):
+        station.choose_mode(**kwargs)
 
 
 def test_three_way_question_labels_match_the_real_paths(repo, tmp_path, monkeypatch):
@@ -201,7 +206,8 @@ def test_three_way_question_labels_match_the_real_paths(repo, tmp_path, monkeypa
     assert str(repo / "workspace") in q and str(old) in q
     assert "[1]" in q and "[2]" in q and "[3]" in q
     assert station.choose_mode(ask=_script("2"))[:2] == ("separate", str(old))
-    for stop in ("3", "", "x"):
+    assert station.choose_mode(ask=_script(""))[:2] == ("embedded", str(repo / "workspace"))
+    for stop in ("3", "x"):
         with pytest.raises(ContractError) as e:
             station.choose_mode(ask=_script(stop))
         assert str(old) in str(e.value)
@@ -210,7 +216,7 @@ def test_three_way_question_labels_match_the_real_paths(repo, tmp_path, monkeypa
 def test_three_way_question_one_with_the_variable_is_workspaces_video(repo, tmp_path, monkeypatch):
     _legacy(tmp_path, monkeypatch)
     monkeypatch.setenv("OPCOS_WORKSPACES", str(tmp_path / "ws"))
-    ask = _script("1")
+    ask = _script("1", "")                  # [1] rồi Enter nhận <biến>/video
     mode, path, _why = station.choose_mode(ask=ask)
     expect = os.path.abspath(str(tmp_path / "ws" / "video"))
     assert (mode, path) == ("separate", expect) and expect in ask.seen[0]

@@ -13,10 +13,15 @@ kiểm).
   dòng, không có biến thì thoát mã 2 đòi `--station`. `~/.video` chỉ còn là trạm cũ để nhận ra
   và quyết định. Hàm nội bộ `default_station()` đổi tên `legacy_station()`.
 - `init` không bao giờ tự nhận trạm cũ dưới home (`~/.video` mang dấu), kể cả với `--mode separate`.
-  Có người thì hỏi ba đường (trạm mới · nhận trạm cũ · dừng); `--yes`, `--non-interactive` hay không
-  có terminal thì dùng trạm mới (embedded, hoặc `<OPCOS_WORKSPACES>/video` nếu biến đã đặt) và in
-  một dòng nêu trạm cũ cùng `--station <đường>` để nhận nó. Trước đây các ca này trả mã 2 hoặc nhận
-  luôn trạm cũ. Nhận trạm cũ chỉ qua `--station`, `--migrate` hoặc câu trả lời [2].
+  Có người thì hỏi ba đường — [1] trạm mới (Enter; `<OPCOS_WORKSPACES>/video` nếu biến đã đặt, hỏi
+  xác nhận/đổi, không thì `<repo>/workspace`), [2] nhận trạm cũ, [3] dừng. `--yes` (có hay không có
+  terminal) không bao giờ hỏi: dùng trạm mới embedded `<repo>/workspace` và in một dòng nêu trạm
+  cũ cùng `--station <đường>`. `--non-interactive` thiếu cả `--yes` lẫn `--mode` thoát mã 2 (không
+  đoán chế độ). `--mode embedded` khi có trạm cũ vẫn bị từ chối ("hai nguồn sự thật"), nay kèm
+  ba lối ra. `--mode separate --yes` không còn hỏi: có biến thì `<biến>/video`, không thì mã 2.
+  Nhận trạm cũ chỉ qua `--station`, `--migrate` hoặc câu trả lời [2]; ai quen `--mode separate` để
+  nhận trạm cũ nay dùng `--station <đường>`.
+- `migrate` dời hỏng thì trả lại thư mục đích rỗng mà người dùng đã tạo sẵn.
 - Đường dán có cặp ngoặc kép bao quanh (`"C:\\x"`, kiểu "Copy as path" của Windows) được bóc ngoặc ở
   mọi chỗ nhập đường; `migrate` kiểm `.env` trong kho secret trước câu y/N thay vì sau.
 - `video-studio migrate --to separate` hỏi nơi dời thay vì tự dời vào `~/.video`: gợi ý
