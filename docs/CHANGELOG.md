@@ -21,7 +21,10 @@ kiểm).
   ba lối ra. `--mode separate --yes` không còn hỏi: có biến thì `<biến>/video`, không thì mã 2.
   Nhận trạm cũ chỉ qua `--station`, `--migrate` hoặc câu trả lời [2]; ai quen `--mode separate` để
   nhận trạm cũ nay dùng `--station <đường>`.
-- `migrate` dời hỏng thì trả lại thư mục đích rỗng mà người dùng đã tạo sẵn.
+- `migrate` dời hỏng thì trả lại thư mục đích rỗng mà người dùng đã tạo sẵn; đích là một FILE
+  (`--station` hay câu trả lời) thì dừng mã 2 với thông báo rõ thay vì traceback.
+- Lựa chọn đã ghi trong `studio.local.json` thắng trạm cũ dưới home: chạy lại `init` không hỏi lại
+  ba đường, không đổi chế độ, `--mode embedded` không bị từ chối; chỉ in một dòng nêu trạm cũ.
 - Đường dán có cặp ngoặc kép bao quanh (`"C:\\x"`, kiểu "Copy as path" của Windows) được bóc ngoặc ở
   mọi chỗ nhập đường; `migrate` kiểm `.env` trong kho secret trước câu y/N thay vì sau.
 - `video-studio migrate --to separate` hỏi nơi dời thay vì tự dời vào `~/.video`: gợi ý

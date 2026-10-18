@@ -145,6 +145,49 @@ def test_yes_says_one_line_about_the_old_station_and_leaves_it_alone(world, monk
     assert [p.name for p in old.iterdir()] == ["projects"]
 
 
+# ── lựa chọn đã ghi trong studio.local.json thắng trạm cũ dưới home ───────────────────────
+# (đã ghi, biến, câu trả lời giả, kwargs, kết quả). "rec" = đường đã ghi.
+REC_ROWS = [
+    ("embedded", F, None, {"yes": True}, "embedded"),
+    ("embedded", T, None, {"yes": True}, "embedded"),
+    ("embedded", F, None, {"non_interactive": True}, "embedded"),   # không còn mã 2
+    ("embedded", T, None, {"non_interactive": True}, "embedded"),
+    ("embedded", T, None, {}, "embedded"),
+    ("embedded", T, None, {"mode": "embedded"}, "embedded"),        # không bị từ chối
+    ("embedded", F, None, {"mode": "embedded", "yes": True}, "embedded"),
+    ("embedded", T, [""], {}, "embedded"),                          # không hỏi lại 3 đường
+    ("separate", F, None, {"non_interactive": True}, "rec"),
+    ("separate", T, None, {"yes": True}, "rec"),
+    ("separate", T, [""], {}, "rec"),
+    (None, F, None, {"non_interactive": True}, "exit2"),            # chưa ghi gì: hành vi cũ
+    (None, T, None, {"non_interactive": True}, "exit2"),
+    (None, F, None, {"mode": "embedded"}, "exit2"),
+]
+
+
+@pytest.mark.parametrize("prev,var,answers,kw,want", REC_ROWS)
+def test_a_recorded_choice_beats_the_old_home_station(world, monkeypatch, capsys, prev, var,
+                                                      answers, kw, want):
+    import json
+    if prev:
+        cfg = {"mode": prev}
+        if prev == "separate":
+            cfg["station_path"] = str(world["typed"])
+        (world["repo"] / "studio.local.json").write_text(json.dumps(cfg), encoding="utf-8")
+    old = world["home"] / ".video"
+    if want == "exit2":
+        with pytest.raises(ContractError):
+            _run(world, monkeypatch, True, var, answers, F, **dict(kw))
+        return
+    # Lựa chọn đã ghi ⇒ KHÔNG hỏi gì cả (một `ask` mà bị gọi là hỏng), dù hàng có "câu trả lời giả".
+    (mode, path, _why), _ = _run(world, monkeypatch, True, var, None, F, never_ask=True, **dict(kw))
+    exp = {"embedded": ("embedded", str(world["repo"] / "workspace")),
+           "rec": ("separate", str(world["typed"]))}[want]
+    assert (mode, path) == exp
+    lines = [ln for ln in capsys.readouterr().err.splitlines() if str(old) in ln]
+    assert len(lines) == 1 and f"--station {old}" in lines[0]       # đúng MỘT dòng nêu trạm cũ
+
+
 def test_refusing_embedded_lists_the_neutral_options(world, monkeypatch):
     with pytest.raises(ContractError) as e:
         _run(world, monkeypatch, True, False, None, mode="embedded")

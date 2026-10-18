@@ -135,6 +135,19 @@ def test_the_help_does_not_promise_the_hidden_default(capsys):
     assert ".video" not in capsys.readouterr().out
 
 
+def test_a_destination_that_is_a_file_is_a_clear_error_not_a_traceback(repo, tmp_path):
+    f = tmp_path / "la-file"
+    f.write_text("x", encoding="utf-8")
+    with pytest.raises(ContractError, match="không phải thư mục"):
+        station.migrate_to_separate(str(f))
+    ask = _script(str(f), "y")
+    with pytest.raises(ContractError, match="không phải thư mục"):
+        station.migrate_to_separate(ask=ask)
+    assert len(ask.seen) == 1 and f.read_text(encoding="utf-8") == "x"
+    assert (repo / "workspace").is_dir()
+    assert cli_main(["migrate", "--to", "separate", "--station", str(f)]) == 2
+
+
 def test_a_pasted_quoted_destination_is_unquoted(repo, tmp_path):
     target = tmp_path / "co dau cach"
     res = station.migrate_to_separate(ask=_script(f'"{target}"', "y"))

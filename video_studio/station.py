@@ -294,9 +294,13 @@ def choose_mode(station=None, mode=None, yes=False, ask=None, non_interactive=Fa
     local = _env.local_config(repo) if repo else {}
     prev = local.get("mode")
     explicit = bool(mode)
+    # Lựa chọn ĐÃ GHI thắng trạm cũ dưới home: chạy lại `init` không hỏi lại, không đổi chế độ.
+    recorded = prev in MODES and (not mode or mode == prev)
+    if ext and recorded:
+        contract.log(_legacy_note(ext[0]))
     if not mode and prev == "separate" and local.get("station_path"):
         return "separate", _env.resolve_station()[0], "studio.local.json (lần chọn trước)"
-    if ext:
+    if ext and not recorded:
         if migrate:
             # `--migrate` là ý định tường minh nhận trạm cũ.
             return "separate", ext[0], f"--migrate — nhận trạm có sẵn: {ext[1]}"
@@ -1223,6 +1227,9 @@ def migrate_to_separate(target=None, ask=None, non_interactive=False):
         raise ContractError(f"không có {ws} — máy này không ở chế độ embedded")
     asked = not target
     target = _env._expand(target) if target else _ask_migrate_target(ws, ask, non_interactive)
+    if os.path.exists(target) and not os.path.isdir(target):
+        raise ContractError(f"đích {target} đã có và không phải thư mục — chọn đường khác "
+                            "(--station DIR); chưa đụng gì.")
     wsn, tn = os.path.normcase(os.path.abspath(ws)), os.path.normcase(target)
     if tn == wsn or tn.startswith(wsn + os.sep):
         raise ContractError(f"đích {target} nằm trong trạm đang dời ({ws}) — chọn chỗ ngoài repo")

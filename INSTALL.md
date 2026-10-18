@@ -253,7 +253,9 @@ tự nhận trạm đó. Có người thì nó hỏi ba đường ([1] trạm m�
 `--yes` nó không hỏi: dùng trạm mới embedded `<repo>/workspace` và in một dòng nêu trạm cũ (trạm cũ
 không bị đụng tới); `--non-interactive` thiếu `--yes`/`--mode` thì thoát mã 2. Muốn dùng trạm cũ — mọi render sau đó ghi
 vào đó, kể cả khi nó là trạm của lịch chạy thật — thì người dùng nói rõ, rồi chạy lại với
-`--station <thư mục>` (hoặc `--migrate` cho bố cục cũ). Máy đã đặt `VIDEO_STATION` (máy chạy lịch) thì `init` dùng trạm đó như trước, không hỏi.
+`--station <thư mục>` (hoặc `--migrate` cho bố cục cũ). Bản cài đã ghi lựa chọn trong
+`studio.local.json` thì chạy lại `init` giữ nguyên lựa chọn đó (không hỏi lại), chỉ in một dòng nêu
+trạm cũ. Máy đã đặt `VIDEO_STATION` (máy chạy lịch) thì `init` dùng trạm đó như trước, không hỏi.
 
 `init` không chép skill vào trạm: host đọc skill từ repo qua adapter `.claude/skills` /
 `.agents/skills` ở gốc repo, nên mở **thư mục repo** là đủ ([hosts/README.md](hosts/README.md)).
@@ -358,8 +360,9 @@ Dùng đúng khung này, lời thường, không rút gọn dòng doctor:
   định ở mục 4, cài lại.
 - **`init` báo mã 2 "hai nguồn sự thật":** máy đã có trạm ngoài (biến `VIDEO_STATION` hoặc trạm cũ)
   mà lại xin trạm trong repo. Hỏi người dùng giữ trạm nào; không tự xoá trạm nào.
-- **`init --yes` báo mã 2 "máy đã có trạm video ở …":** xem đoạn *Máy đã có trạm video từ trước*
-  ở mục 6 — hỏi người dùng, đừng tự thêm `--mode separate`.
+- **`init --non-interactive` (không `--yes`/`--mode`) báo mã 2 và nêu một trạm video cũ:** chưa ai
+  chọn chế độ — xem đoạn *Máy đã có trạm video từ trước* ở mục 6. `init --yes` thì không còn mã 2:
+  nó dùng trạm mới embedded và in một dòng nêu trạm cũ; đừng tự thêm `--mode separate`.
 - **Render hỏng giữa chừng (mã 1):** chạy lại một lần; vẫn hỏng thì chép 15 dòng log cuối cho
   người dùng và chạy `video-studio doctor --hf <bản>` như lời khuyên in ra.
 
