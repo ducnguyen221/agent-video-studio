@@ -336,3 +336,74 @@ def test_sibling_repo_is_not_a_voice_station(tmp_path, monkeypatch):
     monkeypatch.setenv("VIDEO_STUDIO_REPO", str(video))
     monkeypatch.setitem(__import__("sys").modules, "voice_studio", None)
     assert _env.voice_station() is None
+
+
+# ── OPCOS_WORKSPACES: chỉ `init`/`doctor` đọc, resolver thì không ───────────────────────
+
+def _opcos_ws(tmp_path, monkeypatch, marked=True):
+    ws = tmp_path / "ws"
+    (ws / "video").mkdir(parents=True)
+    if marked:
+        (ws / "video" / "station.json").write_text("{}", encoding="utf-8")
+    monkeypatch.setenv("OPCOS_WORKSPACES", str(ws))
+    return ws / "video"
+
+
+def test_sandbox_home_hides_real_home(sandbox_home, tmp_path):
+    assert os.path.expanduser("~").startswith(str(tmp_path))
+    assert os.environ["USERPROFILE"] == str(sandbox_home)
+    assert "OPCOS_WORKSPACES" not in os.environ and "OPCOS_ROOT" not in os.environ
+
+
+def test_opcos_station_found_when_marked(tmp_path, monkeypatch):
+    st = _opcos_ws(tmp_path, monkeypatch)
+    assert _env.opcos_station() == str(st)
+
+
+def test_opcos_station_none_without_marker(tmp_path, monkeypatch):
+    _opcos_ws(tmp_path, monkeypatch, marked=False)
+    assert _env.opcos_station() is None
+
+
+def test_opcos_station_none_when_variable_absent(sandbox_home):
+    assert _env.opcos_station() is None
+
+
+def test_opcos_station_blank_file_or_tilde(sandbox_home, tmp_path, monkeypatch):
+    for blank in ("", "   "):
+        monkeypatch.setenv("OPCOS_WORKSPACES", blank)
+        assert _env.opcos_station() is None
+    a_file = tmp_path / "la-file"
+    a_file.write_text("x", encoding="utf-8")
+    monkeypatch.setenv("OPCOS_WORKSPACES", str(a_file))
+    assert _env.opcos_station() is None
+    (sandbox_home / "ws" / "video").mkdir(parents=True)
+    (sandbox_home / "ws" / "video" / "station.json").write_text("{}", encoding="utf-8")
+    monkeypatch.setenv("OPCOS_WORKSPACES", "~/ws")
+    assert _env.opcos_station() == os.path.join(str(sandbox_home), "ws", "video")
+
+
+def test_opcos_station_ignores_dotenv(tmp_path, monkeypatch):
+    """Một `.env` trong repo không được dời trạm (như VIDEO_STATION)."""
+    repo = _repo(tmp_path, monkeypatch)
+    ws = tmp_path / "ws"
+    (ws / "video").mkdir(parents=True)
+    (ws / "video" / "station.json").write_text("{}", encoding="utf-8")
+    # Chế độ embedded: chỉ khi đó `_env.env()` mới đọc `.env` — nếu không, test không bắt được
+    # lỗi đổi `opcos_station` sang `_env.env("OPCOS_WORKSPACES")`.
+    (repo / "studio.local.json").write_text('{"mode": "embedded"}', encoding="utf-8")
+    (repo / ".env").write_text("OPCOS_WORKSPACES=" + str(ws) + "\n", encoding="utf-8")
+    assert _env.env("OPCOS_WORKSPACES") == str(ws)      # chứng minh `.env` ĐANG được đọc ở chế độ này
+    assert _env.opcos_station() is None
+
+
+def test_resolve_station_ignores_opcos_workspaces(tmp_path, monkeypatch):
+    repo = _repo(tmp_path, monkeypatch)
+    _opcos_ws(tmp_path, monkeypatch)
+    assert _env.resolve_station() == (str(repo / "workspace"), "workspace")
+
+
+def test_home_dot_video_marker_still_not_chosen_in_sandbox(sandbox_home, tmp_path, monkeypatch):
+    repo = _repo(tmp_path, monkeypatch)
+    assert _env.has_marker(str(sandbox_home / ".video"))
+    assert _env.resolve_station() == (str(repo / "workspace"), "workspace")

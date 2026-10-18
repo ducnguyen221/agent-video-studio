@@ -21,6 +21,7 @@ CONTRACT_VARS = (
     "VIDEO_STATION", "VIDEO_ROOT", "VOICE_STATION", "OMNIVOICE_DIR",
     "HYPERFRAMES_VERSION", "HYPERFRAMES_WORKDIR", "NODE_DIR", "FFMPEG_DIR",
     "VIDEO_FONT", "CHROME_BIN", "VIDEO_STUDIO_REPO",
+    "OPCOS_WORKSPACES", "OPCOS_ROOT",
 )
 
 
@@ -39,6 +40,30 @@ def _clean_contract_env(monkeypatch, tmp_path):
     # dev). `_env.voice_station()` hỏi nó khi không có biến — nên trỏ nó vào chỗ rỗng luôn.
     monkeypatch.setenv("VOICE_STUDIO_REPO", str(tmp_path / "no-voice-repo"))
     yield
+
+
+@pytest.fixture
+def sandbox_home(tmp_path, monkeypatch):
+    """HOME giả KHÔNG junction: `tmp_path/home` có sẵn một `.video` mang dấu trạm giả.
+
+    `_clean_contract_env` (autouse) đã trỏ HOME/USERPROFILE và xoá biến trạm; fixture này làm
+    kín thêm HOMEDRIVE/HOMEPATH (tiến trình con PowerShell tính lại từ đó) và dựng trạm mồi để
+    test chứng minh: có `~/.video` mang dấu mà resolver vẫn không chọn nó."""
+    home = tmp_path / "home"
+    home.mkdir(exist_ok=True)
+    for name in CONTRACT_VARS + ("MARKETING_STUDIO_DATA", "MARKETING_STUDIO_HOME"):
+        monkeypatch.delenv(name, raising=False)
+    drive, tail = os.path.splitdrive(str(home))
+    monkeypatch.setenv("HOME", str(home))
+    monkeypatch.setenv("USERPROFILE", str(home))
+    monkeypatch.setenv("HOMEDRIVE", drive)
+    monkeypatch.setenv("HOMEPATH", tail)
+    monkeypatch.setenv("VIDEO_STUDIO_REPO", str(tmp_path / "no-repo"))
+    monkeypatch.setenv("VOICE_STUDIO_REPO", str(tmp_path / "no-voice-repo"))
+    bait = home / ".video"
+    bait.mkdir(exist_ok=True)
+    (bait / "station.json").write_text("{}", encoding="utf-8")
+    return home
 
 
 def _fake_module(name, **attrs):

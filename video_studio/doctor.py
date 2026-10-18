@@ -250,6 +250,23 @@ def station_checks(st, src):
     return out
 
 
+def opcos_station_check(src):
+    """Nhắc (không bao giờ đỏ) về `OPCOS_WORKSPACES`: biến chỉ được ĐỌC ở đây và ở `init`,
+    resolver không dùng nó. Vắng biến ⇒ không in gì."""
+    base = _env.opcos_base()
+    if not base:
+        return []
+    path = os.path.normpath(os.path.join(base, "video"))
+    if not _env.has_marker(path):
+        return [_check("opcos-station", False, f"OPCOS_WORKSPACES={base}: {path} chưa là trạm",
+                       level="warn", hint="muốn dùng trạm OpcOS: tạo trạm đó trước (`video-studio init "
+                                          f"--station \"{path}\"`)")]
+    if src in ("workspace", "default", "unset"):
+        return [_check("opcos-station", False, f"{path} là trạm OpcOS nhưng chưa được chọn ({src})",
+                       level="warn", hint=f"`video-studio init --mode separate --station \"{path}\"`")]
+    return []
+
+
 def two_sources_check():
     repo = _env.repo_root()
     if not repo or not os.path.isdir(os.path.join(repo, _env.WORKSPACE)):
@@ -473,6 +490,7 @@ def run_checks(hf=None, offline=False, check_updates=False):
     checks += tool_checks()
     checks.append(font_check())
     checks += station_checks(st, src)
+    checks += opcos_station_check(src)
     checks += two_sources_check()
     checks += embedded_guard_checks()
     checks.append(voice_check())

@@ -288,6 +288,55 @@ def test_offline_check_updates_reports_no_age(machine, good_station, capsys):
     assert not any(a[0].endswith("npm") for a, _ in machine.calls)
 
 
+def _opcos_var(tmp_path, monkeypatch, marked=True):
+    ws = tmp_path / "opcos-ws"
+    (ws / "video").mkdir(parents=True)
+    if marked:
+        (ws / "video" / "station.json").write_text("{}", encoding="utf-8")
+    monkeypatch.setenv("OPCOS_WORKSPACES", str(ws))
+    return ws / "video"
+
+
+def test_doctor_hints_init_when_opcos_station_unused(machine, tmp_path, monkeypatch, capsys):
+    repo = tmp_path / "repo"
+    (repo / "video_studio").mkdir(parents=True)
+    (repo / "pyproject.toml").write_text("", encoding="utf-8")
+    monkeypatch.setenv("VIDEO_STUDIO_REPO", str(repo))
+    st = _opcos_var(tmp_path, monkeypatch)
+    rc, out, _ = run(["--json"], capsys)
+    c = _check(last_json(out), "opcos-station")
+    assert c["level"] == "warn" or c["ok"] is False
+    assert "init --mode separate --station" in c["hint"] and str(st) in c["hint"]
+
+
+def test_doctor_silent_when_station_env_set(machine, good_station, tmp_path, monkeypatch, capsys):
+    _opcos_var(tmp_path, monkeypatch)
+    rc, out, _ = run(["--json"], capsys)
+    assert not any(c["name"] == "opcos-station" for c in last_json(out)["checks"])
+
+
+def test_doctor_has_no_own_environ_read_of_opcos_workspaces():
+    """Mọi đọc `OPCOS_WORKSPACES` nằm ở `_env.opcos_base` (ràng buộc PLAN)."""
+    import inspect
+    assert "environ" not in inspect.getsource(doctor.opcos_station_check)
+
+
+def test_doctor_silent_without_opcos_var(machine, good_station, capsys):
+    rc, out, _ = run(["--json"], capsys)
+    assert not any(c["name"] == "opcos-station" for c in last_json(out)["checks"])
+
+
+def test_doctor_notes_opcos_dir_without_marker(machine, tmp_path, monkeypatch, capsys):
+    repo = tmp_path / "repo"
+    (repo / "video_studio").mkdir(parents=True)
+    (repo / "pyproject.toml").write_text("", encoding="utf-8")
+    monkeypatch.setenv("VIDEO_STUDIO_REPO", str(repo))
+    _opcos_var(tmp_path, monkeypatch, marked=False)
+    rc, out, _ = run(["--json"], capsys)
+    c = _check(last_json(out), "opcos-station")
+    assert "chưa là trạm" in c["detail"] + c["hint"]
+
+
 def test_two_sources_is_red(machine, good_station, tmp_path, monkeypatch, capsys):
     repo = tmp_path / "repo"
     (repo / "video_studio").mkdir(parents=True)

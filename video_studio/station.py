@@ -173,7 +173,7 @@ Máy này ĐÃ CÓ một trạm video: {path}
   [2] dừng lại — muốn trạm mới trong repo (embedded, <repo>/workspace/) thì dời hoặc đổi tên
       trạm cũ trước; giữ cả hai là hai nguồn sự thật cho một repo.
 
-Không trả lời gì = [2]. Chạy không có người: `--mode separate` (hoặc `--station DIR`) là [1].
+Không trả lời gì = [2]. Chạy không có người: {run1} là [1].
 """
 
 
@@ -184,7 +184,7 @@ def _ask_adopt_console(prompt):
     return input()
 
 
-def _adopt_or_stop(ext, yes, ask, non_interactive):
+def _adopt_or_stop(ext, yes, ask, non_interactive, opcos=None):
     """`~/.video` mang dấu trạm nhưng chưa ai chọn nó ⇒ HỎI người dùng; không có người thì dừng.
 
     Lượt cài trên Mac (29/09): `init --yes` nhận âm thầm một `~/.video` có sẵn, và mọi render
@@ -192,10 +192,18 @@ def _adopt_or_stop(ext, yes, ask, non_interactive):
     "nhận bất cứ trạm nào tình cờ nằm ở home".
     """
     path, why = ext[0], ext[1]
-    table = ADOPT_TABLE.format(path=path, why=why)
+    # Có trạm OpcOS thì `--mode separate` lấy trạm OpcOS (xem `choose_mode`); trạm ở home phải
+    # chỉ đích danh bằng `--station`.
+    run1 = f"`--station {path}`" if opcos else "`--mode separate` (hoặc `--station DIR`)"
+    table = ADOPT_TABLE.format(path=path, why=why, run1=run1)
+    if opcos:
+        table += (f"\nLưu ý: OPCOS_WORKSPACES cũng có một trạm video: {opcos}. Muốn dùng trạm "
+                  "đó thay vì trạm ở home: chạy lại với --mode separate.\n")
+    use_home = (f"--station {path} (dùng trạm ở home; --mode separate sẽ lấy trạm OpcOS {opcos})"
+                if opcos else "--mode separate (dùng trạm có sẵn) hoặc --station DIR")
     stop = ("máy đã có trạm video ở {p} ({w}) mà chưa ai chọn dùng nó; {lead}KHÔNG tự nhận. "
-            "Agent: hỏi người dùng, rồi chạy lại với --mode separate (dùng trạm có sẵn) hoặc "
-            "--station DIR; muốn trạm trong repo (embedded) thì dời/đổi tên trạm cũ trước.")
+            "Agent: hỏi người dùng, rồi chạy lại với " + use_home.replace("{", "{{").replace("}", "}}")
+            + "; muốn trạm trong repo (embedded) thì dời/đổi tên trạm cũ trước.")
     if yes or non_interactive or (ask is None and not _stdin_is_tty()):
         contract.log(table)
         lead = "--yes nghĩa là embedded (<repo>/workspace/) nên " if yes else ""
@@ -249,33 +257,47 @@ def choose_mode(station=None, mode=None, yes=False, ask=None, non_interactive=Fa
         return "separate", ext[0], f"nhận diện trạm có sẵn — {ext[1]}"
     local = _env.local_config(repo) if repo else {}
     prev = local.get("mode")
+    explicit = bool(mode)
     if not mode and prev == "separate" and local.get("station_path"):
         return "separate", _env.resolve_station()[0], "studio.local.json (lần chọn trước)"
     if ext:
         if mode == "separate" or migrate:
             flag = "--mode separate" if mode == "separate" else "--migrate"
+            oc = _env.opcos_station()
+            if mode == "separate" and oc:
+                # Đường mặc định của `--mode separate` là trạm OpcOS, kể cả khi
+                # `~/.video` cũng mang dấu (trạm ở home chỉ còn là thứ được nhận ra để hỏi).
+                return "separate", os.path.abspath(oc), f"{flag} — trạm OpcOS: {oc}"
             return "separate", ext[0], f"{flag} — nhận trạm có sẵn: {ext[1]}"
         if mode == "embedded":
             raise ContractError(
                 f"máy đã có trạm video ngoài ({ext[1]}: {ext[0]}); tạo thêm workspace/ sẽ thành "
                 "hai nguồn sự thật. Dùng trạm đó (--mode separate) hoặc dời/đổi tên trạm cũ trước.")
-        return _adopt_or_stop(ext, yes, ask, non_interactive)
+        return _adopt_or_stop(ext, yes, ask, non_interactive, opcos=_env.opcos_station())
     if not mode:
         if prev in MODES:
             mode, why = prev, "studio.local.json (lần chọn trước)"
         elif yes:
             mode, why = "embedded", "--yes (nhận khuyến nghị)"
         else:
+            # Trạm OpcOS (OPCOS_WORKSPACES + <trạm>/video mang dấu): chỉ ĐỀ XUẤT trong câu hỏi.
+            # Không bao giờ tự nhận (`--yes` ở nhánh trên vẫn là embedded) và chỉ khi
+            # studio.local.json chưa ghi lựa chọn (nhánh `prev` ở trên đã trả).
+            oc = _env.opcos_station()
+            table = CHOICE_TABLE
+            if oc:
+                table = (f"Gợi ý: OPCOS_WORKSPACES đã đặt và {oc} là một trạm video — chọn [2] để "
+                         "dùng nó.\n\n" + CHOICE_TABLE)
             if ask is None:
                 if non_interactive or not _stdin_is_tty():
-                    contract.log(CHOICE_TABLE)
+                    contract.log(table)
                     raise ContractError(
                         "cần người dùng chọn chế độ cài. Agent: trình bảng trên cho người dùng, "
                         "rồi chạy lại với --mode embedded|separate (hoặc --yes = embedded, "
                         "hoặc --station DIR = separate).")
                 ask = _ask_console
             try:
-                ans = (ask(CHOICE_TABLE) or "").strip().lower()
+                ans = (ask(table) or "").strip().lower()
             except EOFError:
                 # Windows: stdin là NUL vẫn báo isatty() = True — hết dữ liệu nghĩa là không có người.
                 raise ContractError(
@@ -288,6 +310,8 @@ def choose_mode(station=None, mode=None, yes=False, ask=None, non_interactive=Fa
             else:
                 raise ContractError(f"lựa chọn không hợp lệ: {ans!r} (1 = embedded, 2 = separate)")
             why = "người dùng chọn"
+            if mode == "separate" and oc:
+                why = "người dùng chọn — trạm OpcOS: OPCOS_WORKSPACES đã đặt và " + oc + " là một trạm"
     else:
         why = "--mode"
     if mode == "embedded":
@@ -298,6 +322,9 @@ def choose_mode(station=None, mode=None, yes=False, ask=None, non_interactive=Fa
             raise ContractError("chế độ embedded cần chạy từ bản clone repo (pip install -e <repo>); "
                                 "bản cài wheel chỉ dùng được separate (--station DIR).")
         return "embedded", os.path.join(repo, _env.WORKSPACE), why
+    oc = _env.opcos_station()
+    if oc and (explicit or not prev):
+        return "separate", os.path.abspath(oc), (why + " — trạm OpcOS") if explicit else why
     return "separate", _env.default_station(), why
 
 

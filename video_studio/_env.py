@@ -224,6 +224,27 @@ def default_station():
     return os.path.join(os.path.expanduser("~"), ".video")
 
 
+def opcos_base():
+    """Giá trị `OPCOS_WORKSPACES` (đã `expanduser`, bỏ khoảng trắng) hoặc None khi vắng/rỗng.
+
+    ĐIỂM ĐỌC DUY NHẤT của biến này (`init` và `doctor` đều đi qua đây). Chỉ đọc `os.environ`:
+    một `.env` trong repo không được dời trạm."""
+    base = (os.environ.get("OPCOS_WORKSPACES") or "").strip()
+    return os.path.expanduser(base) if base else None
+
+
+def opcos_station(station="video"):
+    """`<OPCOS_WORKSPACES>/<station>` nếu biến đã đặt và thư mục đó mang dấu trạm; ngược lại None.
+
+    CHỈ `init` và `doctor` gọi (đề xuất / nhắc). `resolve_station()` không đọc nó: biến này
+    không bao giờ tự chọn trạm hộ ai. Không tạo, không ghi, không cảnh báo."""
+    base = opcos_base()
+    if not base:
+        return None
+    path = os.path.normpath(os.path.join(base, station))
+    return path if has_marker(path) else None
+
+
 def has_marker(path):
     """Thư mục có phải một trạm video không: có station.json, có projects/, hoặc là trạm đời
     cũ (trước khi có station.json) có seed `demo/hyperframes.json`."""

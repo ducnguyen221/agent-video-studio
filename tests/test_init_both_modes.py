@@ -194,6 +194,122 @@ def test_previous_choice_is_remembered(repo):
     assert mode == "embedded" and "studio.local.json" in why
 
 
+# ── trạm OpcOS (OPCOS_WORKSPACES): chỉ ĐỀ XUẤT, không bao giờ tự nhận ─────────────────────
+
+def _opcos(tmp_path, monkeypatch, marked=True):
+    ws = tmp_path / "opcos-ws"
+    (ws / "video").mkdir(parents=True)
+    if marked:
+        (ws / "video" / "station.json").write_text("{}", encoding="utf-8")
+    monkeypatch.setenv("OPCOS_WORKSPACES", str(ws))
+    return ws / "video"
+
+
+def test_init_mode_separate_defaults_to_opcos_station_and_writes_absolute_path(
+        repo, tmp_path, monkeypatch, capsys):
+    st = _opcos(tmp_path, monkeypatch)
+    monkeypatch.setattr(station, "_stdin_is_tty", lambda: False)
+    assert station.init_main(["--mode", "separate", "--non-interactive", "--json"]) == 0
+    local = json.loads((repo / "studio.local.json").read_text(encoding="utf-8"))
+    assert local["mode"] == "separate" and local["station_path"] == os.path.abspath(str(st))
+    assert os.path.isabs(local["station_path"])
+    assert not (repo / "workspace").exists()
+    assert (st / "station.json").is_file()
+    assert sorted(p.name for p in (tmp_path / "opcos-ws").iterdir()) == ["video"]
+
+
+def test_init_interactive_proposes_opcos_station(repo, tmp_path, monkeypatch):
+    st = _opcos(tmp_path, monkeypatch)
+    asked = []
+    mode, path, why = station.choose_mode(ask=lambda p: asked.append(p) or "2")
+    assert (mode, path) == ("separate", os.path.abspath(str(st)))
+    assert "OPCOS_WORKSPACES" in asked[0] and str(st) in asked[0]
+    assert "trạm OpcOS" in why
+    mode, path, _ = station.choose_mode(ask=lambda p: "1")
+    assert mode == "embedded" and path == str(repo / "workspace")
+
+
+def test_init_yes_with_opcos_var_stays_embedded(repo, tmp_path, monkeypatch):
+    _opcos(tmp_path, monkeypatch)
+    mode, path, why = station.choose_mode(yes=True)
+    assert mode == "embedded" and path == str(repo / "workspace") and "--yes" in why
+
+
+def test_init_mode_embedded_allowed_with_opcos_var(repo, tmp_path, monkeypatch):
+    _opcos(tmp_path, monkeypatch)
+    mode, path, _ = station.choose_mode(mode="embedded")
+    assert mode == "embedded" and path == str(repo / "workspace")
+
+
+def test_init_again_on_embedded_clone_is_not_flipped(repo, tmp_path, monkeypatch):
+    _opcos(tmp_path, monkeypatch)
+    (repo / "studio.local.json").write_text(json.dumps({"mode": "embedded"}), encoding="utf-8")
+    mode, _st, why = station.choose_mode(ask=lambda p: pytest.fail("đã chọn rồi thì đừng hỏi"))
+    assert mode == "embedded" and "studio.local.json" in why
+
+
+def test_init_yes_ignores_opcos_dir_without_marker(repo, tmp_path, monkeypatch):
+    _opcos(tmp_path, monkeypatch, marked=False)
+    mode, path, _ = station.choose_mode(yes=True)
+    assert mode == "embedded" and path == str(repo / "workspace")
+    asked = []
+    station.choose_mode(ask=lambda p: asked.append(p) or "1")
+    assert "OPCOS_WORKSPACES" not in asked[0]
+
+
+def test_init_prev_separate_without_path_not_flipped_to_opcos(repo, tmp_path, monkeypatch):
+    """`studio.local.json` đã ghi `separate` (không `station_path`) và không `--mode`: lựa chọn đã
+    ghi thắng, trạm OpcOS không được chen vào — đường mặc định vẫn là `~/.video`."""
+    _opcos(tmp_path, monkeypatch)
+    (repo / "studio.local.json").write_text(json.dumps({"mode": "separate"}), encoding="utf-8")
+    mode, path, why = station.choose_mode(ask=lambda p: pytest.fail("đã chọn rồi thì đừng hỏi"))
+    assert (mode, path) == ("separate", _env.default_station()) and "studio.local.json" in why
+
+
+def test_mode_separate_prefers_opcos_over_a_marked_home_station(repo, tmp_path, monkeypatch):
+    """Có cả `~/.video` mang dấu lẫn trạm OpcOS mang dấu ⇒ `--mode separate` lấy trạm
+    OpcOS; `--migrate` vẫn là trạm ở home; câu hỏi tương tác nhắc trạm OpcOS."""
+    _home_station(tmp_path, monkeypatch)
+    st = _opcos(tmp_path, monkeypatch)
+    mode, path, why = station.choose_mode(mode="separate")
+    assert (mode, path) == ("separate", os.path.abspath(str(st))) and "trạm OpcOS" in why
+    _mode, path, _why = station.choose_mode(migrate=True)
+    assert path == str(_env.default_station())
+    asked = []
+    with pytest.raises(ContractError):
+        station.choose_mode(ask=lambda p: asked.append(p) or "2")
+    assert str(st) in asked[0] and "--mode separate" in asked[0]
+
+
+def test_guidance_points_home_choice_to_station_flag_when_opcos_exists(repo, tmp_path, monkeypatch):
+    """Có trạm OpcOS: lựa chọn [1] (trạm ở home) phải bảo `--station <đường home>`, không phải
+    `--mode separate` (vì `--mode separate` giờ lấy trạm OpcOS)."""
+    home_st = _home_station(tmp_path, monkeypatch)
+    _opcos(tmp_path, monkeypatch)
+    asked = []
+    with pytest.raises(ContractError) as e:
+        station.choose_mode(ask=lambda p: asked.append(p) or "2")
+    for text in (asked[0], str(e.value)):
+        assert f"--station {home_st}" in text
+        assert "--mode separate (dùng trạm có sẵn)" not in text
+
+
+def test_non_interactive_table_mentions_opcos_station(repo, tmp_path, monkeypatch, capsys):
+    st = _opcos(tmp_path, monkeypatch)
+    monkeypatch.setattr(station, "_stdin_is_tty", lambda: False)
+    assert station.init_main([]) == 2
+    assert str(st) in capsys.readouterr().err
+
+
+def test_init_without_opcos_var_unchanged(repo, tmp_path, monkeypatch):
+    home_st = _home_station(tmp_path, monkeypatch)
+    with pytest.raises(ContractError):
+        station.choose_mode(yes=True)
+    mode, st, _ = station.choose_mode(mode="separate")
+    assert (mode, st) == ("separate", str(home_st))
+    assert _env.opcos_station() is None
+
+
 def test_embedded_needs_a_clone(monkeypatch, tmp_path):
     monkeypatch.setenv("VIDEO_STUDIO_REPO", str(tmp_path / "khong-phai-repo"))
     with pytest.raises(ContractError) as e:
