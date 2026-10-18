@@ -357,7 +357,7 @@ def test_a_dotenv_can_never_move_the_repo_or_the_station(var, repo):
     assert _env.read_env_file()[var] == "/khong/ton/tai"     # đọc được nếu ai hỏi thẳng file
     assert _env.env(var) != "/khong/ton/tai"                 # nhưng env() không lấy từ đó
     assert _env.repo_root() == str(repo)
-    assert _env.resolve_station() == (str(repo / "workspaces"), "studio.local.json")
+    assert _env.resolve_station() == (str(repo / "workspaces"), "workspaces")
 
 
 def test_the_voice_station_pointer_does_come_from_the_dotenv(repo, tmp_path, monkeypatch):

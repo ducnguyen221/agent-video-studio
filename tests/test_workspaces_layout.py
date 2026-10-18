@@ -45,7 +45,7 @@ def test_init_embedded_builds_workspaces_and_never_the_singular_dir(repo):
     local = json.loads((repo / "studio.local.json").read_text(encoding="utf-8"))
     assert local["station_path"] == "workspaces"
     assert not (repo / "workspaces" / "video").exists()
-    assert _env.resolve_station() == (str(st), "studio.local.json")      # init ghi lựa chọn
+    assert _env.resolve_station() == (str(st), "workspaces")             # config embedded không được tin như chuỗi
 
 
 def test_resolution_prefers_the_new_layout_and_still_finds_the_old_one(repo):
@@ -111,17 +111,25 @@ def test_migrate_moves_the_new_layout(repo, tmp_path):
 
 # ── không còn thư mục ẩn ở thư mục cá nhân ────────────────────────────────────────────────
 
-HIDDEN = re.compile(r"(?<![\w])\.video(?![\w-])")
+#: Tên thư mục ẩn của CẢ BA trạm (video, voice, marketing) ở các dạng `~/.x`, `/.x/`, biến-thư-mục-cá-nhân kiểu Windows,
+#: `$HOME/.x`. Đứng sau một ký tự chữ (vd `args.video`, `module.voice`) thì không tính.
+HIDDEN = re.compile(r"(?<![\w])\.(video|voice|marketing)(?![\w-])")
+SKIP_DIRS = {".git", ".venv", "venv", "node_modules", "__pycache__", ".pytest_cache", ".worktrees",
+             ".tmp", "workspaces", "workspace", "out", "work", "scratch", "cache"}
+SKIP_FILES = {"tests/test_workspaces_layout.py", ".env", "studio.local.json"}
+BINARY = (".png", ".jpg", ".jpeg", ".webp", ".gif", ".woff", ".woff2", ".ttf", ".mp4", ".mov", ".mp3",
+          ".wav", ".zip", ".pt", ".onnx", ".safetensors", ".pyc")
 
 
-def _tracked_text_files():
-    out = subprocess.run(["git", "-C", str(ROOT), "ls-files"], capture_output=True, text=True,
-                         encoding="utf-8").stdout.split("\n")
-    for rel in out:
-        if not rel or rel.endswith((".png", ".jpg", ".woff2", ".mp4", ".zip")):
-            continue
-        p = ROOT / rel
-        if p.is_file() and rel != "tests/test_workspaces_layout.py":
+def _walk_text_files(root):
+    """Duyệt bằng `os.walk` (không cần git: bản `git archive`/wheel cũng được quét)."""
+    for dp, dn, fn in os.walk(root):
+        dn[:] = sorted(d for d in dn if d not in SKIP_DIRS)
+        for name in sorted(fn):
+            p = Path(dp) / name
+            rel = p.relative_to(root).as_posix()
+            if rel in SKIP_FILES or name.endswith(BINARY):
+                continue
             yield rel, p.read_text(encoding="utf-8", errors="replace")
 
 
@@ -130,15 +138,129 @@ def _unreleased(text):
     return m.group(1) if m else ""
 
 
-def test_no_tracked_file_names_the_hidden_home_folder():
-    bad = []
-    for rel, text in _tracked_text_files():
+def _hidden_hits(root):
+    bad, seen = [], 0
+    for rel, text in _walk_text_files(root):
+        seen += 1
         if rel == "docs/CHANGELOG.md":
             text = _unreleased(text)            # bản đã phát hành giữ nguyên chữ
         for n, line in enumerate(text.splitlines(), 1):
             if HIDDEN.search(line):
                 bad.append(f"{rel}:{n}")
+    return bad, seen
+
+
+def test_no_file_names_a_hidden_home_folder_of_any_of_the_three_stations():
+    bad, seen = _hidden_hits(ROOT)
+    assert seen > 100, f"quét quá ít file ({seen}) — bộ duyệt hỏng thì test này xanh giả"
     assert not bad, bad[:20]
+
+
+@pytest.mark.parametrize("name", ["video", "voice", "marketing"])
+@pytest.mark.parametrize("form", ["~/.{n}", "%USER" + "PROFILE%\\.{n}", "$HOME/.{n}", "x/.{n}/y"])
+def test_the_scanner_catches_an_injected_string_without_git(tmp_path, name, form):
+    """Đột biến: chèn chuỗi cấm vào một file mã trong một cây KHÔNG có `.git` ⇒ phải đỏ."""
+    (tmp_path / "video_studio").mkdir()
+    for i in range(3):
+        (tmp_path / "video_studio" / f"m{i}.py").write_text("x = 1\n", encoding="utf-8")
+    assert _hidden_hits(tmp_path)[0] == []
+    (tmp_path / "video_studio" / "m0.py").write_text("# " + form.format(n=name) + "\n", encoding="utf-8")
+    assert _hidden_hits(tmp_path)[0] == ["video_studio/m0.py:1"]
+
+
+def test_attribute_access_is_not_mistaken_for_a_hidden_folder(tmp_path):
+    (tmp_path / "a.py").write_text("print(args.video, mod.voice, self.marketing)\n", encoding="utf-8")
+    assert _hidden_hits(tmp_path)[0] == []
+
+
+# ── hành vi: một trạm mồi ở thư mục ẩn của thư mục cá nhân KHÔNG bao giờ được dùng ───────────
+
+@pytest.mark.parametrize("name", ["video", "voice", "marketing"])
+def test_a_decoy_station_in_a_hidden_home_folder_is_never_used(repo, tmp_path, monkeypatch, name):
+    from video_studio import doctor
+    home = tmp_path / "home"
+    decoy = home / ("." + name)                   # dựng bằng chuỗi GHÉP — file này không nêu tên nó
+    (decoy / "projects").mkdir(parents=True)
+    (decoy / "station.json").write_text("{}", encoding="utf-8")
+    monkeypatch.setenv("HOME", str(home))
+    monkeypatch.setenv("USERPROFILE", str(home))
+    st, src = _env.resolve_station()
+    assert st == str(repo / "workspaces") and src == "workspaces"
+    assert station.choose_mode(yes=True)[1] == str(repo / "workspaces")
+    with pytest.raises(Exception):
+        station.choose_mode(mode="separate", non_interactive=True)      # không biến ⇒ mã 2, không rơi về home
+    texts = [c["detail"] + c.get("hint", "") for c in doctor.station_checks(st, src)]
+    assert all(str(decoy) not in t for t in texts)
+    before = sorted(p.name for p in decoy.rglob("*"))
+    station.do_init(mode="embedded")
+    assert sorted(p.name for p in decoy.rglob("*")) == before            # không đụng byte nào
+
+
+# ── studio.local.json cũ ghi `station_path` tương đối: không tin chuỗi ở chế độ embedded ────
+
+def _config(repo, kind):
+    if kind == "none":
+        return
+    name = "workspace" if kind == "old" else "workspaces"
+    (repo / "studio.local.json").write_text(
+        json.dumps({"mode": "embedded", "station_path": name}), encoding="utf-8")
+
+
+def _tier(repo, tier):
+    if tier in ("A", "C"):
+        _old(repo)
+    if tier in ("B", "C"):
+        (repo / "workspaces").mkdir(parents=True)
+
+
+@pytest.mark.parametrize("cfg", ["old", "new", "none"])
+@pytest.mark.parametrize("tier,want", [("A", "workspace"), ("B", "workspaces"), ("C", "workspaces")])
+def test_a_relative_workspace_station_path_goes_through_the_shared_resolution(
+        repo, capsys, monkeypatch, cfg, tier, want):
+    """(A) chỉ `workspace` cũ · (B) đã đổi tên sang `workspaces` (config còn ghi tên cũ — ca doctor
+    khuyên đổi tên) · (C) có cả hai ⇒ `workspaces` thắng. Config ghi tên nào cũng vậy."""
+    monkeypatch.setattr(_env, "_NOTED", set())
+    _tier(repo, tier)
+    _config(repo, cfg)
+    st, _src = _env.resolve_station()
+    assert st == str(repo / want)
+    lines = [ln for ln in capsys.readouterr().err.splitlines() if "bố cục cũ" in ln]
+    assert len(lines) == (1 if tier in ("A", "C") else 0)
+    _env.resolve_station()
+    assert not [ln for ln in capsys.readouterr().err.splitlines() if "bố cục cũ" in ln]   # một lần
+
+
+def test_a_separate_config_or_an_other_path_is_still_trusted(repo, tmp_path):
+    _old(repo)
+    (repo / "studio.local.json").write_text(
+        json.dumps({"mode": "separate", "station_path": "workspace"}), encoding="utf-8")
+    assert _env.resolve_station()[0] == str(repo / "workspace")
+    (repo / "studio.local.json").write_text(
+        json.dumps({"mode": "embedded", "station_path": str(tmp_path / "ngoai")}), encoding="utf-8")
+    assert _env.resolve_station() == (str(tmp_path / "ngoai"), "studio.local.json")
+    (repo / "studio.local.json").write_text(
+        json.dumps({"mode": "embedded", "station_path": "sub/dir"}), encoding="utf-8")
+    assert _env.resolve_station()[0] == str(repo / "sub" / "dir")
+
+
+def test_init_rewrites_an_old_station_path_to_the_new_name(repo):
+    _old(repo)
+    (repo / "studio.local.json").write_text(
+        json.dumps({"mode": "embedded", "station_path": "workspace"}), encoding="utf-8")
+    station.do_init(mode="embedded")
+    local = json.loads((repo / "studio.local.json").read_text(encoding="utf-8"))
+    assert local["station_path"] == "workspaces"
+    assert _env.resolve_station()[0] == str(repo / "workspace")        # vẫn nhận trạm cũ
+
+
+def test_migrate_uses_the_resolved_embedded_station_when_both_exist(repo, tmp_path):
+    old = _old(repo)
+    new = repo / "workspaces"
+    new.mkdir()
+    (new / "station.json").write_text("{}", encoding="utf-8")
+    target = tmp_path / "ngoai"
+    station.migrate_to_separate(str(target))
+    assert (target / "station.json").is_file() and old.is_dir() and not new.exists()
 
 
 def test_the_helper_for_the_hidden_folder_is_gone():

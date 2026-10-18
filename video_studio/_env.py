@@ -21,7 +21,7 @@ Biến hợp đồng:
     VOICE_STATION        trạm giọng (lồng tiếng, filler)  — tên cũ OMNIVOICE_DIR = thư mục
                          engine ($VOICE_STATION/omnivoice). Không đặt cả hai thì hỏi
                          chính repo giọng (nếu cài cùng venv) — nhận trạm nó đã được
-                         CHỌN (biến, studio.local.json, workspaces/voice), không nhận mặc định nó
+                         CHỌN (biến, studio.local.json, `<repo giọng>/workspaces`), không nhận mặc định nó
                          tự đoán; không có gì thì là "chưa có trạm giọng", không đoán thư mục ẩn
 
 Hai chế độ cài (F17) dùng chung MỘT thứ tự phân giải trạm — `resolve_station()`:
@@ -255,6 +255,20 @@ def old_layout_note(repo):
     return f"đang dùng trạm bố cục cũ {old}; nên đổi tên/dời sang {new}"
 
 
+_NOTED = set()          # các repo đã nhắc đổi tên trong tiến trình này (mỗi repo một lần)
+
+
+def note_old_layout(repo):
+    """In MỘT dòng nhắc (stderr) mỗi tiến trình, mỗi repo, khi bố cục cũ `workspace` còn mang dấu
+    trạm. Dùng chung cho `init` và bộ phân giải, để mọi đường dùng tên cũ đều được nhắc đúng một lần."""
+    note = old_layout_note(repo)
+    if note and repo not in _NOTED:
+        _NOTED.add(repo)
+        from . import contract
+        contract.log(note)
+    return note
+
+
 def opcos_base():
     """Giá trị `OPCOS_WORKSPACES` (đã `expanduser`, bỏ khoảng trắng) hoặc None khi vắng/rỗng.
 
@@ -304,13 +318,23 @@ def resolve_station():
         return _expand(old), "VIDEO_ROOT"
     repo = existing_repo()
     if repo:
-        sp = (local_config(repo).get("station_path") or "").strip()
+        cfg = local_config(repo)
+        sp = (cfg.get("station_path") or "").strip()
+        # Chế độ embedded: `station_path` tương đối `workspace`/`workspaces` do `init` đời trước ghi
+        # KHÔNG được tin như một chuỗi — đi qua tầng nhúng chung (workspaces trước, workspace cũ có
+        # dấu trạm sau + nhắc), nếu không thì đổi tên thư mục là mất trạm và có cả hai thì thắng nhầm.
+        if sp and cfg.get("mode") != "separate" and \
+                sp.replace("\\", "/").strip("/") in (OLD_WORKSPACE, WORKSPACE):
+            sp = ""
         if sp:
             sp = os.path.expanduser(sp)
             return (sp if os.path.isabs(sp) else os.path.abspath(os.path.join(repo, sp))), LOCAL_CONFIG
         old = embedded_old(repo)
         if old:
+            note_old_layout(repo)
             return old, "workspace"
+        if os.path.isdir(embedded_new(repo)):
+            note_old_layout(repo)           # có cả hai ⇒ workspaces thắng + nhắc
         return embedded_new(repo), "workspaces"
     return None, "unset"
 
@@ -537,7 +561,7 @@ def sibling_repo(package):
 
 def voice_station():
     """Gốc trạm giọng: VOICE_STATION → cha của OMNIVOICE_DIR (tên cũ) → trạm mà repo giọng đã
-    được chọn (studio.local.json / workspaces/voice) → None. Không bao giờ đoán thư mục ẩn."""
+    được chọn (studio.local.json / `<repo giọng>/workspaces`; có OPCOS_WORKSPACES thì `<biến>/voice`) → None. Không bao giờ đoán thư mục ẩn."""
     v = env("VOICE_STATION")
     if v:
         return _expand(v)

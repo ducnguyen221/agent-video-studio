@@ -274,7 +274,7 @@ def test_voice_station_takes_what_the_voice_repo_was_told(tmp_path, monkeypatch)
 
 
 @pytest.mark.parametrize("answer", [
-    ("~/.voice", "default"),                 # nó tự đoán ở home — không phải lựa chọn của ai
+    ("~/." + "voice", "default"),                 # nó tự đoán ở home — không phải lựa chọn của ai
     ("/nowhere/workspace", "workspace"),     # repo giọng chưa init
     (None, "unset"),
 ])

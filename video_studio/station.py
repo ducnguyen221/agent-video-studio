@@ -169,9 +169,7 @@ def _embedded_station(repo, announce=True):
         raise ContractError("chế độ embedded cần chạy từ bản clone repo (pip install -e <repo>); "
                             "bản cài wheel chỉ dùng được separate (--station DIR).")
     if announce:
-        note = _env.old_layout_note(repo)
-        if note:
-            contract.log(note)
+        _env.note_old_layout(repo)
     return _env.embedded_station(repo)
 
 
@@ -804,8 +802,7 @@ def do_init(station=None, mode=None, yes=False, migrate=False, dry_run=False, as
         local = _env.read_json(local_path)[0]
         local.update({
             "mode": mode,
-            "station_path": (os.path.relpath(st, repo).replace(os.sep, "/")
-                             if mode == "embedded" else st),
+            "station_path": _env.WORKSPACE if mode == "embedded" else st,
             "secrets": _env.ENV_FILE if mode == "embedded" else SECRET_STORE,
         })
         with open(local_path, "w", encoding="utf-8", newline="\n") as f:
@@ -1130,9 +1127,7 @@ def migrate_to_separate(target=None, ask=None, non_interactive=False):
     if not repo:
         raise ContractError("không xác định được repo (cài -e từ bản clone, hoặc đặt "
                             "VIDEO_STUDIO_REPO)")
-    ws = _env.embedded_new(repo)
-    if not os.path.isdir(ws):
-        ws = os.path.join(repo, _env.OLD_WORKSPACE)         # bố cục cũ, nếu chỉ có nó
+    ws = _env.embedded_station(repo)       # workspaces; tên số ít cũ chỉ khi nó là trạm duy nhất
     if not os.path.isdir(ws):
         raise ContractError(f"không có {_env.embedded_new(repo)} — máy này không ở chế độ embedded")
     asked = not target

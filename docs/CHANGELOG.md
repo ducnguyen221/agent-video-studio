@@ -11,11 +11,14 @@ kiểm).
   `<repo>/workspaces` (thay cho `<repo>/workspace`); cài cùng OpcOS thì trạm là
   `<OPCOS_WORKSPACES>/video`. Bản cài cũ có `<repo>/workspace` mang dấu trạm vẫn được nhận kèm một
   dòng khuyến nghị đổi tên thành `workspaces`; có cả hai thì `workspaces` thắng; `init` mới không
-  bao giờ tạo thư mục số ít. `.gitignore` và hook `pre-commit` chặn cả hai tên.
+  bao giờ tạo thư mục số ít. `.gitignore` và hook `pre-commit` chặn cả hai tên. Chế độ embedded
+  không còn tin chuỗi `station_path: workspace` (hay `workspaces`) mà `init` đời trước ghi trong
+  `studio.local.json`: luôn đi qua cách chọn trạm nhúng chung, nên đổi tên thư mục theo lời nhắc
+  không làm mất trạm và có cả hai thì `workspaces` thắng; `init` ghi lại `station_path: workspaces`.
 - **Cảnh báo:** có `OPCOS_WORKSPACES` thì Enter/xác nhận ra `<biến>/video`, còn `--yes` ra
   `<repo>/workspaces`.
 - Thư mục trạm cũ ẩn trong thư mục cá nhân không còn được tự nhận; trỏ vào bằng
-  `--station <đường>`. Mọi cơ chế dò, nhận và nhắc nó (kể cả câu hỏi ba đường) đã bỏ.
+  `--station <đường>`.
 - `init`: `--yes` không bao giờ hỏi và luôn là embedded; `--non-interactive` thiếu cả `--yes` lẫn
   `--mode` thoát mã 2 (không đoán chế độ); `--mode separate` thiếu `--station` thì có
   `OPCOS_WORKSPACES` ⇒ `<biến>/video` (có người thì hỏi xác nhận/đổi, không người thì dùng luôn và
@@ -24,7 +27,7 @@ kiểm).
   (`--station` hay câu trả lời) thì dừng mã 2 với thông báo rõ thay vì traceback.
 - Đường dán có cặp ngoặc kép bao quanh (`"C:\\x"`, kiểu "Copy as path" của Windows) được bóc ngoặc ở
   mọi chỗ nhập đường; `migrate` kiểm `.env` trong kho secret trước câu y/N thay vì sau.
-- `video-studio migrate --to separate` hỏi nơi dời thay vì tự dời vào một thư mục ẩn: gợi ý
+- `video-studio migrate --to separate` hỏi nơi dời thay vì tự chọn một nơi: gợi ý
   `<OPCOS_WORKSPACES>/video` nếu biến đã đặt, hiện đường tuyệt đối đích cùng số file/dung lượng
   rồi xin xác nhận y/N. Không có người trả lời (`--non-interactive`, hoặc không có terminal) thì
   `--station DIR` là bắt buộc, thiếu thì thoát mã 2. Đích nằm trong trạm đang dời bị từ chối.
