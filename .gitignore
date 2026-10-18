@@ -41,6 +41,7 @@ scratch/
 cache/
 
 # ── trạm chế độ embedded + secret + lựa chọn cài (F17)
+/workspaces/
 /workspace/
 .env
 .env.*

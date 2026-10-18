@@ -18,7 +18,7 @@ chạy. Không có "bộ" nào phải cài đủ.
 
 | Chế độ | Trạm | Biến cấu hình | Dành cho |
 |---|---|---|---|
-| **`embedded`** — gọn trong repo (**mặc định, khuyến nghị cho người mới**) | `<repo>/workspace/` | `<repo>/.env` | một máy, "mở một folder là thấy hết" |
+| **`embedded`** — gọn trong repo (**mặc định, khuyến nghị cho người mới**) | `<repo>/workspaces/` | `<repo>/.env` | một máy, "mở một folder là thấy hết" |
 | **`separate`** — trạm ngoài repo | nơi bạn chọn (vd `<OPCOS_WORKSPACES>/video`) | cấp user; bí mật ở `~/.secret/video-studio/` | nhiều máy, repo public của chính bạn, nhiều repo dùng chung một trạm |
 
 `video-studio init` hỏi bạn chọn (Enter = `embedded`) và ghi lựa chọn vào
@@ -26,19 +26,13 @@ chạy. Không có "bộ" nào phải cài đủ.
 
 - `--station DIR` — bạn chỉ thẳng trạm ⇒ `separate`.
 - Máy **đã chọn trạm ngoài**: biến `VIDEO_STATION` (hoặc tên cũ `VIDEO_ROOT`) đã đặt, hoặc
-  `studio.local.json` đã ghi `separate` ⇒ dùng trạm đó, và **không bao giờ** tạo `workspace/`.
+  `studio.local.json` đã ghi `separate` ⇒ dùng trạm đó, và **không bao giờ** tạo `workspaces/`.
   Hai trạm cho một repo là hai nguồn sự thật, và cái sai chỉ lộ ra khi bạn "mất" một project.
-  (`~/.video` chỉ tình cờ có `station.json`, `projects/` hay seed `demo/` đời cũ thì **không**
-  thuộc trường hợp này và **không bao giờ** được tự nhận: có người thì `init` hỏi ba đường —
-  [1] dùng trạm mới (Enter; `<OPCOS_WORKSPACES>/video` nếu biến đã đặt, không thì
-  `<repo>/workspace`), [2] nhận trạm cũ, [3] dừng; `--yes` không bao giờ hỏi: dùng trạm mới
-  embedded `<repo>/workspace` và in một dòng nêu trạm cũ; `--non-interactive` thiếu `--yes` và
-  `--mode` thì thoát mã 2. Nhận trạm cũ chỉ bằng `--station <thư mục>`, `--migrate` hoặc trả lời [2]; `--mode separate` không
-  nhận nó.)
-- `--mode embedded|separate`, hoặc `--yes` (= nhận khuyến nghị `embedded`). (`separate` mà thiếu
-  `--station` thì không hỏi chế độ nữa mà hỏi **đường trạm**: gợi ý `<OPCOS_WORKSPACES>/video` nếu
-  biến đã đặt, không thì gõ tay; không có người thì dùng đường gợi ý hoặc dừng mã 2 đòi `--station`.
-  Không còn đường mặc định nào ở `~/.video`.)
+- `--mode embedded|separate`, hoặc `--yes` (= nhận khuyến nghị `embedded`, **không bao giờ hỏi**).
+  `separate` mà thiếu `--station` thì không hỏi chế độ nữa mà hỏi **đường trạm**: gợi ý
+  `<OPCOS_WORKSPACES>/video` nếu biến đã đặt, không thì gõ tay; không có người thì dùng đường gợi ý
+  hoặc dừng mã 2 đòi `--station`. Có `OPCOS_WORKSPACES` mà chạy tương tác thì Enter ở bảng chọn ra
+  `<biến>/video` (có hỏi xác nhận/đổi), còn `--yes` ra `<repo>/workspaces`.
 
 Chạy không có người trả lời (agent, script, lịch) mà chưa chọn ⇒ `init` in bảng lựa chọn rồi
 thoát **mã 2**, chưa ghi byte nào. **Agent cài phải trình bảng đó cho người dùng và chờ họ
@@ -69,7 +63,7 @@ khuôn:
 
 - `VIDEO_STATION`, `VIDEO_ROOT`, `VIDEO_STUDIO_REPO` — chúng trỏ chính repo và trạm này, tức
   quay ngược lại cái đã quyết định có đọc `.env` hay không. `.env` chỉ được nạp khi chế độ là
-  `embedded`, nghĩa là trạm đã chốt ở `<repo>/workspace/`; để một dòng trong đó trỏ trạm đi nơi
+  `embedded`, nghĩa là trạm đã chốt ở `<repo>/workspaces/`; để một dòng trong đó trỏ trạm đi nơi
   khác là tự tạo ra đúng cái "hai nguồn sự thật" mà cả bộ cài sinh ra để chặn.
 - Biến mã đọc thẳng từ `os.environ` (`VIDEO_WHISPER_MODEL`, `VIDEO_BROLL_QUERY`,
   `TOPSTORY_ACCENTS`, `REPO_TODAY_INPUT`).
@@ -81,20 +75,24 @@ cách người dùng `embedded` nối hai năng lực lại mà không phải đ
 
 ```
 --station  →  VIDEO_STATION  →  VIDEO_ROOT (tên cũ)  →
-<repo>/studio.local.json  →  <repo>/workspace/
+<repo>/studio.local.json  →  <repo>/workspaces/
 ```
 
-Không đặt gì thì trạm là `<repo>/workspace/` — **kể cả trước khi `init` tạo nó** (lệnh cần trạm
-sẽ báo mã 3 và chỉ `video-studio init`). Không có tầng đoán thư mục ở home: máy dùng trạm ngoài
-thì chọn nó tường minh bằng `VIDEO_STATION` hoặc `video-studio init --station DIR` (ghi vào
-`studio.local.json`). `~/.video` chỉ còn là trạm đời cũ cần quyết định/di chuyển: `init` nhận ra nó để không dựng
-thêm trạm thứ hai. `migrate --to separate` không đoán nơi dời: thiếu `--station` thì hỏi.
+Không đặt gì thì trạm là `<repo>/workspaces/` — **kể cả trước khi `init` tạo nó** (lệnh cần
+trạm sẽ báo mã 3 và chỉ `video-studio init`). Thư mục gốc luôn tên `workspaces`, giống khi cài
+cùng OpcOS (`<OPCOS_WORKSPACES>/video`); trong repo thì chính nó là trạm, không cần thêm tên.
+Không có tầng đoán thư mục ở thư mục cá nhân: máy dùng trạm ngoài thì chọn nó tường minh bằng
+`VIDEO_STATION` hoặc `video-studio init --station DIR` (ghi vào `studio.local.json`).
+Tương thích: `<repo>/workspace/` (số ít, bố cục cũ) mang dấu trạm mà `workspaces` chưa có thì
+vẫn được nhận kèm một dòng khuyến nghị đổi tên thành `workspaces`; có cả hai thì `workspaces` thắng;
+`init` mới không bao giờ tạo thư mục số ít. `migrate --to separate` không đoán nơi dời: thiếu
+`--station` thì hỏi.
 
 `<repo>` là bản clone đã `pip install -e` (hoặc đặt `VIDEO_STUDIO_REPO`). Bản cài wheel không có
 repo — chỉ dùng được `separate`, và không đặt `VIDEO_STATION` thì mọi lệnh cần trạm dừng mã 3.
 
 Trạm **giọng** theo cùng tinh thần: `VOICE_STATION` → `OMNIVOICE_DIR` (tên cũ) → trạm mà repo giọng
-cài cùng venv **đã được chọn** (`studio.local.json` hoặc `workspace/` của nó). Không có gì thì là
+cài cùng venv **đã được chọn** (`studio.local.json` hoặc `workspaces/` của nó). Không có gì thì là
 "chưa có trạm giọng" — không đoán một thư mục ở home.
 
 ## Cây trạm
@@ -136,11 +134,11 @@ nên `--undo` trả lại được.
 
 Trạm nằm TRONG repo, nên trước khi có byte dữ liệu nào ở đó phải có đủ:
 
-1. **`.gitignore`** chặn `workspace/`, `.env`, `.env.*` (trừ `.env.example`), `studio.local.json`,
+1. **`.gitignore`** chặn `workspaces/`, `.env`, `.env.*` (trừ `.env.example`), `studio.local.json`,
    và mọi họ file media/model. `video-studio doctor` kiểm bằng `git check-ignore` chứ không bằng
    cách đọc file — một dòng `!` ở dưới có thể mở lại cả thư mục đã chặn phía trên, và chỉ git
    mới biết luật nào thắng.
-2. **Hook `pre-commit`** (`init` cài, không bao giờ đè hook sẵn có): chặn file dưới `workspace/`,
+2. **Hook `pre-commit`** (`init` cài, không bao giờ đè hook sẵn có): chặn file dưới `workspaces/`,
    `.env`, `studio.local.json`, file media, và dòng thêm mới trông giống token. Bỏ qua có chủ ý:
    `git commit --no-verify`.
 
@@ -174,7 +172,7 @@ việc hiện tại**, không mang lịch sử theo.
 video-studio init [--station DIR] [--mode embedded|separate] [--yes] [--non-interactive]
                   [--migrate] [--dry-run] [--undo]
 video-studio backup --out <file>.zip          # zip cả trạm, trừ scratch/cache/venv/cây git
-video-studio migrate --to separate [--station DIR]   # chuyển workspace/ ra ngoài repo
+video-studio migrate --to separate [--station DIR]   # chuyển workspaces/ ra ngoài repo
 video-studio update                           # git pull --ff-only trên bản clone, không bao giờ xoá gì
 video-studio doctor --json                    # trong đó có kiểm hai nguồn sự thật + hai lớp rào
 ```

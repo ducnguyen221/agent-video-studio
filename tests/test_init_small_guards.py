@@ -35,4 +35,4 @@ def test_a_failed_migrate_gives_back_the_users_empty_target_dir(repo, tmp_path, 
     with pytest.raises(ContractError):
         station.migrate_to_separate(str(target))
     assert target.is_dir() and not any(target.iterdir())
-    assert (repo / "workspace").is_dir()
+    assert (repo / "workspaces").is_dir()

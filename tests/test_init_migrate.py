@@ -430,15 +430,17 @@ def test_station_flag_means_separate_never_asks(tmp_path, monkeypatch, capsys):
     assert local["mode"] == "separate" and local["station_path"] == str(tmp_path / "s")
 
 
-def test_legacy_home_station_detected_without_flag(tmp_path, monkeypatch, capsys):
-    """~/.video đời cũ (chưa station.json, biến chưa đặt) vẫn được nhận ra ⇒ separate, không hỏi."""
+def test_a_legacy_station_in_home_is_not_detected_any_more(tmp_path, monkeypatch, capsys):
+    """Một trạm đời cũ nằm trong thư mục cá nhân không còn được dò hay nhận: `--migrate` không kèm
+    `--station` thì không có gì để nhận ⇒ mã 2, và đường trong home không hề được nhắc."""
     make_repo_assets(tmp_path, monkeypatch)
     home_st = make_legacy_station(tmp_path)
-    os.replace(home_st, tmp_path / "home" / ".video")
-    rc, out, _ = run(["init", "--migrate", "--dry-run", "--json"], capsys)
-    assert rc == 0
-    res = last_json(out)
-    assert res["mode"] == "separate" and "~/.video" in res["reason"]
+    hidden = tmp_path / "home" / ".old-station"
+    os.replace(home_st, hidden)
+    monkeypatch.setattr("sys.stdin", io.StringIO(""))
+    rc, out, err = run(["init", "--migrate", "--dry-run", "--json"], capsys)
+    assert rc == 2
+    assert str(hidden) not in err and str(hidden) not in out
 
 
 def test_embedded_needs_a_human_choice(tmp_path, monkeypatch, capsys):
@@ -450,11 +452,12 @@ def test_embedded_needs_a_human_choice(tmp_path, monkeypatch, capsys):
     monkeypatch.setattr("sys.stdin", io.StringIO(""))
     rc, out, err = run(["init", "--json"], capsys)
     assert rc == 2 and "embedded" in err and "KHUYẾN NGHỊ" in err
-    assert not (repo / "workspace").exists()
+    assert not (repo / "workspaces").exists()
     rc, out, _ = run(["init", "--yes", "--json"], capsys)
     assert rc == 0
     assert last_json(out)["mode"] == "embedded"
-    assert (repo / "workspace" / "station.json").is_file()
+    assert (repo / "workspaces" / "station.json").is_file()
+    assert not (repo / "workspace").exists()
 
 
 def test_migrate_refuses_embedded(tmp_path, monkeypatch, capsys):

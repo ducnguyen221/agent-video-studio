@@ -140,14 +140,14 @@ def test_start_here_runs_the_sample_the_way_expected_md_does():
 STALE_DOCS = ("README.md", "README.vi.md", "GUIDE.md", "GUIDE.vi.md", "START-HERE.md",
               "INSTALL.md", "docs/INSTALL.md", "docs/WORKSPACE.md", "skills/video-routing/SKILL.md",
               "docs/index.html", "docs/install/index.html")
-# (câu sai, vì sao sai). Từ 0.2.2 `init` KHÔNG tự nhận `~/.video` có sẵn: `--yes` = embedded,
-# trạm cũ chỉ được nhận qua `--station` / `--migrate` hoặc câu trả lời [2];
-# không có người thì dùng trạm mới (`station.py::_legacy_choice`). Câu cũ dạy agent chờ một lượt nhận
-# trạm im lặng không còn tồn tại — đúng kiểu lỗi của lượt cài Mac 29/09.
+# (câu sai, vì sao sai). Từ 0.2.2 `init` KHÔNG tự nhận một trạm tình cờ có sẵn ở thư mục cá nhân
+# (nay còn không dò nó nữa): `--yes` = embedded, trạm ngoài chỉ được nhận qua `--station` /
+# `--migrate`. Câu cũ dạy agent chờ một lượt nhận trạm im lặng không còn tồn tại — đúng kiểu lỗi
+# của lượt cài Mac 29/09.
 STALE_CLAIMS = (
     ("detects it and does not ask", "init không tự nhận trạm cũ từ 0.2.2"),
     ("tự nhận ra và không hỏi", "init không tự nhận trạm cũ từ 0.2.2"),
-    ("`init` tự chọn `separate`, không hỏi", "~/.video tình cờ có mặt không được tự chọn"),
+    ("`init` tự chọn `separate`, không hỏi", "trạm tình cờ có mặt ở thư mục cá nhân không được tự chọn"),
     ("init --yes` tự nhận", "--yes luôn là embedded"),
 )
 

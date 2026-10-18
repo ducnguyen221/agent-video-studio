@@ -5,7 +5,7 @@ Chế độ `embedded` đặt trạm (project đang dựng, footage, nháp) và 
 mở lại bằng dòng `!` là đủ để rò. Hook này là **lớp rào thứ hai**, và nó nhìn vào thứ đã stage
 chứ không nhìn vào luật:
 
-    - file dưới `workspace/`, `.env` / `.env.*` (trừ `.env.example`), `studio.local.json`
+    - file dưới `workspaces/` (và `workspace/` của bố cục cũ), `.env` / `.env.*` (trừ `.env.example`), `studio.local.json`
     - file media/model (mp4, mov, mp3, wav, png, woff2, pt…) — repo này dạy cách dựng video,
       nó không chứa video
     - dòng THÊM MỚI trong diff trông giống token (GitHub, Hugging Face, OpenAI/Anthropic, AWS,
@@ -19,7 +19,7 @@ import re
 import subprocess
 import sys
 
-BLOCKED_PREFIXES = ("workspace/",)
+BLOCKED_PREFIXES = ("workspaces/", "workspace/")
 BLOCKED_FILES = ("studio.local.json",)
 MEDIA_EXT = {".mp4", ".mov", ".webm", ".mkv", ".mp3", ".wav", ".m4a", ".aac", ".flac", ".ogg",
              ".png", ".jpg", ".jpeg", ".webp", ".gif", ".woff", ".woff2", ".ttf", ".otf",

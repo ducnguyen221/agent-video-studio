@@ -218,7 +218,7 @@ def station_checks(st, src):
     if not st:
         # Bản cài wheel, không biến: không có tầng mặc định nào để đoán.
         return [_check("station", False, f"(chưa chọn — {src})", hint=_env.UNSET_HINT)]
-    hint = ("chưa có trạm video — `video-studio init` (mặc định tạo workspace/ trong repo; "
+    hint = ("chưa có trạm video — `video-studio init` (mặc định tạo workspaces/ trong repo; "
             "trạm ngoài: đặt VIDEO_STATION hoặc `init --station DIR`)")
     out = [_check("station", os.path.isdir(st), f"{st} ({src})", hint=hint)]
     if _env.env("VIDEO_ROOT") and not _env.env("VIDEO_STATION"):
@@ -261,7 +261,7 @@ def opcos_station_check(src):
         return [_check("opcos-station", False, f"OPCOS_WORKSPACES={base}: {path} chưa là trạm",
                        level="warn", hint="muốn dùng trạm OpcOS: tạo trạm đó trước (`video-studio init "
                                           f"--station \"{path}\"`)")]
-    if src in ("workspace", "default", "unset"):
+    if src in ("workspaces", "workspace", "default", "unset"):
         return [_check("opcos-station", False, f"{path} là trạm OpcOS nhưng chưa được chọn ({src})",
                        level="warn", hint=f"`video-studio init --mode separate --station \"{path}\"`")]
     return []
@@ -269,18 +269,21 @@ def opcos_station_check(src):
 
 def two_sources_check():
     repo = _env.repo_root()
-    if not repo or not os.path.isdir(os.path.join(repo, _env.WORKSPACE)):
+    ws = _env.embedded_station(repo) if repo else None
+    if not ws or not os.path.isdir(ws):
         return []
-    ws = os.path.join(repo, _env.WORKSPACE)
     others = [n for n in ("VIDEO_STATION", "VIDEO_ROOT") if _env.env(n)]
     if _env.local_config(repo).get("mode") == "separate":
         others.append("studio.local.json=separate")
-    if _env.has_marker(_env.legacy_station()):
-        others.append("~/.video")
     out = [_check("two-sources", not others, f"{ws} + {', '.join(others)}" if others else ws,
                   hint="hai nguồn sự thật cho một repo: giữ MỘT trạm — gộp dữ liệu rồi xoá "
-                       "workspace/ hoặc gỡ biến/trạm ngoài",
+                       "workspaces/ hoặc gỡ biến/trạm ngoài",
                   code=contract.CONTRACT_ERROR)]
+    note = _env.old_layout_note(repo)
+    if note:
+        out.append(_check("old-layout", False, note, level="warn",
+                          hint="bố cục cũ `workspace/` (số ít) vẫn dùng được; đổi tên/dời sang "
+                               "`workspaces/` khi tiện"))
     low = repo.lower()
     cloud = [m for m in CLOUD_MARKERS if m in low]
     out.append(_check("cloud-sync", not cloud, repo, level="warn",
@@ -289,7 +292,7 @@ def two_sources_check():
     return out
 
 
-IGNORE_MUST = ("workspace", ".env", "studio.local.json")
+IGNORE_MUST = ("workspaces", ".env", "studio.local.json")
 
 
 def embedded_guard_checks():
@@ -300,7 +303,8 @@ def embedded_guard_checks():
     thể mở lại cả thư mục đã chặn phía trên, và chỉ git mới biết luật nào thắng.
     """
     repo = _env.repo_root()
-    if not repo or not os.path.isdir(os.path.join(repo, _env.WORKSPACE)):
+    ws = _env.embedded_station(repo) if repo else None
+    if not ws or not os.path.isdir(ws):
         return []
     if not os.path.isdir(os.path.join(repo, ".git")):
         return [_skip("gitignore", "repo chưa `git init` — chưa có gì để chặn")]
@@ -316,7 +320,7 @@ def embedded_guard_checks():
                   ("git KHÔNG chặn: " + ", ".join(leaked)) if leaked else
                   "git chặn " + ", ".join(IGNORE_MUST),
                   hint="chế độ embedded để dữ liệu trạm trong repo — khôi phục các dòng "
-                       "workspace/, .env, studio.local.json trong .gitignore trước khi commit",
+                       "workspaces/, .env, studio.local.json trong .gitignore trước khi commit",
                   code=contract.CONTRACT_ERROR)]
     hook = os.path.join(repo, ".git", "hooks", "pre-commit")
     out.append(_check("pre-commit", os.path.isfile(hook), hook, level="warn",

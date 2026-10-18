@@ -58,7 +58,7 @@ giữa lượt render chứ không phải lúc cài. Đây là đường **duy n
 người dùng thường (chế độ embedded, không biến môi trường); lệnh đầy đủ cho từng hệ điều hành —
 torch đúng phần cứng, `voice-studio init --yes`, tạo giọng mặc định — ở
 [INSTALL.md mục 5b](../INSTALL.md#5b-lồng-tiếng-tuỳ-chọn-nặng--hỏi-trước). Cần **`-e`**: repo
-giọng tìm trạm của nó (`../agent-voice-studio/workspace/`) qua bản clone.
+giọng tìm trạm của nó (`../agent-voice-studio/workspaces/`) qua bản clone.
 
 > **Ngoại lệ có chủ đích:** luật đẻ repo của hệ này nói "không dùng `pip install -e`". Ở đây
 > dùng, vì trạm giọng và trạm video là **hai bản clone sống động** phải cùng venv và còn được
@@ -92,18 +92,19 @@ video-studio init --non-interactive --yes    # CI / lịch chạy: không hỏi 
 = dừng). Chạy không có người: có biến thì dùng luôn đường đó và in một dòng; không có biến thì
 thoát **mã 2** đòi `--station DIR`.
 
-**`embedded` là mặc định và là khuyến nghị**: trạm ở `<repo>/workspace/`, biến cấu hình ở
+**`embedded` là mặc định và là khuyến nghị**: trạm ở `<repo>/workspaces/`, biến cấu hình ở
 `<repo>/.env`, bấm Enter là xong, không phải đặt biến môi trường nào. Chọn `separate` khi bạn
 dùng nhiều máy, rành kỹ thuật, hoặc repo này là bản public của chính bạn. Agent cài nên **phân
 tích rồi khuyến nghị**, không hỏi trống.
 
 `init` **chỉ bỏ qua câu hỏi khi trạm đã được chọn**. Máy đã đặt biến `VIDEO_STATION`/`VIDEO_ROOT`
-(hoặc `studio.local.json` đã ghi `separate`) thì bản trần dùng trạm đó và nói rõ lý do. `~/.video`
-chỉ tình cờ mang dấu trạm thì **không** tự nhận: `init` hỏi ba đường ([1] trạm mới, [2] nhận trạm
-cũ, [3] dừng; Enter = [1]); với `--yes` nó không hỏi, dùng trạm mới embedded và in một dòng nêu
-trạm cũ; `--non-interactive` thiếu `--yes`/`--mode` thì thoát mã 2 — nhận trạm đó phải bằng `--station <thư mục>`, `--migrate` hoặc trả lời [2]. Xin `embedded` khi máy đã có trạm ngoài là **lỗi mã 2**
-("hai nguồn sự thật") chứ không phải một cảnh báo — muốn dựng trạm trong repo thì gỡ biến hoặc
-dời trạm cũ trước.
+(hoặc `studio.local.json` đã ghi `separate`) thì bản trần dùng trạm đó và nói rõ lý do. Có
+`OPCOS_WORKSPACES` mà chạy tương tác thì Enter ở bảng chọn ra `<biến>/video` (có hỏi xác nhận/đổi);
+`--yes` không bao giờ hỏi và ra `<repo>/workspaces`; `--non-interactive` thiếu
+`--yes`/`--mode` thì thoát mã 2. Xin `embedded` khi máy đã chọn trạm ngoài là **lỗi mã 2**
+("hai nguồn sự thật") chứ không phải một cảnh báo — muốn dựng trạm trong repo thì gỡ biến trước.
+Bản cài cũ có `<repo>/workspace/` (số ít) vẫn được nhận kèm một dòng khuyến nghị đổi sang
+`workspaces`.
 
 Không có ai trả lời (CI, scheduled task) mà chưa chọn ⇒ `init` in bảng lựa chọn rồi thoát
 **mã 2, chưa ghi byte nào**. Cờ `--non-interactive` tự khai "không có ai ngồi đây"; nó **không**
@@ -162,7 +163,7 @@ video-studio edit --footage <dir> --out <dir> --backend vendored
 1. **`python3` là 3.9** trên Mac mới — tạo venv bằng `python3.12`, không bằng `python3`.
 2. **Shell của agent không nạp `~/.zshrc`/`~/.zprofile`.** Biến môi trường hay `PATH` người dùng
    đặt ở đó có thể vô hình với agent; kiểm bằng `zsh -lic 'echo $TÊN_BIẾN'` (hoặc `$PATH`) thay vì
-   `echo` trong shell của agent. Người dùng embedded không cần biến nào — `workspace/` tự phân giải.
+   `echo` trong shell của agent. Người dùng embedded không cần biến nào — `workspaces/` tự phân giải.
 3. **Không có PowerShell mặc định** — ba file `scripts/*.ps1` là vỏ tiện cho Windows; trên
    macOS gọi thẳng `video-studio …` (bản cài video-use dùng `scripts/install-video-use.sh`).
 4. **Chromium ghim theo bản engine** chưa có sẵn trong cache ⇒ chạy

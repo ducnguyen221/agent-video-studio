@@ -75,7 +75,7 @@ video-studio doctor          # after init: before there is a station, doctor exi
 ```
 
 `init` **presents a table before doing anything**, rather than asking an open question.
-`embedded` — station at `<repo>/workspace/`, configuration in `<repo>/.env` — is the
+`embedded` — station at `<repo>/workspaces/`, configuration in `<repo>/.env` — is the
 **recommendation**: press Enter and you are done, with no environment variables to set, and
 `init` copies `.env.example` to `.env` for you to fill in. Choose `separate` when you work
 across machines, are comfortable with the technical side, or this repository is your own public

@@ -33,12 +33,12 @@ SCRIPTS = sorted((p for rel, p in repo_files() if rel.lower().endswith(".ps1")),
                  key=lambda p: p.as_posix())
 WRAPPER_DIR = sorted((ROOT / "scripts").glob("*.ps1")) if (ROOT / "scripts").is_dir() else []
 
-#: Đoán trạm ở home (`$HOME/.video`, `Join-Path $HOME '.video'`): máy cài embedded có trạm ở
-#: `<repo>/workspace/`, và script đoán home sẽ cài vào một trạm không ai dùng. Trạm do package
-#: phân giải (biến → studio.local.json → <repo>/workspace). Áp cho cả `.ps1` lẫn `.sh`.
+#: Đoán trạm ở home (`$HOME/.tts`, `Join-Path $HOME '.tts'` và tên ẩn tương tự): máy cài embedded có
+#: trạm ở `<repo>/workspaces/`, và script đoán home sẽ cài vào một trạm không ai dùng. Trạm do
+#: package phân giải (biến → studio.local.json → <repo>/workspaces). Áp cho cả `.ps1` lẫn `.sh`.
 HOME_STATION_RULE = (
     r"(?i)\$HOME[\\/]\.(video|voice|tts)\b|Join-Path\s+\$HOME\s+['\"]\.(video|voice|tts)\b",
-    "đoán trạm ở home — trạm do package phân giải (biến → studio.local.json → <repo>/workspace)")
+    "đoán trạm ở home — trạm do package phân giải (biến → studio.local.json → <repo>/workspaces)")
 
 RULES = (
     HOME_STATION_RULE,
@@ -146,7 +146,7 @@ def test_shell_installer_is_posix_and_strict(path):
 
 
 @pytest.mark.parametrize("snippet,caught", [
-    ('$p = "$env:USERPROFILE\\.video"', True),
+    ('$p = "$env:USERPROFILE\\.tts"', True),
     ('$py = "C:\\Users\\x\\.venv\\python"', True),
     ('$py = "C:/Users/x/.venv/python"', True),   # dấu ngăn XUÔI cũng là ổ đĩa — từng lọt
     ("Invoke-WebRequest https://example.test/x", False),   # `s:/` không phải ổ đĩa
@@ -160,8 +160,8 @@ def test_shell_installer_is_posix_and_strict(path):
     ("# xem trước một project", True),           # còn dấu -> đỏ
     ("$argv = @('preview'); & $exe @argv", False),
     ("$c = Get-Command 'python'; & $c.Source -c 'import sys'", False),
-    ("if (-not $Station) { $Station = Join-Path $HOME '.video' }", True),
-    ('STATION="${VIDEO_STATION:-$HOME/.video}"', True),
+    ("if (-not $Station) { $Station = Join-Path $HOME '.tts' }", True),
+    ('STATION="${VIDEO_STATION:-$HOME/.tts}"', True),
     ("# never guessed as a folder under $HOME", False),
 ])
 def test_rules_catch_their_target(snippet, caught):

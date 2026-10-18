@@ -4,7 +4,7 @@ Một "project HyperFrames" = ba file cấu hình (`package.json`, `hyperframes.
 + một `index.html` do template sinh ra mỗi lần render. Repo không giữ project nào: mọi project
 sống trong trạm, dưới `<trạm>/projects/<tên>/`.
 
-Bản `.tts` đời cũ neo đường cứng (`C:\\…\\.video\\news`, `…\\.video\\demo`) ngay trong template.
+Bản `.tts` đời cũ neo đường cứng vào một thư mục ẩn ở thư mục cá nhân (tên `news` và `demo` bên dưới) ngay trong template.
 Ở đây template gọi `projects.ensure("news")`: chỗ đặt do `_env` quyết, seed cấu hình lấy từ
 `<trạm>/demo/` đúng như `_ensure_project()` cũ vẫn làm (chép một lần, không đè bản người dùng
 đã sửa).

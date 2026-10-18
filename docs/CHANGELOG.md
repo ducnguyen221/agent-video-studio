@@ -7,27 +7,24 @@ kiểm).
 
 ## Chưa phát hành
 
-- `video-studio init --mode separate` không còn rơi về `~/.video` khi thiếu `--station`: có
-  `OPCOS_WORKSPACES` thì gợi ý `<biến>/video` (tuyệt đối) và hỏi nhận/đổi; không có biến thì hỏi
-  đường (Enter rỗng = dừng). Không có người trả lời: có biến thì dùng luôn đường đó và in một
-  dòng, không có biến thì thoát mã 2 đòi `--station`. `~/.video` chỉ còn là trạm cũ để nhận ra
-  và quyết định. Hàm nội bộ `default_station()` đổi tên `legacy_station()`.
-- `init` không bao giờ tự nhận trạm cũ dưới home (`~/.video` mang dấu), kể cả với `--mode separate`.
-  Có người thì hỏi ba đường — [1] trạm mới (Enter; `<OPCOS_WORKSPACES>/video` nếu biến đã đặt, hỏi
-  xác nhận/đổi, không thì `<repo>/workspace`), [2] nhận trạm cũ, [3] dừng. `--yes` (có hay không có
-  terminal) không bao giờ hỏi: dùng trạm mới embedded `<repo>/workspace` và in một dòng nêu trạm
-  cũ cùng `--station <đường>`. `--non-interactive` thiếu cả `--yes` lẫn `--mode` thoát mã 2 (không
-  đoán chế độ). `--mode embedded` khi có trạm cũ vẫn bị từ chối ("hai nguồn sự thật"), nay kèm
-  ba lối ra. `--mode separate --yes` không còn hỏi: có biến thì `<biến>/video`, không thì mã 2.
-  Nhận trạm cũ chỉ qua `--station`, `--migrate` hoặc câu trả lời [2]; ai quen `--mode separate` để
-  nhận trạm cũ nay dùng `--station <đường>`.
+- **Bố cục `workspaces`:** thư mục gốc luôn tên `workspaces`. Cài riêng lẻ thì trạm nhúng là chính
+  `<repo>/workspaces` (thay cho `<repo>/workspace`); cài cùng OpcOS thì trạm là
+  `<OPCOS_WORKSPACES>/video`. Bản cài cũ có `<repo>/workspace` mang dấu trạm vẫn được nhận kèm một
+  dòng khuyến nghị đổi tên thành `workspaces`; có cả hai thì `workspaces` thắng; `init` mới không
+  bao giờ tạo thư mục số ít. `.gitignore` và hook `pre-commit` chặn cả hai tên.
+- **Cảnh báo:** có `OPCOS_WORKSPACES` thì Enter/xác nhận ra `<biến>/video`, còn `--yes` ra
+  `<repo>/workspaces`.
+- Thư mục trạm cũ ẩn trong thư mục cá nhân không còn được tự nhận; trỏ vào bằng
+  `--station <đường>`. Mọi cơ chế dò, nhận và nhắc nó (kể cả câu hỏi ba đường) đã bỏ.
+- `init`: `--yes` không bao giờ hỏi và luôn là embedded; `--non-interactive` thiếu cả `--yes` lẫn
+  `--mode` thoát mã 2 (không đoán chế độ); `--mode separate` thiếu `--station` thì có
+  `OPCOS_WORKSPACES` ⇒ `<biến>/video` (có người thì hỏi xác nhận/đổi, không người thì dùng luôn và
+  in một dòng), không có biến ⇒ có người thì hỏi đường, không người thì mã 2 đòi `--station`.
 - `migrate` dời hỏng thì trả lại thư mục đích rỗng mà người dùng đã tạo sẵn; đích là một FILE
   (`--station` hay câu trả lời) thì dừng mã 2 với thông báo rõ thay vì traceback.
-- Lựa chọn đã ghi trong `studio.local.json` thắng trạm cũ dưới home: chạy lại `init` không hỏi lại
-  ba đường, không đổi chế độ, `--mode embedded` không bị từ chối; chỉ in một dòng nêu trạm cũ.
 - Đường dán có cặp ngoặc kép bao quanh (`"C:\\x"`, kiểu "Copy as path" của Windows) được bóc ngoặc ở
   mọi chỗ nhập đường; `migrate` kiểm `.env` trong kho secret trước câu y/N thay vì sau.
-- `video-studio migrate --to separate` hỏi nơi dời thay vì tự dời vào `~/.video`: gợi ý
+- `video-studio migrate --to separate` hỏi nơi dời thay vì tự dời vào một thư mục ẩn: gợi ý
   `<OPCOS_WORKSPACES>/video` nếu biến đã đặt, hiện đường tuyệt đối đích cùng số file/dung lượng
   rồi xin xác nhận y/N. Không có người trả lời (`--non-interactive`, hoặc không có terminal) thì
   `--station DIR` là bắt buộc, thiếu thì thoát mã 2. Đích nằm trong trạm đang dời bị từ chối.

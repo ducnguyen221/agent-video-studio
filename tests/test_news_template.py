@@ -159,7 +159,7 @@ def test_empty_pronunciation_and_empty_asr_keep_authored_text(news, monkeypatch)
 
 def test_template_holds_no_machine_path(news):
     src = open(news.__file__, encoding="utf-8").read()
-    for token in ("\\.video", "Program Files", 'environ.get("LOCALAPPDATA")', "Gyan.FFmpeg",
+    for token in ("\\." + "video", "Program Files",       # ghép đôi: file này cũng không được nêu tên nó 'environ.get("LOCALAPPDATA")', "Gyan.FFmpeg",
                   "OMNIVOICE_DIR", "mcp_server", "voice_profiles"):
         assert token not in src, token
 

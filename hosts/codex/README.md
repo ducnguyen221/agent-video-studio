@@ -9,7 +9,7 @@ desktop sẽ hỏi tin cậy (trust) thư mục — bấm đồng ý để agent
 **Sandbox:** sandbox của Codex có thể chặn `winget`/`brew`, chặn mạng (lúc `pip install`, lúc
 HyperFrames tải Chromium) hoặc chặn ghi ra ngoài thư mục project (trạm ngoài repo). Khi bị chặn,
 **không** đổi thiết lập sandbox để lách: đưa đúng lệnh cho người dùng tự chạy trong terminal
-thường rồi dán kết quả lại. Trạm mặc định `workspace/` nằm trong repo nên không cần ghi ra ngoài.
+thường rồi dán kết quả lại. Trạm mặc định `workspaces/` nằm trong repo nên không cần ghi ra ngoài.
 
 **Skill:** cách chắc chắn là bảo Codex "đọc `skills/video-routing/SKILL.md` rồi làm theo". Khi mở
 thư mục repo, Codex còn thấy adapter `.agents/skills/` ở gốc repo, trỏ về từng skill gốc

@@ -17,7 +17,7 @@ Thứ bị gỡ — chỉ những thứ `init` tạo ra và dựng lại đượ
     khác không bao giờ bị đụng.
 
 Thứ KHÔNG BAO GIỜ bị đụng: `projects/`, `demo/`, `templates/`, `station.json`, nháp, cache, cả
-thư mục trạm (kể cả `<repo>/workspace/`), bản cài Python. Gỡ package là bước riêng
+thư mục trạm (kể cả `<repo>/workspaces/`), bản cài Python. Gỡ package là bước riêng
 (`pip uninstall agent-video-studio`) mà lệnh này in ra ở cuối.
 
 Không xoá thẳng: mọi thứ bị gỡ được DỜI vào `<trạm>/.video-studio/runs/<id>/prev/` kèm nhật ký,

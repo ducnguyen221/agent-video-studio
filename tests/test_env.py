@@ -19,24 +19,23 @@ def _repo(tmp_path, monkeypatch):
 
 # ── trạm ────────────────────────────────────────────────────────────────────────────────
 
-def test_no_variable_means_the_repo_workspace_even_before_init(tmp_path, monkeypatch):
-    """Đ4: người dùng không đặt gì ⇒ trạm là `<repo>/workspace/` — kể cả khi `init` chưa tạo nó.
+def test_no_variable_means_the_repo_workspaces_even_before_init(tmp_path, monkeypatch):
+    """Đ4: người dùng không đặt gì ⇒ trạm là `<repo>/workspaces/` — kể cả khi `init` chưa tạo nó.
 
-    Trước đây tầng cuối là `~/.video`: một thư mục ẩn ở home mà người dùng public không hề biết
-    là có, và máy nào tình cờ có nó thì mọi bản clone đều dùng chung mà không ai chọn.
+    Không có tầng cuối nào là thư mục ẩn ở home mà người dùng public không hề biết là có.
     """
     repo = _repo(tmp_path, monkeypatch)
-    assert not (repo / "workspace").exists()
-    assert _env.resolve_station() == (str(repo / "workspace"), "workspace")
+    assert not (repo / "workspaces").exists()
+    assert _env.resolve_station() == (str(repo / "workspaces"), "workspaces")
 
 
-def test_home_dot_video_is_never_guessed(tmp_path, monkeypatch):
-    """`~/.video` có đủ dấu trạm vẫn KHÔNG được chọn khi không ai chọn nó (biến / init)."""
+def test_a_hidden_folder_in_home_is_never_guessed(tmp_path, monkeypatch):
+    """Một thư mục ẩn ở home có đủ dấu trạm vẫn KHÔNG được chọn khi không ai chọn nó."""
     repo = _repo(tmp_path, monkeypatch)
-    legacy = tmp_path / "home" / ".video"
-    legacy.mkdir()
-    (legacy / "station.json").write_text("{}", encoding="utf-8")
-    assert _env.resolve_station() == (str(repo / "workspace"), "workspace")
+    hidden = tmp_path / "home" / ".station-decoy"
+    hidden.mkdir()
+    (hidden / "station.json").write_text("{}", encoding="utf-8")
+    assert _env.resolve_station() == (str(repo / "workspaces"), "workspaces")
 
 
 def test_without_a_repo_there_is_no_default_station(tmp_path):
@@ -53,7 +52,8 @@ def test_without_a_repo_there_is_no_default_station(tmp_path):
 
 def test_init_command_matches_the_station_kind(tmp_path, monkeypatch):
     repo = _repo(tmp_path, monkeypatch)
-    assert _env.init_command(str(repo / "workspace")) == "video-studio init"
+    assert _env.init_command(str(repo / "workspaces")) == "video-studio init"
+    assert _env.init_command(str(repo / "workspace")) == "video-studio init"      # bố cục cũ
     ext = str(tmp_path / "ext")
     assert _env.init_command(ext) == f'video-studio init --station "{ext}"'
 
@@ -81,8 +81,8 @@ def test_blank_env_counts_as_unset(monkeypatch):
 
 def test_local_config_then_workspace(tmp_path, monkeypatch):
     repo = _repo(tmp_path, monkeypatch)
-    (repo / "workspace").mkdir()
-    assert _env.resolve_station() == (str(repo / "workspace"), "workspace")
+    (repo / "workspaces").mkdir()
+    assert _env.resolve_station() == (str(repo / "workspaces"), "workspaces")
     (repo / "studio.local.json").write_text(json.dumps({"station_path": str(tmp_path / "ext")}),
                                             encoding="utf-8")
     assert _env.resolve_station() == (str(tmp_path / "ext"), "studio.local.json")
@@ -90,9 +90,9 @@ def test_local_config_then_workspace(tmp_path, monkeypatch):
 
 def test_local_config_relative_path_is_relative_to_repo(tmp_path, monkeypatch):
     repo = _repo(tmp_path, monkeypatch)
-    (repo / "studio.local.json").write_text(json.dumps({"station_path": "workspace"}),
+    (repo / "studio.local.json").write_text(json.dumps({"station_path": "workspaces"}),
                                             encoding="utf-8")
-    assert _env.resolve_station()[0] == str(repo / "workspace")
+    assert _env.resolve_station()[0] == str(repo / "workspaces")
 
 
 def test_env_beats_local_config(tmp_path, monkeypatch):
@@ -400,10 +400,11 @@ def test_opcos_station_ignores_dotenv(tmp_path, monkeypatch):
 def test_resolve_station_ignores_opcos_workspaces(tmp_path, monkeypatch):
     repo = _repo(tmp_path, monkeypatch)
     _opcos_ws(tmp_path, monkeypatch)
-    assert _env.resolve_station() == (str(repo / "workspace"), "workspace")
+    assert _env.resolve_station() == (str(repo / "workspaces"), "workspaces")
 
 
-def test_home_dot_video_marker_still_not_chosen_in_sandbox(sandbox_home, tmp_path, monkeypatch):
+def test_a_hidden_home_folder_with_a_marker_is_still_not_chosen_in_sandbox(
+        sandbox_home, tmp_path, monkeypatch):
     repo = _repo(tmp_path, monkeypatch)
-    assert _env.has_marker(str(sandbox_home / ".video"))
-    assert _env.resolve_station() == (str(repo / "workspace"), "workspace")
+    assert _env.has_marker(str(sandbox_home / ".station-decoy"))
+    assert _env.resolve_station() == (str(repo / "workspaces"), "workspaces")

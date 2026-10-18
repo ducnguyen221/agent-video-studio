@@ -341,7 +341,7 @@ def test_two_sources_is_red(machine, good_station, tmp_path, monkeypatch, capsys
     repo = tmp_path / "repo"
     (repo / "video_studio").mkdir(parents=True)
     (repo / "pyproject.toml").write_text("", encoding="utf-8")
-    (repo / "workspace").mkdir()
+    (repo / "workspaces").mkdir()
     monkeypatch.setenv("VIDEO_STUDIO_REPO", str(repo))
     rc, out, _ = run(["--json"], capsys)
     # MÃ 2, không phải 3: hai nguồn sự thật là lỗi CẤU HÌNH — cài thêm gì cũng không chữa
@@ -361,7 +361,7 @@ def test_the_worst_code_wins_when_several_checks_are_red(machine, good_station, 
     repo = tmp_path / "repo"
     (repo / "video_studio").mkdir(parents=True)
     (repo / "pyproject.toml").write_text("", encoding="utf-8")
-    (repo / "workspace").mkdir()
+    (repo / "workspaces").mkdir()
     monkeypatch.setenv("VIDEO_STUDIO_REPO", str(repo))
     machine.node = "v20.11.1"                        # quá cũ ⇒ check `node` đỏ với mã 3
     rc, out, _ = run(["--json"], capsys)
@@ -416,7 +416,7 @@ def _embedded_repo(tmp_path, monkeypatch, with_git=True):
     repo = tmp_path / "repo"
     (repo / "video_studio").mkdir(parents=True)
     (repo / "pyproject.toml").write_text("", encoding="utf-8")
-    (repo / "workspace").mkdir()
+    (repo / "workspaces").mkdir()
     if with_git:
         (repo / ".git" / "hooks").mkdir(parents=True)
     monkeypatch.setenv("VIDEO_STUDIO_REPO", str(repo))
@@ -484,16 +484,16 @@ def test_no_repo_no_variable_is_code_3_and_asks_to_choose(machine, capsys):
 
 
 def test_repo_without_workspace_points_to_plain_init(machine, tmp_path, monkeypatch, capsys):
-    """Clone xong chưa init: trạm là `<repo>/workspace/`, lời khuyên là `video-studio init` —
-    không phải `--station <repo>/workspace` (thành trạm "ngoài repo" nằm trong repo)."""
+    """Clone xong chưa init: trạm là `<repo>/workspaces/`, lời khuyên là `video-studio init` —
+    không phải `--station <repo>/workspaces` (thành trạm "ngoài repo" nằm trong repo)."""
     repo = tmp_path / "repo"
     (repo / "video_studio").mkdir(parents=True)
     (repo / "pyproject.toml").write_text("[project]\n", encoding="utf-8")
     monkeypatch.setenv("VIDEO_STUDIO_REPO", str(repo))
     rc, out, err = run(["--json"], capsys)
     res = last_json(out)
-    assert rc == 3 and res["station"] == str(repo / "workspace")
-    assert "(workspace)" in _check(res, "station")["detail"]
+    assert rc == 3 and res["station"] == str(repo / "workspaces")
+    assert "(workspaces)" in _check(res, "station")["detail"]
     assert "video-studio init" in err and '--station "' not in _check(res, "station")["hint"]
 
 

@@ -22,19 +22,19 @@ nothing: it names what is missing and how to install it.
 
 `video-studio init` asks you to pick one:
 
-- **embedded** (recommended for new users) — the station is `workspace/` inside the repo, ignored
+- **embedded** (recommended for new users) — the station is `workspaces/` inside the repo, ignored
   by git. One folder holds everything. Do not delete the repo folder to reinstall: your projects
   live there.
 - **separate** — the station has its own folder, which you choose (for example `<OPCOS_WORKSPACES>/video`). Suits several machines or a
   repo that is your own public one. Set `VIDEO_STATION` so every other tool finds it.
 
 A station that was already chosen — the `VIDEO_STATION` variable, or an earlier `separate` choice
-saved in `studio.local.json` — is used as before, without asking. An older station that merely
-sits at `~/.video` is **not** adopted on its own: `init` shows three options (new station, old
-station, stop) and asks. With `--yes` it never asks: it uses the new embedded station and prints
-one line naming the old one, which it leaves untouched; `--non-interactive` without `--yes` or
-`--mode` exits with code 2. To use the old station run `init --station
-DIR` (or answer [2], or `--migrate` for an old layout).
+saved in `studio.local.json` — is used as before, without asking. `--yes` never asks and always means
+embedded (`<repo>/workspaces`); `--non-interactive` without `--yes` or `--mode` exits with code 2.
+With `OPCOS_WORKSPACES` set, pressing Enter at the interactive choice goes to `<variable>/video`
+(you are asked to confirm or change the path). An older `<repo>/workspace` (singular) station is
+still recognised, with a one-line reminder to rename it to `workspaces`. To point at any other
+station use `init --station DIR` (or `--migrate` for an old layout).
 
 ## 4. Adopt an existing station
 

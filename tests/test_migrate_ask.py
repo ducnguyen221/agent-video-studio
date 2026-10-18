@@ -1,4 +1,4 @@
-"""`video-studio migrate --to separate` phải HỎI nơi dời, không tự dời vào `~/.video`.
+"""`video-studio migrate --to separate` phải HỎI nơi dời, không tự dời vào một thư mục ẩn ở thư mục cá nhân.
 
 Luật: không có `--station` ⇒ hỏi (gợi ý `<OPCOS_WORKSPACES>/video` nếu biến có), hiện đường
 tuyệt đối + số file/dung lượng rồi xin xác nhận y/N; không có người ⇒ dừng mã 2. Biến chỉ đọc
@@ -21,8 +21,8 @@ def repo(tmp_path, monkeypatch):
     (r / ".env.example").write_text("# khuon\nVIDEO_FONT=\n", encoding="utf-8")
     monkeypatch.setenv("VIDEO_STUDIO_REPO", str(r))
     station.do_init(mode="embedded")
-    (r / "workspace" / "projects" / "news").mkdir(parents=True)
-    (r / "workspace" / "projects" / "news" / "meta.json").write_text("{}", encoding="utf-8")
+    (r / "workspaces" / "projects" / "news").mkdir(parents=True)
+    (r / "workspaces" / "projects" / "news" / "meta.json").write_text("{}", encoding="utf-8")
     return r
 
 
@@ -43,7 +43,7 @@ def test_no_station_asks_and_takes_the_typed_destination(repo, tmp_path):
     res = station.migrate_to_separate(ask=ask)
     assert res["station"] == str(target)
     assert (target / "projects" / "news" / "meta.json").is_file()
-    assert not (repo / "workspace").exists()
+    assert not (repo / "workspaces").exists()
 
 
 def test_the_question_suggests_workspaces_video_and_shows_absolute_path_and_size(
@@ -71,7 +71,7 @@ def test_a_relative_opcos_workspaces_is_shown_and_used_as_absolute(repo, tmp_pat
 def test_no_suggestion_and_empty_answer_stops_without_moving(repo, tmp_path):
     with pytest.raises(ContractError):
         station.migrate_to_separate(ask=_script(""))
-    assert (repo / "workspace").is_dir()
+    assert (repo / "workspaces").is_dir()
 
 
 @pytest.mark.parametrize("no", ["", "n", "N", "no", "khong"])
@@ -79,18 +79,17 @@ def test_anything_but_yes_cancels_and_moves_nothing(repo, tmp_path, no):
     target = tmp_path / "ngoai"
     with pytest.raises(ContractError, match="huỷ"):
         station.migrate_to_separate(ask=_script(str(target), no))
-    assert (repo / "workspace" / "projects" / "news" / "meta.json").is_file()
+    assert (repo / "workspaces" / "projects" / "news" / "meta.json").is_file()
     assert not target.exists()
 
 
 def test_never_defaults_to_the_hidden_home_station(repo, tmp_path, monkeypatch):
-    """Dù HOME có `.video` mang dấu hay không, gợi ý không bao giờ là `~/.video`."""
+    """Gợi ý nơi dời không bao giờ là một thư mục ẩn ở thư mục cá nhân."""
     monkeypatch.setenv("OPCOS_WORKSPACES", str(tmp_path / "ws"))
     ask = _script("", "n")
     with pytest.raises(ContractError):
         station.migrate_to_separate(ask=ask)
-    home_old = os.path.join(os.path.expanduser("~"), ".video")
-    assert all(home_old not in p for p in ask.seen)
+    assert all(os.path.expanduser("~") not in p for p in ask.seen)
 
 
 def test_an_explicit_target_does_not_ask(repo, tmp_path):
@@ -103,15 +102,15 @@ def test_an_explicit_target_does_not_ask(repo, tmp_path):
 
 def test_a_target_inside_the_workspace_is_refused(repo):
     with pytest.raises(ContractError, match="nằm trong trạm đang dời"):
-        station.migrate_to_separate(str(repo / "workspace" / "con"))
-    assert (repo / "workspace").is_dir()
+        station.migrate_to_separate(str(repo / "workspaces" / "con"))
+    assert (repo / "workspaces").is_dir()
 
 
 def test_cli_non_interactive_without_station_is_exit_2_and_names_the_flag(repo, capsys):
     code = cli_main(["migrate", "--to", "separate", "--non-interactive"])
     err = capsys.readouterr().err
     assert code == 2 and "--station" in err and "bắt buộc" in err
-    assert (repo / "workspace").is_dir()
+    assert (repo / "workspaces").is_dir()
 
 
 def test_cli_without_a_tty_and_without_station_is_exit_2(repo, capsys, monkeypatch):
@@ -119,7 +118,7 @@ def test_cli_without_a_tty_and_without_station_is_exit_2(repo, capsys, monkeypat
     code = cli_main(["migrate", "--to", "separate"])
     err = capsys.readouterr().err
     assert code == 2 and "--station" in err and "bắt buộc" in err
-    assert (repo / "workspace").is_dir()
+    assert (repo / "workspaces").is_dir()
 
 
 def test_cli_with_station_moves_without_asking(repo, tmp_path):
@@ -132,7 +131,7 @@ def test_cli_with_station_moves_without_asking(repo, tmp_path):
 
 def test_the_help_does_not_promise_the_hidden_default(capsys):
     assert station.migrate_main(["--help"]) == 0
-    assert ".video" not in capsys.readouterr().out
+    assert os.path.expanduser("~") not in capsys.readouterr().out
 
 
 def test_a_destination_that_is_a_file_is_a_clear_error_not_a_traceback(repo, tmp_path):
@@ -144,7 +143,7 @@ def test_a_destination_that_is_a_file_is_a_clear_error_not_a_traceback(repo, tmp
     with pytest.raises(ContractError, match="không phải thư mục"):
         station.migrate_to_separate(ask=ask)
     assert len(ask.seen) == 1 and f.read_text(encoding="utf-8") == "x"
-    assert (repo / "workspace").is_dir()
+    assert (repo / "workspaces").is_dir()
     assert cli_main(["migrate", "--to", "separate", "--station", str(f)]) == 2
 
 
@@ -166,4 +165,4 @@ def test_an_existing_secret_env_is_reported_before_the_y_n_question(repo, tmp_pa
     with pytest.raises(ContractError, match="đã có"):
         station.migrate_to_separate(ask=ask)
     assert len(ask.seen) == 1                    # chỉ câu hỏi đường; chưa tới câu y/N
-    assert (repo / "workspace").is_dir()
+    assert (repo / "workspaces").is_dir()

@@ -66,14 +66,14 @@ def _old_install(st, names=("video-routing", "video-edit", "hyperframes-core")):
 
 def test_init_no_longer_copies_skills_into_the_station(repo, capsys):
     rc, res, err = run(["init", "--yes", "--json"], capsys)
-    ws = repo / "workspace"
+    ws = repo / "workspaces"
     assert rc == 0, err
     assert not (ws / ".claude").exists() and not (ws / ".agents").exists()
     assert not (ws / station.LOCK_FILE).exists()
 
 
 def test_lifecycle_embedded_keeps_every_user_byte(repo, tmp_path, monkeypatch, capsys):
-    ws = repo / "workspace"
+    ws = repo / "workspaces"
     rc, res, err = run(["init", "--yes", "--json"], capsys)
     assert rc == 0 and res["mode"] == "embedded" and res["station"] == str(ws), err
     _old_install(ws)
@@ -134,14 +134,14 @@ def test_lifecycle_separate_station(repo, tmp_path, capsys):
     assert canary.read_text(encoding="utf-8") == CANARY
     assert _skills(ext) == [] and not (ext / ".claude").exists(), "thư mục skill rỗng phải được dọn"
     assert (ext / "station.json").is_file()
-    assert not (repo / "workspace").exists(), "gỡ không được đẻ ra trạm thứ hai"
+    assert not (repo / "workspaces").exists(), "gỡ không được đẻ ra trạm thứ hai"
 
 
 # ── từng luật một ──────────────────────────────────────────────────────────────────────
 
 def test_dry_run_writes_nothing(repo, capsys):
     run(["init", "--yes", "--json"], capsys)
-    ws = repo / "workspace"
+    ws = repo / "workspaces"
     before = sorted(str(p) for p in ws.rglob("*")) + sorted(str(p) for p in repo.iterdir())
     rc, res, err = run(["uninstall", "--dry-run", "--json"], capsys)
     assert rc == 0 and res["dry_run"] and res["plan"] and "removed" not in res
@@ -199,7 +199,7 @@ def test_a_failure_half_way_puts_everything_back(repo, monkeypatch, capsys):
     """Windows giữ file, hay đường dẫn vượt 260 ký tự (đã gặp thật khi thử trên máy): bước thứ
     N hỏng thì N-1 bước trước phải được trả về — trạm không bao giờ ở trạng thái nửa gỡ."""
     run(["init", "--yes", "--json"], capsys)
-    ws = repo / "workspace"
+    ws = repo / "workspaces"
     _old_install(ws)
     before = {str(p.relative_to(ws)) for p in ws.rglob("*") if ".video-studio" not in p.parts}
     real_backup = station._Run.backup

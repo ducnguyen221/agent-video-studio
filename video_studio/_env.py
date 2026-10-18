@@ -7,7 +7,7 @@ hàm dưới đây, đọc biến môi trường MỖI LẦN gọi (không đón
 
 Biến hợp đồng:
 
-    VIDEO_STATION        gốc trạm video                       (mặc định <repo>/workspace/)
+    VIDEO_STATION        gốc trạm video                       (mặc định <repo>/workspaces/)
     VIDEO_ROOT           tên cũ của VIDEO_STATION — đọc được, kèm DeprecationWarning
     HYPERFRAMES_VERSION  bản HyperFrames gọi qua npx — PHẢI là bản cụ thể (x.y.z), cấm
                          `latest`/`^`/`~` để lịch chạy không trôi bản âm thầm
@@ -21,19 +21,21 @@ Biến hợp đồng:
     VOICE_STATION        trạm giọng (lồng tiếng, filler)  — tên cũ OMNIVOICE_DIR = thư mục
                          engine ($VOICE_STATION/omnivoice). Không đặt cả hai thì hỏi
                          chính repo giọng (nếu cài cùng venv) — nhận trạm nó đã được
-                         CHỌN (biến, studio.local.json, workspace/), không nhận mặc định nó
-                         tự đoán; không có gì thì là "chưa có trạm giọng", không đoán ~/.tts
+                         CHỌN (biến, studio.local.json, workspaces/voice), không nhận mặc định nó
+                         tự đoán; không có gì thì là "chưa có trạm giọng", không đoán thư mục ẩn
 
 Hai chế độ cài (F17) dùng chung MỘT thứ tự phân giải trạm — `resolve_station()`:
 
     --station (lệnh đặt VIDEO_STATION trong tiến trình) → VIDEO_STATION → VIDEO_ROOT (cũ)
-    → <repo>/studio.local.json ("station_path") → <repo>/workspace/
+    → <repo>/studio.local.json ("station_path") → <repo>/workspaces/
 
-Tầng cuối là `<repo>/workspace/` DÙ CHƯA CÓ (`video-studio init` tạo nó, Git bỏ qua cả thư
-mục): người dùng không đặt gì thì trạm nằm trong chính folder họ đã clone, không phải một thư
-mục ẩn ở home mà họ không biết là có. Máy dùng trạm ngoài thì CHỌN nó tường minh — biến
-`VIDEO_STATION` hoặc `init --station DIR` (ghi vào `studio.local.json`). Không còn tầng đoán
-`~/.video` nào.
+Tầng cuối là `<repo>/workspaces/` DÙ CHƯA CÓ (`video-studio init` tạo nó, Git bỏ qua cả thư
+mục): người dùng không đặt gì thì trạm nằm trong chính folder họ đã clone. Thư mục gốc cùng tên
+`workspaces` với khi cài cùng OpcOS (`<OPCOS_WORKSPACES>/video`); trong repo thì chính
+`workspaces` là trạm, không cần thêm tên. Tương thích: `<repo>/workspace/` (bố cục cũ, số ít)
+mang dấu trạm mà `workspaces` chưa có thì vẫn được nhận; cả hai cùng có thì `workspaces` thắng.
+Máy dùng trạm ngoài thì CHỌN nó tường minh — biến `VIDEO_STATION` hoặc `init --station DIR`
+(ghi vào `studio.local.json`). Không có tầng đoán thư mục ẩn nào ở thư mục cá nhân.
 
 `<repo>` là bản clone đã `pip install -e` (có `pyproject.toml` cạnh package); đặt
 `VIDEO_STUDIO_REPO` để trỏ tường minh (trỏ vào chỗ không tồn tại = không có repo). Cài dạng
@@ -57,7 +59,8 @@ import warnings
 from .contract import ContractError, StationMissing
 
 LOCAL_CONFIG = "studio.local.json"
-WORKSPACE = "workspace"
+WORKSPACE = "workspaces"                           # trạm nhúng = chính `<repo>/workspaces`
+OLD_WORKSPACE = "workspace"                         # bố cục cũ — chỉ để nhận, không bao giờ tạo
 STATION_FILE = "station.json"
 ENV_FILE = ".env"
 ENV_EXAMPLE = ".env.example"
@@ -68,7 +71,7 @@ MODES = ("embedded", "separate")
 # quyết định có đọc `.env` hay không:
 #   VIDEO_STUDIO_REPO — nói repo nằm đâu, mà `.env` nằm TRONG repo. Đọc là đệ quy vô hạn.
 #   VIDEO_STATION, VIDEO_ROOT — nói TRẠM NÀY nằm đâu. `.env` chỉ được nạp khi chế độ là
-#     `embedded`, tức là trạm đã được chốt ở `<repo>/workspace/`; để một dòng trong file đó
+#     `embedded`, tức là trạm đã được chốt ở `<repo>/workspaces/`; để một dòng trong file đó
 #     trỏ trạm đi nơi khác là tự tạo ra đúng cái "hai nguồn sự thật" mà cả bộ cài này sinh
 #     ra để chặn. Trỏ trạm đi chỗ khác là việc của biến môi trường thật, hoặc của `migrate`.
 # Trạm GIỌNG (VOICE_STATION, OMNIVOICE_DIR) thì đọc được: nó là trạm của repo KHÁC.
@@ -221,12 +224,35 @@ def read_env_file(repo=None):
     return out
 
 
-def legacy_station():
-    """`~/.video` — CHỈ còn là trạm đời cũ cần quyết định/di chuyển: nơi `init` nhận ra nó để
-    không dựng trạm thứ hai. KHÔNG phải đường mặc định của bất cứ lệnh nào: `init --mode
-    separate` và `migrate` đều hỏi đường (hoặc đòi `--station`). Nó cũng KHÔNG là tầng cuối của
-    `resolve_station()`: không đặt gì ⇒ `<repo>/workspace/`."""
-    return os.path.join(os.path.expanduser("~"), ".video")
+def embedded_new(repo):
+    """Trạm nhúng chuẩn: chính `<repo>/workspaces` (trong repo thì không cần thêm tên trạm;
+    cài cùng OpcOS thì trạm là `<OPCOS_WORKSPACES>/video`)."""
+    return os.path.join(repo, WORKSPACE)
+
+
+def embedded_old(repo):
+    """Trạm nhúng của bố cục cũ (`<repo>/workspace`) NẾU nó mang dấu trạm và bố cục mới chưa có;
+    ngược lại None. Chỉ để NHẬN trạm đã có — `init` mới không bao giờ tạo nó."""
+    old = os.path.join(repo, OLD_WORKSPACE)
+    if has_marker(old) and not os.path.isdir(embedded_new(repo)):
+        return old
+    return None
+
+
+def embedded_station(repo):
+    """Trạm nhúng đang dùng: bố cục cũ nếu chỉ có nó (có dấu trạm), không thì `workspaces`."""
+    return embedded_old(repo) or embedded_new(repo)
+
+
+def old_layout_note(repo):
+    """Một dòng khuyến nghị đổi chỗ khi `<repo>/workspace` (cũ) còn mang dấu trạm; None nếu không."""
+    old = os.path.join(repo, OLD_WORKSPACE)
+    if not has_marker(old):
+        return None
+    new = embedded_new(repo)
+    if os.path.isdir(new):
+        return (f"có cả {old} (bố cục cũ) lẫn {new}: đang dùng {new}; gộp dữ liệu rồi bỏ {old}")
+    return f"đang dùng trạm bố cục cũ {old}; nên đổi tên/dời sang {new}"
 
 
 def opcos_base():
@@ -282,21 +308,26 @@ def resolve_station():
         if sp:
             sp = os.path.expanduser(sp)
             return (sp if os.path.isabs(sp) else os.path.abspath(os.path.join(repo, sp))), LOCAL_CONFIG
-        return os.path.join(repo, WORKSPACE), WORKSPACE
+        old = embedded_old(repo)
+        if old:
+            return old, "workspace"
+        return embedded_new(repo), "workspaces"
     return None, "unset"
 
 
-UNSET_HINT = ("chưa chọn trạm video: bản cài này không có repo để đặt workspace/ — đặt biến "
+UNSET_HINT = ("chưa chọn trạm video: bản cài này không có repo để đặt workspaces/ — đặt biến "
               "VIDEO_STATION=<thư mục trạm> hoặc chạy `video-studio init --station <thư mục>`")
 
 
 def init_command(st):
-    """Lệnh dựng đúng trạm `st`: trạm là `<repo>/workspace/` ⇒ `video-studio init` (embedded);
-    trạm khác ⇒ `init --station "<st>"`. Khuyên `--station <repo>/workspace` là khuyên dựng một
-    trạm "ngoài repo" nằm trong repo — đúng thứ hai-nguồn-sự-thật mà F17 chặn."""
+    """Lệnh dựng đúng trạm `st`: trạm là `<repo>/workspaces/` (hoặc `<repo>/workspace/` của
+    bố cục cũ) ⇒ `video-studio init` (embedded); trạm khác ⇒ `init --station "<st>"`. Khuyên
+    `--station <repo>/workspaces` là khuyên dựng một trạm "ngoài repo" nằm trong repo —
+    đúng thứ hai-nguồn-sự-thật mà F17 chặn."""
     repo = existing_repo()
-    if repo and st and os.path.normcase(os.path.abspath(st)) == os.path.normcase(
-            os.path.join(repo, WORKSPACE)):
+    here = os.path.normcase(os.path.abspath(st)) if st else None
+    if repo and here in (os.path.normcase(embedded_new(repo)),
+                         os.path.normcase(os.path.join(repo, OLD_WORKSPACE))):
         return "video-studio init"
     return f'video-studio init --station "{st}"'
 
@@ -450,7 +481,8 @@ def hyperframes_cache():
 
 # Nguồn trạm mà repo giọng coi là ĐÃ ĐƯỢC CHỌN. Nguồn còn lại (`default` — nó tự đoán một
 # thư mục ở home) không được nhận: đoán hộ trạm của repo khác là đúng cái Đ4 cấm.
-_VOICE_CHOSEN = frozenset({"VOICE_STATION", "OMNIVOICE_DIR", "studio.local.json", "workspace"})
+_VOICE_CHOSEN = frozenset({"VOICE_STATION", "OMNIVOICE_DIR", "studio.local.json", "workspace",
+                           "workspaces"})
 
 
 def _voice_repo_station():
@@ -470,7 +502,7 @@ def _voice_repo_station():
         return None
     if not st or src not in _VOICE_CHOSEN:
         return None
-    if src == "workspace" and not os.path.isdir(st):
+    if src in ("workspace", "workspaces") and not os.path.isdir(st):
         return None             # repo giọng chưa init: chưa có trạm giọng nào
     return _expand(st)
 
@@ -505,7 +537,7 @@ def sibling_repo(package):
 
 def voice_station():
     """Gốc trạm giọng: VOICE_STATION → cha của OMNIVOICE_DIR (tên cũ) → trạm mà repo giọng đã
-    được chọn (studio.local.json / workspace/) → None. Không bao giờ đoán `~/.tts`/`~/.voice`."""
+    được chọn (studio.local.json / workspaces/voice) → None. Không bao giờ đoán thư mục ẩn."""
     v = env("VOICE_STATION")
     if v:
         return _expand(v)

@@ -134,7 +134,7 @@ chọn đoạn, viết EDL. Quy trình đầy đủ + luật cứng: skill `vide
 1. **Bản engine trôi.** `latest` làm lượt render đêm nay khác lượt tuần sau mà không ai đổi gì.
    Ở đây bản trôi bị từ chối ngay ở tầng cấu hình; nâng bản là việc có chủ đích: render hồi quy
    rồi mới đổi `HYPERFRAMES_VERSION`. `doctor --check-updates` chỉ **báo**.
-2. **Hai nguồn sự thật.** Vừa có `workspace/` trong repo vừa có trạm ngoài ⇒ `doctor` trả mã 3.
+2. **Hai nguồn sự thật.** Vừa có `workspaces/` trong repo vừa có trạm ngoài ⇒ `doctor` trả mã 3.
    Giữ MỘT trạm.
 3. **Đường tuyệt đối trong composition.** Không chạy được trên máy khác, và dấu `:` của ổ đĩa
    Windows còn làm vỡ filtergraph của ffmpeg.

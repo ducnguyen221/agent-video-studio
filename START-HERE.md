@@ -62,7 +62,7 @@ python3.12 -m venv .venv
 Đặt repo ở thư mục cục bộ, **không** trong OneDrive, iCloud Drive, Google Drive hay Dropbox:
 đồng bộ đám mây làm hỏng `.venv` và đẩy cả nháp render lên mạng.
 
-`init --yes` tạo **trạm** ở `workspace/` ngay trong repo — nơi chứa project đang dựng, nháp và
+`init --yes` tạo **trạm** ở `workspaces/` ngay trong repo — nơi chứa project đang dựng, nháp và
 cache. Git bỏ qua cả thư mục này, nên dữ liệu của bạn không bao giờ đi vào mã nguồn. Muốn đặt
 trạm ở chỗ khác (dùng chung giữa nhiều máy, hoặc repo là bản public của chính bạn): đặt biến
 `VIDEO_STATION` trỏ thư mục đó, hoặc `video-studio init --station <thư mục>`. Hai chế độ và cây

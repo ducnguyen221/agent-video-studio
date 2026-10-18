@@ -1,13 +1,15 @@
-"""Bảng quyết định của `init` khi chọn chỗ đặt trạm: {trạm cũ dưới home có/không} × {OPCOS_WORKSPACES
-đặt/không} × {câu trả lời giả · --yes · --non-interactive · --mode ...}.
+"""Bảng quyết định của `init` khi chọn chỗ đặt trạm: {OPCOS_WORKSPACES đặt/không} × {tầng phân
+giải trong repo: không có · chỉ `workspace` cũ · có `workspaces` · cả hai} × {câu trả lời giả ·
+--yes · --non-interactive · --mode ...}.
 
-Định nghĩa chung: `--yes` KHÔNG BAO GIỜ hỏi (kể cả có terminal) và dùng trạm mới = embedded
-`<repo>/workspace`; `--non-interactive` thiếu cả `--yes` lẫn `--mode` ⇒ mã 2 (không đoán chế độ);
-tương tác: Enter ở câu hỏi ba đường = [1] trạm mới (nhãn in đường thật: `<biến>/video` nếu biến
-đặt, không thì `<repo>/workspace`); `--mode separate`: có biến ⇒ `<biến>/video`, không biến ⇒ hỏi
-đường (không người ⇒ mã 2); `--mode embedded` khi có trạm cũ bị từ chối. Trạm cũ chỉ được nhận qua
-`--station`, `--migrate` hoặc câu trả lời [2].
+Định nghĩa chung: `--yes` KHÔNG BAO GIỜ hỏi (kể cả có terminal) và luôn là embedded
+`<repo>/workspaces`; `--non-interactive` thiếu cả `--yes` lẫn `--mode` ⇒ mã 2 (không đoán chế độ);
+tương tác: bảng chọn hai đường, có `OPCOS_WORKSPACES` thì Enter = separate `<biến>/video` (rồi hỏi
+xác nhận/đổi đường); `--mode separate`: có biến ⇒ `<biến>/video`, không biến ⇒ hỏi đường (không
+người ⇒ mã 2). Trạm nhúng cũ `<repo>/workspace` (mang dấu trạm) chỉ được NHẬN khi `workspaces` chưa
+có, kèm một dòng nhắc đổi tên; `init` mới không bao giờ tạo thư mục số ít.
 """
+import json
 import os
 
 import pytest
@@ -23,16 +25,20 @@ def world(tmp_path, monkeypatch):
     (r / "pyproject.toml").write_text("[project]\nname='x'\n", encoding="utf-8")
     (r / ".env.example").write_text("# khuon\n", encoding="utf-8")
     monkeypatch.setenv("VIDEO_STUDIO_REPO", str(r))
-    home = tmp_path / "home"
-    home.mkdir(exist_ok=True)
-    monkeypatch.setenv("USERPROFILE", str(home))
-    monkeypatch.setenv("HOME", str(home))
-    return {"repo": r, "home": home, "ws": tmp_path / "ws", "typed": tmp_path / "typed"}
+    return {"repo": r, "ws": tmp_path / "ws", "typed": tmp_path / "typed"}
 
 
-def _run(world, monkeypatch, legacy, var, answers=None, tty=False, **kw):
-    if legacy:
-        (world["home"] / ".video" / "projects").mkdir(parents=True)
+def _layout(world, layout):
+    r = world["repo"]
+    if layout in ("old", "both"):
+        (r / "workspace" / "projects").mkdir(parents=True)
+        (r / "workspace" / "station.json").write_text("{}", encoding="utf-8")
+    if layout in ("new", "both"):
+        (r / "workspaces").mkdir(parents=True)
+
+
+def _run(world, monkeypatch, layout, var, answers=None, tty=False, never_ask=False, **kw):
+    _layout(world, layout)
     if var:
         monkeypatch.setenv("OPCOS_WORKSPACES", str(world["ws"]))
     monkeypatch.setattr(station, "_stdin_is_tty", lambda: tty)
@@ -44,152 +50,127 @@ def _run(world, monkeypatch, legacy, var, answers=None, tty=False, **kw):
         def ask(prompt):
             seen.append(prompt)
             return next(it)
-    else:
-        def ask_never(prompt):
+    elif never_ask:
+        def ask(prompt):
             pytest.fail("không được hỏi: " + prompt)
-        ask = None if not kw.pop("never_ask", False) else ask_never
-    res = station.choose_mode(ask=ask, **kw)
-    return res, seen
+    return station.choose_mode(ask=ask, **kw), seen
 
 
-def _expect(world, kind):
-    return {"embedded": ("embedded", str(world["repo"] / "workspace")),
+def _embedded(world, layout):
+    sub = "workspace" if layout == "old" else "workspaces"
+    return ("embedded", str(world["repo"] / sub))
+
+
+def _expect(world, layout, kind):
+    return {"embedded": _embedded(world, layout),
             "var": ("separate", os.path.abspath(str(world["ws"] / "video"))),
-            "old": ("separate", str(world["home"] / ".video")),
             "typed": ("separate", str(world["typed"]))}[kind]
 
 
-# (trạm cũ, biến, câu trả lời giả, tty, kwargs, kết quả: loại đường | "exit2")
 T, F = True, False
+# (biến, câu trả lời giả, tty, kwargs, kết quả: embedded | var | typed | exit2)
 ROWS = [
-    # ── có trạm cũ, tương tác (ask giả) ──
-    (T, F, [""], F, {}, "embedded"),                      # Enter = [1]
-    (T, T, ["", ""], F, {}, "var"),                       # Enter = [1] rồi Enter nhận <biến>/video
-    (T, F, ["1"], F, {}, "embedded"),
-    (T, T, ["1", ""], F, {}, "var"),
-    (T, T, ["1", "TYPED"], F, {}, "typed"),               # [1] có biến: đổi được đường
-    (T, F, ["2"], F, {}, "old"),
-    (T, T, ["2"], F, {}, "old"),
-    (T, F, ["3"], F, {}, "exit2"),
-    (T, T, ["3"], F, {}, "exit2"),
-    (T, F, ["x"], F, {}, "exit2"),
-    # ── có trạm cũ, không hỏi ──
-    (T, F, None, F, {"yes": True}, "embedded"),
-    (T, T, None, F, {"yes": True}, "embedded"),
-    (T, F, None, T, {"yes": True, "never_ask": True}, "embedded"),   # có terminal vẫn không hỏi
-    (T, T, None, T, {"yes": True, "never_ask": True}, "embedded"),
-    (T, F, None, F, {"non_interactive": True, "yes": True}, "embedded"),
-    (T, F, None, F, {"non_interactive": True}, "exit2"),  # không đoán chế độ
-    (T, T, None, F, {"non_interactive": True}, "exit2"),
-    (T, F, None, F, {}, "exit2"),                         # không terminal, không --yes
-    # ── có trạm cũ, --mode ──
-    (T, T, None, F, {"mode": "separate", "non_interactive": True}, "var"),
-    (T, F, None, F, {"mode": "separate", "non_interactive": True}, "exit2"),
-    (T, T, None, F, {"mode": "separate", "yes": True}, "var"),
-    (T, F, None, F, {"mode": "separate", "yes": True}, "exit2"),
-    (T, T, None, T, {"mode": "separate", "yes": True, "never_ask": True}, "var"),
-    (T, F, None, T, {"mode": "separate", "yes": True, "never_ask": True}, "exit2"),
-    (T, T, [""], F, {"mode": "separate"}, "var"),
-    (T, F, ["TYPED"], F, {"mode": "separate"}, "typed"),
-    (T, F, [""], F, {"mode": "separate"}, "exit2"),
-    (T, F, None, F, {"mode": "embedded"}, "exit2"),       # hai nguồn sự thật
-    (T, T, None, F, {"mode": "embedded", "yes": True}, "exit2"),
-    # ── không có trạm cũ ──
-    (F, F, None, F, {"yes": True}, "embedded"),
-    (F, T, None, F, {"yes": True}, "embedded"),
-    (F, F, None, T, {"yes": True, "never_ask": True}, "embedded"),
-    (F, F, None, F, {"non_interactive": True}, "exit2"),
-    (F, T, None, F, {"non_interactive": True}, "exit2"),
-    (F, F, None, F, {"non_interactive": True, "yes": True}, "embedded"),
-    (F, F, [""], F, {}, "embedded"),
-    (F, F, ["1"], F, {}, "embedded"),
-    (F, T, ["2", ""], F, {}, "var"),
-    (F, F, ["2", "TYPED"], F, {}, "typed"),
-    (F, T, None, F, {"mode": "separate", "non_interactive": True}, "var"),
-    (F, F, None, F, {"mode": "separate", "non_interactive": True}, "exit2"),
-    (F, T, None, F, {"mode": "separate", "yes": True}, "var"),
-    (F, F, None, T, {"mode": "separate", "yes": True, "never_ask": True}, "exit2"),
-    (F, F, None, F, {"mode": "embedded"}, "embedded"),
+    # ── tương tác (ask giả) ──
+    (F, [""], F, {}, "embedded"),                       # Enter = [1] embedded
+    (F, ["1"], F, {}, "embedded"),
+    (F, ["2", "TYPED"], F, {}, "typed"),
+    (F, ["2", ""], F, {}, "exit2"),                     # đường rỗng, không gợi ý
+    (F, ["x"], F, {}, "exit2"),
+    (T, ["", ""], F, {}, "var"),                        # có biến: Enter = separate rồi Enter nhận
+    (T, ["", "TYPED"], F, {}, "typed"),                 # …đổi được đường
+    (T, ["1"], F, {}, "embedded"),
+    (T, ["2", ""], F, {}, "var"),
+    # ── không hỏi ──
+    (F, None, F, {"yes": True}, "embedded"),
+    (T, None, F, {"yes": True}, "embedded"),            # --yes ra <repo>/workspaces dù có biến
+    (F, None, T, {"yes": True, "never_ask": True}, "embedded"),   # có terminal vẫn không hỏi
+    (T, None, T, {"yes": True, "never_ask": True}, "embedded"),
+    (F, None, F, {"non_interactive": True, "yes": True}, "embedded"),
+    (F, None, F, {"non_interactive": True}, "exit2"),   # không đoán chế độ
+    (T, None, F, {"non_interactive": True}, "exit2"),
+    (F, None, F, {}, "exit2"),                          # không terminal, không --yes
+    # ── --mode ──
+    (T, None, F, {"mode": "separate", "non_interactive": True}, "var"),
+    (F, None, F, {"mode": "separate", "non_interactive": True}, "exit2"),
+    (T, None, F, {"mode": "separate", "yes": True}, "var"),
+    (T, None, T, {"mode": "separate", "yes": True, "never_ask": True}, "var"),
+    (F, None, T, {"mode": "separate", "yes": True, "never_ask": True}, "exit2"),
+    (T, [""], F, {"mode": "separate"}, "var"),
+    (F, ["TYPED"], F, {"mode": "separate"}, "typed"),
+    (F, [""], F, {"mode": "separate"}, "exit2"),
+    (F, None, F, {"mode": "embedded"}, "embedded"),
+    (T, None, F, {"mode": "embedded", "yes": True}, "embedded"),
 ]
+LAYOUTS = ["none", "old", "new", "both"]
 
 
-@pytest.mark.parametrize("legacy,var,answers,tty,kw,want", ROWS)
-def test_decision_table(world, monkeypatch, legacy, var, answers, tty, kw, want):
+@pytest.mark.parametrize("layout", LAYOUTS)
+@pytest.mark.parametrize("var,answers,tty,kw,want", ROWS)
+def test_decision_table(world, monkeypatch, layout, var, answers, tty, kw, want):
     if answers is not None:
         answers = [str(world["typed"]) if a == "TYPED" else a for a in answers]
     if want == "exit2":
         with pytest.raises(ContractError):
-            _run(world, monkeypatch, legacy, var, answers, tty, **dict(kw))
+            _run(world, monkeypatch, layout, var, answers, tty, **dict(kw))
         return
-    (mode, path, _why), _seen = _run(world, monkeypatch, legacy, var, answers, tty, **dict(kw))
-    assert (mode, path) == _expect(world, want)
+    (mode, path, _why), _seen = _run(world, monkeypatch, layout, var, answers, tty, **dict(kw))
+    assert (mode, path) == _expect(world, layout, want)
 
 
-def test_the_first_label_is_the_real_path_and_enter_means_the_new_station(world, monkeypatch):
-    (mode, path, _why), seen = _run(world, monkeypatch, True, True, ["", ""])
+@pytest.mark.parametrize("layout", LAYOUTS)
+def test_the_reminder_appears_exactly_when_the_old_layout_is_around(world, monkeypatch, capsys,
+                                                                    layout):
+    _run(world, monkeypatch, layout, F, None, F, yes=True)
+    lines = [ln for ln in capsys.readouterr().err.splitlines() if "bố cục cũ" in ln]
+    assert len(lines) == (1 if layout in ("old", "both") else 0)
+    if lines:
+        assert "workspaces" in lines[0]
+
+
+def test_the_choice_table_shows_the_real_embedded_path_and_the_enter_default(world, monkeypatch):
+    (_r, seen) = _run(world, monkeypatch, "none", F, [""], F)
+    assert "<repo>/workspaces/" in seen[0] and "bấm Enter" in seen[0]
+    (_r, seen) = _run(world, monkeypatch, "none", T, ["", ""], F)
     expect = os.path.abspath(str(world["ws"] / "video"))
-    assert path == expect and expect in seen[0] and str(world["home"] / ".video") in seen[0]
-    assert "Không trả lời gì = [1]" in seen[0]
+    assert "Enter = [2]" in seen[0] and expect in seen[0] and expect in seen[1]
 
 
-def test_the_first_label_without_the_variable_is_the_repo_workspace(world, monkeypatch):
-    (_mode, path, _why), seen = _run(world, monkeypatch, True, False, [""])
-    assert path == str(world["repo"] / "workspace") and path in seen[0]
-
-
-def test_yes_says_one_line_about_the_old_station_and_leaves_it_alone(world, monkeypatch, capsys):
-    (_mode, _path, _why), _ = _run(world, monkeypatch, True, False, None, yes=True)
-    old = world["home"] / ".video"
-    lines = [ln for ln in capsys.readouterr().err.splitlines() if str(old) in ln]
-    assert len(lines) == 1 and f"--station {old}" in lines[0]
-    assert [p.name for p in old.iterdir()] == ["projects"]
-
-
-# ── lựa chọn đã ghi trong studio.local.json thắng trạm cũ dưới home ───────────────────────
-# (đã ghi, biến, câu trả lời giả, kwargs, kết quả). "rec" = đường đã ghi.
+# ── lựa chọn đã ghi trong studio.local.json ───────────────────────────────────────────────
+# (đã ghi, tầng, câu trả lời, kwargs, kết quả). "rec" = đường đã ghi.
 REC_ROWS = [
-    ("embedded", F, None, {"yes": True}, "embedded"),
-    ("embedded", T, None, {"yes": True}, "embedded"),
-    ("embedded", F, None, {"non_interactive": True}, "embedded"),   # không còn mã 2
-    ("embedded", T, None, {"non_interactive": True}, "embedded"),
-    ("embedded", T, None, {}, "embedded"),
-    ("embedded", T, None, {"mode": "embedded"}, "embedded"),        # không bị từ chối
-    ("embedded", F, None, {"mode": "embedded", "yes": True}, "embedded"),
-    ("embedded", T, [""], {}, "embedded"),                          # không hỏi lại 3 đường
-    ("separate", F, None, {"non_interactive": True}, "rec"),
-    ("separate", T, None, {"yes": True}, "rec"),
-    ("separate", T, [""], {}, "rec"),
-    (None, F, None, {"non_interactive": True}, "exit2"),            # chưa ghi gì: hành vi cũ
-    (None, T, None, {"non_interactive": True}, "exit2"),
-    (None, F, None, {"mode": "embedded"}, "exit2"),
+    ("embedded", "none", {"yes": True}, "embedded"),
+    ("embedded", "none", {"non_interactive": True}, "embedded"),    # đã chọn rồi: không mã 2
+    ("embedded", "none", {}, "embedded"),
+    ("embedded", "old", {}, "embedded"),
+    ("embedded", "both", {"mode": "embedded"}, "embedded"),
+    ("separate", "none", {"non_interactive": True}, "rec"),
+    ("separate", "new", {"yes": True}, "rec"),
+    (None, "none", {"non_interactive": True}, "exit2"),
 ]
 
 
-@pytest.mark.parametrize("prev,var,answers,kw,want", REC_ROWS)
-def test_a_recorded_choice_beats_the_old_home_station(world, monkeypatch, capsys, prev, var,
-                                                      answers, kw, want):
-    import json
+@pytest.mark.parametrize("prev,layout,kw,want", REC_ROWS)
+def test_a_recorded_choice_is_kept_without_asking(world, monkeypatch, prev, layout, kw, want):
     if prev:
         cfg = {"mode": prev}
         if prev == "separate":
             cfg["station_path"] = str(world["typed"])
         (world["repo"] / "studio.local.json").write_text(json.dumps(cfg), encoding="utf-8")
-    old = world["home"] / ".video"
     if want == "exit2":
         with pytest.raises(ContractError):
-            _run(world, monkeypatch, True, var, answers, F, **dict(kw))
+            _run(world, monkeypatch, layout, F, None, F, **dict(kw))
         return
-    # Lựa chọn đã ghi ⇒ KHÔNG hỏi gì cả (một `ask` mà bị gọi là hỏng), dù hàng có "câu trả lời giả".
-    (mode, path, _why), _ = _run(world, monkeypatch, True, var, None, F, never_ask=True, **dict(kw))
-    exp = {"embedded": ("embedded", str(world["repo"] / "workspace")),
-           "rec": ("separate", str(world["typed"]))}[want]
+    (mode, path, _why), _ = _run(world, monkeypatch, layout, F, None, F, never_ask=True, **dict(kw))
+    exp = _embedded(world, layout) if want == "embedded" else ("separate", str(world["typed"]))
     assert (mode, path) == exp
-    lines = [ln for ln in capsys.readouterr().err.splitlines() if str(old) in ln]
-    assert len(lines) == 1 and f"--station {old}" in lines[0]       # đúng MỘT dòng nêu trạm cũ
 
 
-def test_refusing_embedded_lists_the_neutral_options(world, monkeypatch):
-    with pytest.raises(ContractError) as e:
-        _run(world, monkeypatch, True, False, None, mode="embedded")
-    msg = str(e.value)
-    assert "hai nguồn sự thật" in msg and "--station" in msg and "--mode separate" in msg
+def test_a_station_flag_and_a_chosen_variable_never_ask(world, monkeypatch):
+    mode, path, _ = station.choose_mode(station=str(world["typed"]),
+                                        ask=lambda p: pytest.fail("không được hỏi"))
+    assert (mode, path) == ("separate", str(world["typed"]))
+    monkeypatch.setenv("VIDEO_STATION", str(world["typed"]))
+    mode, path, why = station.choose_mode(yes=True, ask=lambda p: pytest.fail("không được hỏi"))
+    assert (mode, path) == ("separate", str(world["typed"])) and "VIDEO_STATION" in why
+    with pytest.raises(ContractError):
+        station.choose_mode(mode="embedded")             # hai nguồn sự thật

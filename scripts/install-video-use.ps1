@@ -40,7 +40,7 @@ foreach ($tool in 'git', 'ffmpeg') {
 $py = Find-Python
 
 # The station is resolved by the package itself (VIDEO_STATION -> VIDEO_ROOT ->
-# studio.local.json -> <repo>/workspace), never guessed as a folder under $HOME: an embedded
+# studio.local.json -> <repo>/workspaces), never guessed as a folder under $HOME: an embedded
 # install keeps its station inside the repo. The core is stdlib-only, so any Python 3.10+ can
 # import it straight from this clone.
 $RepoRoot = Split-Path -Parent $PSScriptRoot

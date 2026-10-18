@@ -5,7 +5,7 @@ Hai việc làm chung cho mọi test:
 
 1. Đưa gốc repo vào `sys.path` để `import video_studio` chạy được cả khi chưa cài package.
 2. Xoá sạch biến môi trường hợp đồng trước MỖI test và trỏ HOME sang thư mục tạm — máy chạy
-   test có thể đang đặt `VIDEO_STATION`, `OMNIVOICE_DIR`… và có trạm thật ở `~/.video`; test
+   test có thể đang đặt `VIDEO_STATION`, `OMNIVOICE_DIR`… và có trạm thật ở thư mục cá nhân; test
    không bao giờ được đọc hay ghi nhầm vào đó.
 """
 import os
@@ -44,11 +44,11 @@ def _clean_contract_env(monkeypatch, tmp_path):
 
 @pytest.fixture
 def sandbox_home(tmp_path, monkeypatch):
-    """HOME giả KHÔNG junction: `tmp_path/home` có sẵn một `.video` mang dấu trạm giả.
+    """HOME giả KHÔNG junction: `tmp_path/home` có sẵn một thư mục ẩn mang dấu trạm giả.
 
     `_clean_contract_env` (autouse) đã trỏ HOME/USERPROFILE và xoá biến trạm; fixture này làm
     kín thêm HOMEDRIVE/HOMEPATH (tiến trình con PowerShell tính lại từ đó) và dựng trạm mồi để
-    test chứng minh: có `~/.video` mang dấu mà resolver vẫn không chọn nó."""
+    test chứng minh: có thư mục ẩn mang dấu ở home mà resolver vẫn không chọn nó."""
     home = tmp_path / "home"
     home.mkdir(exist_ok=True)
     for name in CONTRACT_VARS + ("MARKETING_STUDIO_DATA", "MARKETING_STUDIO_HOME"):
@@ -60,7 +60,7 @@ def sandbox_home(tmp_path, monkeypatch):
     monkeypatch.setenv("HOMEPATH", tail)
     monkeypatch.setenv("VIDEO_STUDIO_REPO", str(tmp_path / "no-repo"))
     monkeypatch.setenv("VOICE_STUDIO_REPO", str(tmp_path / "no-voice-repo"))
-    bait = home / ".video"
+    bait = home / ".station-decoy"
     bait.mkdir(exist_ok=True)
     (bait / "station.json").write_text("{}", encoding="utf-8")
     return home

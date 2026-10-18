@@ -22,18 +22,17 @@ cài gì: nó chỉ ra thứ còn thiếu và cách cài.
 
 `video-studio init` hỏi bạn chọn một trong hai:
 
-- **embedded** (khuyến nghị cho người mới) — trạm nằm ở `workspace/` trong repo, git bỏ qua. Mở
+- **embedded** (khuyến nghị cho người mới) — trạm nằm ở `workspaces/` trong repo, git bỏ qua. Mở
   một folder là thấy hết. Đừng xoá folder repo để cài lại: project của bạn nằm trong đó.
 - **separate** — trạm ở thư mục riêng do bạn chọn (vd `<OPCOS_WORKSPACES>/video`). Hợp khi dùng nhiều máy hoặc repo là
   public của chính bạn. Đặt biến `VIDEO_STATION` trỏ vào trạm để mọi công cụ khác thấy.
 
 Trạm **đã được chọn** từ trước — biến `VIDEO_STATION`, hoặc lựa chọn `separate` đã ghi trong
-`studio.local.json` — thì `init` dùng tiếp như cũ, không hỏi. Trạm cũ chỉ tình cờ nằm ở `~/.video`
-thì `init` **không** tự nhận: nó trình ba lựa chọn (trạm mới, trạm cũ, dừng) và hỏi. Với `--yes`
-nó không hỏi: dùng trạm mới embedded và in một dòng nêu trạm cũ, không đụng tới nó; `--non-interactive`
-thiếu `--yes`/`--mode` thì thoát mã 2.
-Muốn dùng trạm cũ đó thì chạy `init --station DIR` (hoặc trả lời [2], hoặc `--migrate` với bố cục
-cũ).
+`studio.local.json` — thì `init` dùng tiếp như cũ, không hỏi. `--yes` không bao giờ hỏi và luôn là embedded
+(`<repo>/workspaces`); `--non-interactive` thiếu `--yes`/`--mode` thì thoát mã 2. Có
+`OPCOS_WORKSPACES` mà chạy tương tác thì Enter ở bảng chọn ra `<biến>/video` (có hỏi xác nhận/đổi
+đường). Trạm `<repo>/workspace` (số ít) của bản cũ vẫn được nhận, kèm một dòng nhắc đổi tên thành
+`workspaces`. Trỏ vào trạm khác thì dùng `init --station DIR` (hoặc `--migrate` với bố cục cũ).
 
 ## 4. Nhận một trạm có sẵn
 

@@ -5,11 +5,11 @@
 
 ## 0. Ranh giới mã nguồn và dữ liệu
 
-**Engine, template, skill và script chạy từ repo này. Dữ liệu riêng nằm ở trạm:** `workspace/`
+**Engine, template, skill và script chạy từ repo này. Dữ liệu riêng nằm ở trạm:** `workspaces/`
 ngay trong repo (mặc định; Git bỏ qua cả thư mục), hoặc thư mục ngoài repo được chọn tường minh
 bằng biến `VIDEO_STATION` hay `video-studio init --station DIR`. Không có trạm nào được đoán.
 
-`workspace/` là dữ liệu riêng dù nằm trong checkout: không commit, không đóng gói, không chia sẻ.
+`workspaces/` là dữ liệu riêng dù nằm trong checkout: không commit, không đóng gói, không chia sẻ.
 `.gitignore` không ngăn được `git add -f`; chế độ trạm trong repo còn có hook `pre-commit` chặn lần
 nữa. Không đưa tên thương hiệu hay khách hàng thật, profile giọng thật, đường dẫn máy hoặc token
 vào phần mã được Git theo dõi — `tests/test_no_identity_leak.py` bắt những thứ đó.
@@ -44,7 +44,7 @@ agent-video-studio/
 ├─ tests/ · .github/      pytest, CI Windows + macOS
 ├─ docs/                  tài liệu + trang giới thiệu (GitHub Pages)
 ├─ .claude-plugin/ · .codex-plugin/   manifest plugin
-└─ workspace/             trạm mặc định — Git bỏ qua toàn bộ
+└─ workspaces/            trạm mặc định — Git bỏ qua toàn bộ
 ```
 
 ## 2. Cài đặt và việc đầu tiên

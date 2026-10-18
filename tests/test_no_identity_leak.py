@@ -251,7 +251,7 @@ def test_patterns_catch_their_target():
         "tac-gia": s(68, 117, 99, 32, 78, 103, 117, 121, 101, 110),
         "mien": "site: " + s(100, 117, 99, 110, 103, 117, 121, 101, 110, 46, 118, 110) + "/news",
         "duong-may-win": s(67, 58, 92, 85, 115, 101, 114, 115, 92) + "x",
-        "duong-may-env": s(37, 85, 83, 69, 82, 80, 82, 79, 70, 73, 76, 69, 37) + "\\.video",
+        "duong-may-env": s(37, 85, 83, 69, 82, 80, 82, 79, 70, 73, 76, 69, 37) + "\\." + "video",
         "duong-may-posix": "/home/someone/",
     }
     for key, text in samples.items():
