@@ -556,3 +556,83 @@ def test_a_wheel_install_without_a_repo_has_no_embedded_station_to_keep(world, m
     monkeypatch.setenv("OPCOS_WORKSPACES", str(world["ws"]))
     mode, path, _why = station.choose_mode(yes=True, ask=lambda p: pytest.fail("không được hỏi"))
     assert (mode, path) == ("separate", _oc(world))
+
+
+# ── ô còn lại của bảng: huỷ, --station, trạm riêng, đường gõ là file ───────────────────────────
+
+@pytest.mark.parametrize("var", ["unset", "unmarked", "marked"])
+def test_cl07_cl33_ctrl_c_at_the_first_question_propagates_and_writes_nothing(world, monkeypatch,
+                                                                              var):
+    """Bảng [1]/[2] (không biến) và câu nhận đường (có biến): `KeyboardInterrupt` lan ra khỏi hàm chọn
+    chế độ — `contract.run` mới đổi nó thành mã 2 (xem `test_cli_contract.py`)."""
+    seen = []
+    with pytest.raises(KeyboardInterrupt):
+        _run(world, monkeypatch, "none", var, [CTRL_C], False, seen=seen)
+    assert len(seen) == 1
+    assert not (world["repo"] / "studio.local.json").exists()
+    assert not (world["repo"] / "workspaces").exists()
+
+
+@pytest.mark.parametrize("var", V)
+@pytest.mark.parametrize("kw,answers", [
+    pytest.param({"yes": True}, None, id="cl42-yes"),
+    pytest.param({"non_interactive": True}, None, id="cl42-ni"),
+    pytest.param({}, [""], id="cl42-person"),
+])
+def test_cl42_the_station_flag_beats_the_variable_and_asks_nothing(world, monkeypatch, var, kw,
+                                                                  answers):
+    seen = []
+    choice = _run(world, monkeypatch, "none", var, answers, False, seen=seen,
+                  station=str(world["typed"]), **dict(kw))
+    assert (choice.mode, choice.path, choice.why) == ("separate", str(world["typed"]), "--station")
+    assert seen == []
+
+
+@pytest.mark.parametrize("layout", ["none", "newm", "old"])
+@pytest.mark.parametrize("var", V)
+@pytest.mark.parametrize("kw,tty", [
+    pytest.param({"yes": True, "never_ask": True}, False, id="cl43-yes"),
+    pytest.param({"never_ask": True}, True, id="cl43-person"),
+    pytest.param({"non_interactive": True, "never_ask": True}, False, id="cl43-ni"),
+])
+def test_cl43_a_chosen_outside_station_beats_the_variable_and_asks_nothing(
+        world, monkeypatch, layout, var, kw, tty):
+    monkeypatch.setenv("VIDEO_STATION", str(world["typed"]))
+    seen = []
+    choice = _run(world, monkeypatch, layout, var, None, tty, seen=seen, **dict(kw))
+    assert (choice.mode, choice.path) == ("separate", str(world["typed"]))
+    assert seen == []
+
+
+@pytest.mark.parametrize("var", V)
+def test_cl44_mode_embedded_next_to_a_chosen_outside_station_is_still_code_2(world, monkeypatch,
+                                                                            var):
+    monkeypatch.setenv("VIDEO_STATION", str(world["typed"]))
+    with pytest.raises(ContractError) as e:
+        _run(world, monkeypatch, "none", var, None, False, mode="embedded")
+    assert "hai nguồn sự thật" in str(e.value)
+
+
+def test_cl16_a_relative_station_flag_is_recorded_as_an_absolute_path(world, monkeypatch, capsys,
+                                                                     tmp_path):
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("OPCOS_WORKSPACES", str(world["ws"]))
+    rc, out, _err = _init(monkeypatch, capsys, "--station", "tram-tuong-doi")
+    want = os.path.abspath("tram-tuong-doi")
+    assert rc == 0 and _json_of(out)["station"] == want
+    local = json.loads((world["repo"] / "studio.local.json").read_text(encoding="utf-8"))
+    assert local["station_path"] == want and os.path.isabs(want)
+
+
+@pytest.mark.parametrize("var", V)
+def test_cl34_a_typed_path_that_is_a_file_is_code_2_and_writes_nothing(world, monkeypatch, tmp_path,
+                                                                      var):
+    f = tmp_path / "la-mot-file"
+    f.write_text("khong phai thu muc", encoding="utf-8")
+    _set_var(world, monkeypatch, var)
+    monkeypatch.setattr(station, "_stdin_is_tty", lambda: False)
+    with pytest.raises(ContractError):
+        station.do_init(ask=lambda p: str(f))
+    assert f.read_text(encoding="utf-8") == "khong phai thu muc"
+    assert not (world["repo"] / "studio.local.json").exists()
+    assert not (world["repo"] / "workspaces").exists()
