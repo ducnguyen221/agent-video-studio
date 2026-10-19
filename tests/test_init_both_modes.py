@@ -160,22 +160,23 @@ def test_init_mode_separate_defaults_to_opcos_station_and_writes_absolute_path(
     assert sorted(p.name for p in (tmp_path / "opcos-ws").iterdir()) == ["video"]
 
 
-def test_init_interactive_proposes_opcos_station(repo, tmp_path, monkeypatch):
+def test_init_interactive_asks_one_question_naming_the_opcos_station(repo, tmp_path, monkeypatch):
     st = _opcos(tmp_path, monkeypatch)
-    asked, answers = [], iter(["2", ""])
-    mode, path, why = station.choose_mode(ask=lambda p: asked.append(p) or next(answers))
+    asked = []
+    mode, path, why = station.choose_mode(ask=lambda p: asked.append(p) or "")
     assert (mode, path) == ("separate", os.path.abspath(str(st)))
-    assert "OPCOS_WORKSPACES" in asked[0] and str(st) in asked[0]
-    assert str(st) in asked[1]                   # câu thứ hai: xác nhận đường
+    assert len(asked) == 1 and str(st) in asked[0] and "OPCOS_WORKSPACES" in asked[0]
     assert "OPCOS_WORKSPACES" in why
-    mode, path, _ = station.choose_mode(ask=lambda p: "1")
-    assert mode == "embedded" and path == str(repo / "workspaces")
+    with pytest.raises(ContractError) as e:              # câu này nhận ĐƯỜNG, không nhận `1`
+        station.choose_mode(ask=lambda p: "1")
+    assert "--mode embedded" in str(e.value)
 
 
-def test_init_yes_with_opcos_var_stays_embedded(repo, tmp_path, monkeypatch):
-    _opcos(tmp_path, monkeypatch)
+def test_init_yes_with_opcos_var_uses_the_opcos_station(repo, tmp_path, monkeypatch):
+    st = _opcos(tmp_path, monkeypatch)
     mode, path, why = station.choose_mode(yes=True)
-    assert mode == "embedded" and path == str(repo / "workspaces") and "--yes" in why
+    assert (mode, path) == ("separate", os.path.abspath(str(st)))
+    assert "--yes" in why and "OPCOS_WORKSPACES" in why
 
 
 def test_init_mode_embedded_allowed_with_opcos_var(repo, tmp_path, monkeypatch):
@@ -191,25 +192,26 @@ def test_init_again_on_embedded_clone_is_not_flipped(repo, tmp_path, monkeypatch
     assert mode == "embedded" and "studio.local.json" in why
 
 
-def test_init_yes_ignores_opcos_dir_without_marker(repo, tmp_path, monkeypatch):
-    _opcos(tmp_path, monkeypatch, marked=False)
+def test_init_yes_builds_the_opcos_station_even_without_marker(repo, tmp_path, monkeypatch,
+                                                                 capsys):
+    st = _opcos(tmp_path, monkeypatch, marked=False)
     mode, path, _ = station.choose_mode(yes=True)
-    assert mode == "embedded" and path == str(repo / "workspaces")
+    assert (mode, path) == ("separate", os.path.abspath(str(st)))
+    assert os.path.abspath(str(st)) in capsys.readouterr().err       # dựng mới ⇒ nói ra một dòng
     asked = []
-    station.choose_mode(ask=lambda p: asked.append(p) or "1")
-    assert "Enter = [2]" in asked[0]          # có biến là đủ để gợi ý, không đòi thư mục mang dấu
+    station.choose_mode(ask=lambda p: asked.append(p) or "")
+    assert len(asked) == 1 and "Enter = [2]" not in asked[0]          # một câu, không còn bảng
 
 
-def test_init_prev_separate_without_path_not_flipped_to_opcos(repo, tmp_path, monkeypatch):
-    """`studio.local.json` đã ghi `separate` (không `station_path`) và không `--mode`: lựa chọn đã
-    ghi thắng (không hỏi lại chế độ); thiếu đường thì hỏi đường chứ không đoán."""
+def test_init_prev_separate_without_path_is_code_2_and_never_asks(repo, tmp_path, monkeypatch):
+    """`studio.local.json` đã ghi `separate` mà thiếu `station_path`: bản ghi hỏng ⇒ mã 2 nêu
+    `--station`; không đoán sang trạm OpcOS, không hỏi lại đường."""
     _opcos(tmp_path, monkeypatch)
     (repo / "studio.local.json").write_text(json.dumps({"mode": "separate"}), encoding="utf-8")
-    other = tmp_path / "khac"
     asked = []
-    mode, path, why = station.choose_mode(ask=lambda p: asked.append(p) or str(other))
-    assert (mode, path) == ("separate", str(other)) and "studio.local.json" in why
-    assert len(asked) == 1 and "Đặt trạm" in asked[0]    # chỉ câu hỏi đường, không hỏi chế độ
+    with pytest.raises(ContractError) as e:
+        station.choose_mode(ask=lambda p: asked.append(p) or str(tmp_path / "khac"))
+    assert "--station" in str(e.value) and asked == []
 
 
 def test_mode_separate_takes_the_opcos_station(repo, tmp_path, monkeypatch):
@@ -218,12 +220,14 @@ def test_mode_separate_takes_the_opcos_station(repo, tmp_path, monkeypatch):
     assert (mode, path) == ("separate", os.path.abspath(str(st)))
 
 
-def test_init_yes_with_opcos_is_embedded_in_the_repo(repo, tmp_path, monkeypatch, capsys):
-    _opcos(tmp_path, monkeypatch)
+def test_init_yes_with_opcos_builds_the_opcos_station_through_the_cli(repo, tmp_path, monkeypatch,
+                                                                       capsys):
+    st = _opcos(tmp_path, monkeypatch)
     monkeypatch.setattr(station, "_stdin_is_tty", lambda: False)
     assert station.init_main(["--non-interactive", "--yes", "--json"]) == 0
     cap = capsys.readouterr()
-    assert json.loads(cap.out.strip().splitlines()[-1])["station"] == str(repo / "workspaces")
+    assert json.loads(cap.out.strip().splitlines()[-1])["station"] == os.path.abspath(str(st))
+    assert not (repo / "workspaces").exists()
 
 
 def test_init_without_opcos_var_unchanged(repo):

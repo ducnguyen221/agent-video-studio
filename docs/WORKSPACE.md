@@ -21,24 +21,32 @@ chạy. Không có "bộ" nào phải cài đủ.
 | **`embedded`** — gọn trong repo (**mặc định, khuyến nghị cho người mới**) | `<repo>/workspaces/` | `<repo>/.env` | một máy, "mở một folder là thấy hết" |
 | **`separate`** — trạm ngoài repo | nơi bạn chọn (vd `<OPCOS_WORKSPACES>/video`) | cấp user; bí mật ở `~/.secret/video-studio/` | nhiều máy, repo public của chính bạn, nhiều repo dùng chung một trạm |
 
-`video-studio init` hỏi bạn chọn (Enter = `embedded`; riêng khi đã đặt `OPCOS_WORKSPACES` thì Enter = `separate` ở
-`<biến>/video`, có hỏi xác nhận/đổi) và ghi lựa chọn vào
+`video-studio init` hỏi bạn chọn (Enter = `embedded`; riêng khi đã đặt `OPCOS_WORKSPACES` thì chỉ có
+MỘT câu nhận đường — Enter = `<biến>/video`, hoặc gõ đường khác) và ghi lựa chọn vào
 `<repo>/studio.local.json`. **Không hỏi** trong ba trường hợp:
 
 - `--station DIR` — bạn chỉ thẳng trạm ⇒ `separate`.
 - Máy **đã chọn trạm ngoài**: biến `VIDEO_STATION` (hoặc tên cũ `VIDEO_ROOT`) đã đặt, hoặc
   `studio.local.json` đã ghi `separate` ⇒ dùng trạm đó, và **không bao giờ** tạo `workspaces/`.
   Hai trạm cho một repo là hai nguồn sự thật, và cái sai chỉ lộ ra khi bạn "mất" một project.
-- `--mode embedded|separate`, hoặc `--yes` (= nhận khuyến nghị `embedded`, **không bao giờ hỏi**).
-  `separate` mà thiếu `--station` thì không hỏi chế độ nữa mà hỏi **đường trạm**: gợi ý
-  `<OPCOS_WORKSPACES>/video` nếu biến đã đặt, không thì gõ tay; không có người thì dùng đường gợi ý
-  hoặc dừng mã 2 đòi `--station`. Có `OPCOS_WORKSPACES` mà chạy tương tác thì Enter ở bảng chọn ra
-  `<biến>/video` (có hỏi xác nhận/đổi), còn `--yes` ra `<repo>/workspaces`.
+- `--mode embedded|separate`, hoặc `--yes` (**không bao giờ hỏi**: có `OPCOS_WORKSPACES` thì ra
+  `<biến>/video`, không có biến thì ra trạm `embedded` trong repo; muốn trạm trong repo khi máy có biến:
+  `--mode embedded --yes`). `separate` mà thiếu `--station` thì không hỏi chế độ nữa mà hỏi **đường
+  trạm**: `<OPCOS_WORKSPACES>/video` nếu biến đã đặt (đã mang dấu trạm thì dùng thẳng, không hỏi), không
+  thì gõ tay; không có người thì dùng đường đó hoặc dừng mã 2 đòi `--station`. Chạy không người
+  (pipe, `--non-interactive`) mà máy có `OPCOS_WORKSPACES` thì cũng ra `<biến>/video`.
+
+Trạm trong repo (`workspaces/`, hoặc `workspace/` cũ) **đã có dữ liệu** mà chưa ghi lựa chọn, trên máy
+đặt `OPCOS_WORKSPACES`: dữ liệu có sẵn thắng biến — `init` giữ trạm đó và ghi `embedded` (không người,
+`--yes` hay Enter; có người thì hỏi một câu "giữ hay chuyển", gõ `chuyen` để dời vào `<biến>/video`
+qua `migrate`, có hỏi `y/N`). Nếu `<biến>/video` cũng đã là một trạm thì có **hai trạm** mang dấu:
+`init` vẫn giữ trạm trong repo và nhắc gộp bằng tay hoặc chọn một bằng `--station`.
 
 Chạy không có người trả lời (agent, script, lịch) mà chưa chọn ⇒ `init` in bảng lựa chọn rồi
 thoát **mã 2**, chưa ghi byte nào. **Agent cài phải trình bảng đó cho người dùng và chờ họ
-chọn** — không tự chọn im lặng. Tự khai `--non-interactive` cũng vậy: nó nói "không có ai ngồi
-đây", KHÔNG nói "đoán hộ tôi", nên thiếu `--yes`/`--mode`/`--station` thì vẫn là mã 2.
+chọn** — không tự chọn im lặng (máy đặt `OPCOS_WORKSPACES` thì không người đã có đường rõ ràng
+`<biến>/video`, không mã 2). Tự khai `--non-interactive` cũng vậy: nó nói "không có ai ngồi đây",
+KHÔNG nói "đoán hộ tôi", nên không có biến mà thiếu `--yes`/`--mode`/`--station` thì vẫn là mã 2.
 
 Agent cài nên **phân tích rồi khuyến nghị**, không hỏi trống: người không rành kỹ thuật, một
 máy ⇒ `embedded`; người nhiều máy, rành hơn, hoặc repo này là bản public của chính họ ⇒

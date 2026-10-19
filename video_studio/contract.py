@@ -71,7 +71,13 @@ def run(fn, args, as_json=False):
     try:
         result = fn(args) or {}
     except KeyboardInterrupt:
-        raise
+        # Người dùng tự huỷ (Ctrl+C) là một lần dừng có chủ ý, không phải lỗi máy: một dòng, mã 2,
+        # không traceback. Khối dọn `except BaseException` của từng lệnh đã chạy xong trước khi tới đây.
+        msg = "đã huỷ (Ctrl+C)"
+        log(f"[video-studio] {msg}.")
+        if as_json:
+            emit({"ok": False, "code": CONTRACT_ERROR, "error": msg})
+        return CONTRACT_ERROR
     except Exception as exc:        # noqa: BLE001 — biên của CLI: mọi lỗi phải thành mã thoát
         code = classify(exc)
         msg = str(exc) or exc.__class__.__name__

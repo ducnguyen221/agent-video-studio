@@ -15,14 +15,39 @@ kiểm).
   không còn tin chuỗi `station_path: workspace` (hay `workspaces`) mà `init` đời trước ghi trong
   `studio.local.json`: luôn đi qua cách chọn trạm nhúng chung, nên đổi tên thư mục theo lời nhắc
   không làm mất trạm và có cả hai thì `workspaces` thắng; `init` ghi lại `station_path: workspaces`.
-- **Cảnh báo:** có `OPCOS_WORKSPACES` thì Enter/xác nhận ra `<biến>/video`, còn `--yes` ra
-  `<repo>/workspaces`.
+- **Cảnh báo (đổi hành vi):** máy đặt `OPCOS_WORKSPACES` thì `init --yes` và mọi lần chạy không người
+  (pipe, `--non-interactive`, hết dữ liệu ở câu hỏi) nay ra trạm OpcOS `<biến>/video` thay vì
+  `<repo>/workspaces` hay mã 2: đã mang dấu trạm thì dùng thẳng, chưa thì dựng mới và in một dòng nêu
+  đường cùng `--station <đường>`. Ai quen `--yes` ra trạm trong repo trên máy có biến thì chạy
+  `init --mode embedded --yes`.
 - Thư mục trạm cũ ẩn trong thư mục cá nhân không còn được tự nhận; trỏ vào bằng
   `--station <đường>`.
-- `init`: `--yes` không bao giờ hỏi và luôn là embedded; `--non-interactive` thiếu cả `--yes` lẫn
-  `--mode` thoát mã 2 (không đoán chế độ); `--mode separate` thiếu `--station` thì có
-  `OPCOS_WORKSPACES` ⇒ `<biến>/video` (có người thì hỏi xác nhận/đổi, không người thì dùng luôn và
-  in một dòng), không có biến ⇒ có người thì hỏi đường, không người thì mã 2 đòi `--station`.
+- `init`: `--yes` không bao giờ hỏi; không có `OPCOS_WORKSPACES` thì `--yes` ra trạm nhúng, còn
+  `--non-interactive` thiếu cả `--yes` lẫn `--mode` thoát mã 2 (không đoán chế độ); `--mode separate`
+  thiếu `--station` thì có `OPCOS_WORKSPACES` ⇒ `<biến>/video` (đã mang dấu trạm thì dùng thẳng, không
+  hỏi; chưa thì có người hỏi xác nhận/đổi, không người dùng luôn và in một dòng), không có biến ⇒ có
+  người thì hỏi đường, không người thì mã 2 đòi `--station`.
+- `init` có `OPCOS_WORKSPACES` mà chạy có người: đúng MỘT câu nhận đường (Enter = `<biến>/video`, hoặc
+  gõ đường khác), kể cả khi `<biến>/video` đã mang dấu trạm; bảng `[1]/[2]` chỉ còn khi máy không đặt
+  biến. Gõ `1`, `2`, `embedded` hay `separate` ở câu đó thoát mã 2 kèm hướng dẫn (trước đây `2` đi tiếp
+  sang câu hỏi đường); trạm trong repo thì dùng `--mode embedded`. `< NUL` hoặc pipe hết dữ liệu khi máy
+  có biến nay ra trạm OpcOS thay vì mã 2 (trạm cũ có dữ liệu thì giữ, xem dòng dưới).
+- `init` trên máy có `OPCOS_WORKSPACES` mà trạm trong repo (`workspaces/`, hoặc `workspace/` cũ) ĐÃ có
+  dữ liệu và chưa ghi lựa chọn: dữ liệu có sẵn thắng biến. `--yes`, chạy không người, hết dữ liệu hay
+  Enter ⇒ giữ trạm đó, ghi `mode: embedded` và in một dòng chỉ cách dời sau
+  (`migrate --to separate --station <biến>/video`); có người thì hỏi một câu "giữ hay chuyển", gõ
+  `chuyen` (hoặc `chuyển`, `c`) thì `init` ghi `embedded` rồi hỏi `y/N` của `migrate` để dời vào
+  `<biến>/video` (đích không rỗng ⇒ mã 2 trước câu `y/N`; trả lời không ⇒ giữ, mã 0; `--dry-run` chỉ in
+  "sẽ dời"). Bố cục có cả `workspace/` cũ mang dấu lẫn `workspaces/` rỗng: giữ, nhắc gộp, không hỏi.
+  Nếu `<biến>/video` cũng đã là một trạm thì có hai trạm mang dấu: giữ trạm trong repo và nhắc gộp bằng
+  tay hoặc chọn một bằng `--station`.
+- `studio.local.json` ghi `separate` mà thiếu `station_path` (bản ghi hỏng) ⇒ mã 2, không hỏi, nêu
+  `--station`, với mọi cách gọi (trước đây `init` đoán sang trạm OpcOS và hỏi lại).
+- `OPCOS_WORKSPACES` (hoặc `<biến>/video`) trỏ vào một FILE ⇒ mã 2 nêu tên biến, chưa ghi gì (trước đây
+  mã 1 kèm traceback).
+- Ctrl+C ở bất kỳ lệnh nào của `video-studio` ⇒ một dòng "đã huỷ (Ctrl+C)" và mã 2 (với `--json` là
+  `{"ok": false, "code": 2, …}`), không traceback; `migrate` đang dời giữa chừng vẫn trả lại thư mục
+  đích rỗng như trước rồi mới thoát.
 - `migrate` dời hỏng thì trả lại thư mục đích rỗng mà người dùng đã tạo sẵn; đích là một FILE
   (`--station` hay câu trả lời) thì dừng mã 2 với thông báo rõ thay vì traceback.
 - Đường dán có cặp ngoặc kép bao quanh (`"C:\\x"`, kiểu "Copy as path" của Windows) được bóc ngoặc ở

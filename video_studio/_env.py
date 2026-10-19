@@ -278,6 +278,13 @@ def opcos_base():
     return os.path.expanduser(base) if base else None
 
 
+def opcos_dir(station="video"):
+    """`<OPCOS_WORKSPACES>/<station>` TUYỆT ĐỐI (biến tương đối thì theo cwd lúc gọi), DÙ thư mục đó đã
+    mang dấu trạm hay chưa; biến vắng/rỗng ⇒ None. Không tạo, không ghi."""
+    base = opcos_base()
+    return os.path.abspath(os.path.join(base, station)) if base else None
+
+
 def opcos_station(station="video"):
     """`<OPCOS_WORKSPACES>/<station>` nếu biến đã đặt và thư mục đó mang dấu trạm; ngược lại None.
 

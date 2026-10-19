@@ -28,11 +28,15 @@ cài gì: nó chỉ ra thứ còn thiếu và cách cài.
   public của chính bạn. Đặt biến `VIDEO_STATION` trỏ vào trạm để mọi công cụ khác thấy.
 
 Trạm **đã được chọn** từ trước — biến `VIDEO_STATION`, hoặc lựa chọn `separate` đã ghi trong
-`studio.local.json` — thì `init` dùng tiếp như cũ, không hỏi. `--yes` không bao giờ hỏi và luôn là embedded
-(`<repo>/workspaces`); `--non-interactive` thiếu `--yes`/`--mode` thì thoát mã 2. Có
-`OPCOS_WORKSPACES` mà chạy tương tác thì Enter ở bảng chọn ra `<biến>/video` (có hỏi xác nhận/đổi
-đường). Trạm `<repo>/workspace` (số ít) của bản cũ vẫn được nhận, kèm một dòng nhắc đổi tên thành
-`workspaces`. Trỏ vào trạm khác thì dùng `init --station DIR` (hoặc `--migrate` với bố cục cũ).
+`studio.local.json` — thì `init` dùng tiếp như cũ, không hỏi. `--yes` không bao giờ hỏi. Máy đặt
+`OPCOS_WORKSPACES` thì `--yes` (và mọi lần chạy không người: pipe, `--non-interactive`) ra `<biến>/video`;
+chạy tương tác thì có đúng một câu (Enter nhận `<biến>/video`, hoặc gõ đường khác). Máy không đặt biến
+thì `--yes` ra `<repo>/workspaces`, còn `--non-interactive` thiếu `--yes`/`--mode` thì thoát mã 2. Muốn
+giữ trạm trong repo trên máy có `OPCOS_WORKSPACES`: `init --mode embedded --yes`. Trạm nhúng đã có dữ
+liệu mà chưa ghi lựa chọn thì thắng biến: được giữ (có người thì hỏi một câu "giữ hay chuyển"; gõ
+`chuyen` để dời vào `<biến>/video`). Trạm `<repo>/workspace` (số ít) của bản cũ vẫn được nhận, kèm một
+dòng nhắc đổi tên thành `workspaces`. Trỏ vào trạm khác thì dùng `init --station DIR` (hoặc
+`--migrate` với bố cục cũ).
 
 ## 4. Nhận một trạm có sẵn
 

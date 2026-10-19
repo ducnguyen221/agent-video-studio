@@ -81,10 +81,11 @@ hộ bạn.
 
 ```
 video-studio init                            # trình bảng hai lựa chọn rồi chờ bạn chọn
-video-studio init --yes                      # nhận khuyến nghị (embedded), không hỏi
+video-studio init --yes                      # không hỏi: có OPCOS_WORKSPACES thì <biến>/video, không thì trạm trong repo
 video-studio init --mode separate            # chọn thẳng chế độ; thiếu đường trạm thì hỏi đường (xem dưới)
 video-studio init --station <thư mục trạm>  # hoặc chỉ thẳng một trạm (= separate, không hỏi)
 video-studio init --non-interactive --yes    # CI / lịch chạy: không hỏi và không đoán
+video-studio init --mode embedded --yes     # trạm trong repo, kể cả khi máy đặt OPCOS_WORKSPACES
 ```
 
 `separate` **không có đường trạm mặc định**: thiếu `--station`, `init` gợi ý `<OPCOS_WORKSPACES>/video`
@@ -99,16 +100,20 @@ tích rồi khuyến nghị**, không hỏi trống.
 
 `init` **chỉ bỏ qua câu hỏi khi trạm đã được chọn**. Máy đã đặt biến `VIDEO_STATION`/`VIDEO_ROOT`
 (hoặc `studio.local.json` đã ghi `separate`) thì bản trần dùng trạm đó và nói rõ lý do. Có
-`OPCOS_WORKSPACES` mà chạy tương tác thì Enter ở bảng chọn ra `<biến>/video` (có hỏi xác nhận/đổi);
-`--yes` không bao giờ hỏi và ra `<repo>/workspaces`; `--non-interactive` thiếu
-`--yes`/`--mode` thì thoát mã 2. Xin `embedded` khi máy đã chọn trạm ngoài là **lỗi mã 2**
+`OPCOS_WORKSPACES` thì `--yes` và mọi lần chạy không người (pipe, `--non-interactive`) ra `<biến>/video`
+không hỏi, còn chạy tương tác thì có đúng một câu nhận đường (Enter nhận `<biến>/video`; gõ `1`/`2` thì
+mã 2). Không có biến thì `--yes` không bao giờ hỏi và ra trạm trong repo, còn `--non-interactive` thiếu
+`--yes`/`--mode` thì thoát mã 2. Có biến mà trạm trong repo (`workspaces/`) đã có dữ liệu và chưa ghi
+lựa chọn thì dữ liệu thắng biến: `init` giữ trạm đó (có người thì hỏi "giữ hay chuyển"; gõ `chuyen` để
+dời vào `<biến>/video` qua `migrate`). Xin `embedded` khi máy đã chọn trạm ngoài là **lỗi mã 2**
 ("hai nguồn sự thật") chứ không phải một cảnh báo — muốn dựng trạm trong repo thì gỡ biến trước.
 Bản cài cũ có `<repo>/workspace/` (số ít) vẫn được nhận kèm một dòng khuyến nghị đổi sang
 `workspaces`.
 
 Không có ai trả lời (CI, scheduled task) mà chưa chọn ⇒ `init` in bảng lựa chọn rồi thoát
-**mã 2, chưa ghi byte nào**. Cờ `--non-interactive` tự khai "không có ai ngồi đây"; nó **không**
-có nghĩa "đoán hộ tôi", nên thiếu `--yes`/`--mode`/`--station` thì vẫn là mã 2.
+**mã 2, chưa ghi byte nào** (máy không đặt `OPCOS_WORKSPACES`; có biến thì không người đã có một đường
+rõ ràng là `<biến>/video`). Cờ `--non-interactive` tự khai "không có ai ngồi đây"; nó **không** có
+nghĩa "đoán hộ tôi", nên không có biến mà thiếu `--yes`/`--mode`/`--station` thì vẫn là mã 2.
 
 ### `.env` ở chế độ embedded
 

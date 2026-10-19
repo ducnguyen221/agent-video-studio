@@ -29,10 +29,14 @@ nothing: it names what is missing and how to install it.
   repo that is your own public one. Set `VIDEO_STATION` so every other tool finds it.
 
 A station that was already chosen — the `VIDEO_STATION` variable, or an earlier `separate` choice
-saved in `studio.local.json` — is used as before, without asking. `--yes` never asks and always means
-embedded (`<repo>/workspaces`); `--non-interactive` without `--yes` or `--mode` exits with code 2.
-With `OPCOS_WORKSPACES` set, pressing Enter at the interactive choice goes to `<variable>/video`
-(you are asked to confirm or change the path). An older `<repo>/workspace` (singular) station is
+saved in `studio.local.json` — is used as before, without asking. `--yes` never asks. When
+`OPCOS_WORKSPACES` is set, `--yes` (and any unattended run: a pipe, or `--non-interactive`) goes to
+`<variable>/video`; interactively you get one question (Enter accepts `<variable>/video`, or type
+another path). When it is not set, `--yes` uses `<repo>/workspaces`, and `--non-interactive` without
+`--yes` or `--mode` exits with code 2. To keep the station inside the repo on a machine that has
+`OPCOS_WORKSPACES`, run `init --mode embedded --yes`. An embedded station that already holds data
+and has no recorded choice wins over the variable: it is kept (you are asked "keep or move" once; type
+`chuyen` to move it into `<variable>/video`). An older `<repo>/workspace` (singular) station is
 still recognised, with a one-line reminder to rename it to `workspaces`. To point at any other
 station use `init --station DIR` (or `--migrate` for an old layout).
 
