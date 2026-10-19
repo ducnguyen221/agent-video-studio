@@ -49,6 +49,8 @@ kiểm).
   trạm đang dời, hoặc trạm chính là một điểm nối, nay bị từ chối mã 2 TRƯỚC câu `y/N` và trước byte nào (trước
   đây hỏi `y/N` rồi mới hỏng). `init --migrate` khi chưa có trạm nêu cách đi tiếp (`--station <đường trạm đã
   có>` hoặc bỏ `--migrate`) và không còn in dòng "dùng <biến>/video".
+- `OPCOS_WORKSPACES` có dấu nháy dính vào giá trị, hoặc ký tự cấm trong đường dẫn Windows (`<` `>` `|` `?` `*`; dấu hỏi của tiền tố
+  extended-length vẫn hợp lệ) ⇒ mã 2, một dòng nêu tên biến, 0 câu hỏi, chưa ghi gì (kể cả khi còn trạm cũ có dữ liệu).
 - `OPCOS_WORKSPACES` chính nó đã là một trạm video (có `station.json`, `projects/`…) ⇒ mã 2 nêu tên biến, không dựng trạm
   lồng `<biến>/video`; đường mạng không tới được hay ổ chưa gắn ⇒ mã 2 nêu biến và đường, phần đã làm được hoàn tác
   (trước đây mã 1 kèm traceback).
