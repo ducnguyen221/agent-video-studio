@@ -100,9 +100,9 @@ def test_move_and_yes_moves_every_file_and_records_separate(scene):
 
 
 @pytest.mark.parametrize("second", [
-    pytest.param("n", id="cl56-no"),
-    pytest.param("", id="cl56-enter"),
-    pytest.param("<EOF>", id="cl56-eof"),
+    pytest.param("n", id="no"),
+    pytest.param("", id="enter"),
+    pytest.param("<EOF>", id="eof"),
 ])
 def test_move_but_declined_at_the_yes_no_question_keeps_everything(scene, capsys, second):
     before = _data(scene["st"])
@@ -204,3 +204,19 @@ def test_ctrl_c_at_the_first_question_writes_nothing(scene, monkeypatch, capsys)
     cap = capsys.readouterr()
     assert rc == 2 and "đã huỷ" in cap.err and "Traceback" not in cap.err
     assert not (scene["repo"] / "studio.local.json").exists() and not os.path.exists(scene["oc"])
+
+
+def test_after_a_confirmed_move_the_closing_lines_do_not_offer_an_undo_that_moves_nothing(
+        scene, capsys):
+    res = station.do_init(ask=_script("chuyen", "y"))
+    capsys.readouterr()
+    station._print_init(res)
+    err = capsys.readouterr().err
+    assert "--undo" not in err and scene["oc"] in err
+
+
+def test_a_plain_embedded_init_still_offers_its_undo(scene, capsys):
+    res = station.do_init(yes=True)
+    capsys.readouterr()
+    station._print_init(res)
+    assert "--undo" in capsys.readouterr().err

@@ -103,3 +103,10 @@ def test_the_error_that_asks_for_a_choice_does_not_promise_yes_means_embedded_ev
     assert station.init_main([]) == 2
     err = _flat(capsys.readouterr().err)
     assert "--yes = embedded" not in err or "không đặt OPCOS_WORKSPACES" in err
+
+
+@pytest.mark.parametrize("rel", ["README.md", "README.vi.md", "docs/index.html"])
+def test_entry_pages_do_not_promise_a_table_and_exit_2_on_a_machine_that_sets_the_variable(rel):
+    """"Không có ai trả lời ⇒ in bảng rồi mã 2" chỉ đúng khi máy chưa đặt `OPCOS_WORKSPACES`."""
+    text = _read(rel)
+    assert "OPCOS_WORKSPACES" in text, f"{rel} còn câu 'không ai trả lời ⇒ mã 2' không nêu điều kiện về biến"

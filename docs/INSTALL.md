@@ -94,7 +94,8 @@ video-studio init --mode embedded --yes     # trạm trong repo, kể cả khi m
 thoát **mã 2** đòi `--station DIR`.
 
 **`embedded` là mặc định và là khuyến nghị**: trạm ở `<repo>/workspaces/`, biến cấu hình ở
-`<repo>/.env`, bấm Enter là xong, không phải đặt biến môi trường nào. Chọn `separate` khi bạn
+`<repo>/.env`; khi máy chưa đặt `OPCOS_WORKSPACES`, bấm Enter là xong, không phải đặt biến môi
+trường nào. Chọn `separate` khi bạn
 dùng nhiều máy, rành kỹ thuật, hoặc repo này là bản public của chính bạn. Agent cài nên **phân
 tích rồi khuyến nghị**, không hỏi trống.
 

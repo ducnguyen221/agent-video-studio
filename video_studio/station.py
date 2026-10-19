@@ -237,17 +237,27 @@ def _unquote(text):
     return s
 
 
-def _check_opcos_slot(base, slot):
-    """`OPCOS_WORKSPACES` hay `<biến>/video` là một FILE ⇒ mã 2 nêu tên biến — TRƯỚC mọi `makedirs`
-    (mã 1 là "lỗi máy không lường"; giá trị biến sai là lỗi hợp đồng của người gọi)."""
-    if os.path.isfile(base):
+def _opcos_target():
+    """`<OPCOS_WORKSPACES>/video` tuyệt đối, hoặc None khi biến vắng. Biến (hay một thư mục cha của nó) hoặc
+    `<biến>/video` là một FILE ⇒ ContractError nêu TÊN BIẾN, trước mọi câu hỏi và mọi `makedirs` (lỗi hợp
+    đồng của người gọi, không phải lỗi máy)."""
+    base = _env.opcos_base()
+    if not base:
+        return None
+    base = os.path.abspath(base)
+    probe = base
+    while not os.path.exists(probe) and os.path.dirname(probe) != probe:
+        probe = os.path.dirname(probe)
+    if os.path.exists(probe) and not os.path.isdir(probe):
         raise ContractError(
-            f"OPCOS_WORKSPACES ({base}) là một file, không phải thư mục chứa các trạm — sửa biến "
-            "trỏ vào thư mục, hoặc chọn nơi khác bằng --station DIR.")
-    if os.path.isfile(slot):
+            f"OPCOS_WORKSPACES trỏ vào một FILE, không phải thư mục: {probe}. Đặt lại biến trỏ vào một "
+            "thư mục (hoặc bỏ biến), hoặc chạy lại với --station DIR. Chưa ghi gì.")
+    oc = os.path.join(base, "video")
+    if os.path.exists(oc) and not os.path.isdir(oc):
         raise ContractError(
-            f"{slot} (<OPCOS_WORKSPACES>/video) là một file, không phải thư mục trạm — đổi tên/gỡ file "
-            "đó, sửa OPCOS_WORKSPACES, hoặc chọn nơi khác bằng --station DIR.")
+            f"OPCOS_WORKSPACES/video là một FILE, không phải thư mục: {oc}. Đổi tên/xoá file đó (hoặc "
+            "đặt lại OPCOS_WORKSPACES), hoặc chạy lại với --station DIR. Chưa ghi gì.")
+    return oc
 
 
 def choose_mode(station=None, mode=None, yes=False, ask=None, non_interactive=False,
@@ -293,7 +303,7 @@ def choose_mode(station=None, mode=None, yes=False, ask=None, non_interactive=Fa
     if not mode:
         if prev in MODES:
             mode, why = prev, "studio.local.json (lần chọn trước)"
-        elif _env.opcos_dir():
+        elif _opcos_target():
             return _choose_with_opcos(repo, yes, user_ask, non_interactive)
         elif yes:
             mode, why = "embedded", "--yes (nhận khuyến nghị)"
@@ -349,7 +359,7 @@ def _kept_embedded_station(repo):
 
 def _choose_with_opcos(repo, yes, ask, non_interactive):
     """Máy đặt `OPCOS_WORKSPACES`, chưa có `--station`/`--mode`/biến trạm riêng/lựa chọn đã ghi."""
-    oc = _env.opcos_dir()
+    oc = _opcos_target()                 # biến hỏng ⇒ mã 2 ngay, trước mọi câu hỏi
     interactive = not yes and not non_interactive and (ask is not None or _stdin_is_tty())
     kept = _kept_embedded_station(repo)
     if kept:
@@ -375,9 +385,8 @@ def _choose_with_opcos(repo, yes, ask, non_interactive):
 
 def _use_opcos_station(why, suggest):
     """Dùng `<biến>/video` mà không hỏi: đã mang dấu ⇒ dùng thẳng (không dòng nào); chưa ⇒ dựng + MỘT dòng."""
-    _check_opcos_slot(_env.opcos_base(), suggest)
     if not _env.has_marker(suggest):
-        contract.log(f"[init] trạm separate: dùng {suggest} (OPCOS_WORKSPACES/video). "
+        contract.log(f"[init] separate: dùng {suggest} (OPCOS_WORKSPACES/video). "
                      "Muốn nơi khác: --station <đường>.")
     return Choice("separate", suggest, f"{why} — theo OPCOS_WORKSPACES")
 
@@ -393,7 +402,7 @@ def _pick_separate_path(why, ask, non_interactive, yes=False, confirm=False):
       tương tác không `--mode`) ⇒ vẫn hỏi đúng một câu kể cả khi đã mang dấu, và từ chối `1`/`2`/
       `embedded`/`separate`. Hết dữ liệu (EOF) khi có gợi ý = không có người.
     Cờ `confirm` là boolean tường minh — không rẽ theo chuỗi `why` hiển thị."""
-    suggest = _env.opcos_dir()
+    suggest = _opcos_target()            # biến hỏng ⇒ mã 2 ngay, trước mọi câu hỏi
     interactive = not yes and not non_interactive and (ask is not None or _stdin_is_tty())
     if suggest and not confirm and _env.has_marker(suggest):
         return Choice("separate", suggest, f"{why} — {suggest} đã là một trạm (OPCOS_WORKSPACES)")
@@ -418,15 +427,15 @@ def _pick_separate_path(why, ask, non_interactive, yes=False, confirm=False):
             return _use_opcos_station(why, suggest)
         raise ContractError("không đọc được câu trả lời (stdin không có người): --station DIR là "
                             "bắt buộc khi chạy không tương tác.")
-    if confirm and ans.lower() in STATION_CONFIRM_REJECT:
+    if suggest and ans.lower() in STATION_CONFIRM_REJECT:
         raise ContractError(
-            f"câu này nhận ĐƯỜNG thư mục, không nhận lựa chọn {ans!r}: Enter = {suggest}; "
-            "trạm trong repo thì chạy lại với --mode embedded.")
+            f"câu này nhận ĐƯỜNG DẪN, không nhận lựa chọn {ans!r}. Enter = {suggest} "
+            "(OPCOS_WORKSPACES/video); gõ đường khác để dùng nơi khác; muốn trạm trong repo: chạy lại "
+            "với --mode embedded. Chưa ghi gì.")
     if not ans:
         if not suggest:
             raise ContractError("chưa chọn nơi đặt trạm — chạy lại và gõ đường, hoặc truyền "
                                 "--station DIR.")
-        _check_opcos_slot(_env.opcos_base(), suggest)
         return Choice("separate", suggest, f"{why} — nhận gợi ý theo OPCOS_WORKSPACES")
     return Choice("separate", _env._expand(ans), f"{why} — người dùng gõ đường")
 
@@ -1027,8 +1036,8 @@ def _print_init(res):
     log(f"[init] {tag}chế độ: {res['mode']} · trạm: {res['station']}")
     log(f"[init] lý do: {res['reason']} · HyperFrames {res['hyperframes_version']}")
     if res["dry_run"] and res.get("then_migrate"):
-        log(f"[init] sẽ dời {res['station']} → {res['then_migrate']} (sau khi ghi embedded, có hỏi y/N) "
-            "— xem trước, chưa dời gì")
+        log(f"[init] sẽ dời {res['station']} → {res['then_migrate']} "
+            "(khi chạy thật: hỏi y/N trước khi dời)")
     if not res["plan"]:
         log("[init] trạm đã đúng chuẩn — không có gì phải làm")
     for p in res["plan"]:
@@ -1047,7 +1056,7 @@ def _print_init(res):
         log(f"  ! {n}")
     if res.get("env") == "created":
         log("  + .env (từ .env.example)")
-    if not res["dry_run"] and res["plan"]:
+    if not res["dry_run"] and res["plan"] and not res.get("moved"):
         log(f"[init] xong — hoàn tác: video-studio init --station \"{res['station']}\" --undo")
     if not res["dry_run"]:
         if res["mode"] == "separate":

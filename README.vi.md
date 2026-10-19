@@ -70,11 +70,13 @@ video-studio doctor          # sau init: chưa có trạm thì doctor mã 3, đ�
 ```
 
 `init` **trình bảng rồi mới làm**, chứ không hỏi trống: `embedded` (trạm ở `<repo>/workspaces/`,
-biến cấu hình ở `<repo>/.env`) là **khuyến nghị** — bấm Enter là xong, không phải đặt biến môi
-trường nào, và `init` chép sẵn `.env.example` thành `.env` cho bạn điền. Chọn `separate` khi bạn
-dùng nhiều máy, rành kỹ thuật, hoặc repo này là bản public của chính bạn. Không có ai trả lời
-(CI, lịch chạy) thì `init` in bảng đó ra rồi **thoát mã 2 mà chưa ghi byte nào** — agent cài phải
-đưa bảng cho người dùng xem, không tự chọn im lặng.
+biến cấu hình ở `<repo>/.env`) là **khuyến nghị** — khi máy chưa đặt `OPCOS_WORKSPACES`, bấm Enter là
+xong, không phải đặt biến môi trường nào, và `init` chép sẵn `.env.example` thành `.env` cho bạn điền.
+Chọn `separate` khi bạn dùng nhiều máy, rành kỹ thuật, hoặc repo này là bản public của chính bạn.
+Không có ai trả lời (CI, lịch chạy) và máy chưa đặt `OPCOS_WORKSPACES` thì `init` in bảng đó ra rồi
+**thoát mã 2 mà chưa ghi byte nào** — agent cài phải đưa bảng cho người dùng xem, không tự chọn im
+lặng. Máy đã đặt `OPCOS_WORKSPACES` thì chỗ đặt đã biết: `--yes` hay chạy không người dựng trạm
+`<biến>/video`.
 
 HyperFrames không phải phụ thuộc Python: nó chạy qua `npx hyperframes@$HYPERFRAMES_VERSION`,
 luôn là một bản cụ thể (không bao giờ `latest`).

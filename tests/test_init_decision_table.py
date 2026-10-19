@@ -18,8 +18,8 @@ cũ có dữ liệu → `--yes`/không người → có người):
   dòng nhắc đổi tên; `init` mới không bao giờ tạo thư mục số ít.
 
 Hình của bộ test (ba repo cùng một hình):
-* mỗi dòng bảng là một `pytest.param` với id CỐ ĐỊNH theo tên ô (`cl<NN>-<tên>`), không sinh từ chỉ số
-  hay giá trị — chèn dòng không đổi id dòng khác;
+* mỗi dòng bảng là một `pytest.param` với id CỐ ĐỊNH đặt theo tên tình huống (`enter-var`, `yes-tty-var`…),
+  không sinh từ chỉ số hay giá trị — chèn dòng không đổi id dòng khác;
 * trục biến có ba giá trị: `unset` (không có `OPCOS_WORKSPACES`) · `unmarked` (đặt, `<biến>/video`
   chưa có) · `marked` (đặt, `<biến>/video` đã có `station.json`);
 * mỗi dòng khai SỐ CÂU HỎI kỳ vọng và test assert BẰNG đúng số đó (hỏi ít hơn cũng đỏ).
@@ -116,78 +116,78 @@ def _expect(world, layout, kind):
 
 
 def _rows(*cells):
-    """(tên ô, [biến…], câu trả lời giả, tty, kwargs, kết quả, số câu hỏi[, fr16]) → `pytest.param` có
-    id `<tên ô>-<giá trị biến>`. Biến `unset` một dòng; `unmarked`/`marked` mỗi giá trị một dòng.
-    `fr16` = dòng này đi qua nhánh "trạm nhúng mang dấu, chưa ghi lựa chọn, có biến" khi tầng là
+    """(tên tình huống, [biến…], câu trả lời giả, tty, kwargs, kết quả, số câu hỏi[, keeps_old]) → `pytest.param` có
+    id `<tên tình huống>-<giá trị biến>`. Biến `unset` một dòng; `unmarked`/`marked` mỗi giá trị một dòng.
+    `keeps_old` = dòng này đi qua nhánh "trạm nhúng mang dấu, chưa ghi lựa chọn, có biến" khi tầng là
     `old`/`both` (xem `test_decision_table`)."""
     out = []
     for name, var_values, answers, tty, kw, want, asks, *rest in cells:
-        fr16 = bool(rest and rest[0])
+        keeps_old = bool(rest and rest[0])
         for var in var_values:
             asks_for = asks[var] if isinstance(asks, dict) else asks
-            out.append(pytest.param(var, answers, tty, kw, want, asks_for, fr16,
+            out.append(pytest.param(var, answers, tty, kw, want, asks_for, keeps_old,
                                     id=f"{name}-{var}"))
     return out
 
 
 U = ("unset",)
 V = ("unmarked", "marked")
-# (ô, biến, câu trả lời giả, tty, kwargs, kết quả: embedded | var | typed | exit2, số câu hỏi, fr16)
+# (tình huống, biến, câu trả lời giả, tty, kwargs, kết quả: embedded | var | typed | exit2, số câu hỏi, keeps_old)
 ROWS = _rows(
     # ── tương tác (ask giả) ──
-    ("cl01-enter-table", U, [""], False, {}, "embedded", 1),            # Enter = [1] embedded
-    ("cl02-one-embedded", U, ["1"], False, {}, "embedded", 1),
-    ("cl03-two-then-path", U, ["2", "TYPED"], False, {}, "typed", 2),
-    ("cl04-two-then-empty", U, ["2", ""], False, {}, "exit2", 2),       # đường rỗng, không gợi ý
-    ("cl05-bad-answer", U, ["x"], False, {}, "exit2", 1),
-    ("cl06-eof-novar", U, [EOF], False, {}, "exit2", 1),                # Windows `< NUL`: không biến ⇒ mã 2
+    ("enter-table", U, [""], False, {}, "embedded", 1),            # Enter = [1] embedded
+    ("one-embedded", U, ["1"], False, {}, "embedded", 1),
+    ("two-then-path", U, ["2", "TYPED"], False, {}, "typed", 2),
+    ("two-then-empty", U, ["2", ""], False, {}, "exit2", 2),       # đường rỗng, không gợi ý
+    ("bad-answer", U, ["x"], False, {}, "exit2", 1),
+    ("eof-novar", U, [EOF], False, {}, "exit2", 1),                # Windows `< NUL`: không biến ⇒ mã 2
     # có biến, có người: ĐÚNG MỘT câu nhận đường (Enter = <biến>/video)
-    ("cl27-enter-var", V, [""], False, {}, "var", 1, True),
-    ("cl28-typed-var", V, ["TYPED"], False, {}, "typed", 1, True),
-    ("cl29-one-var", V, ["1"], False, {}, "exit2", 1, True),            # CQ1: câu này nhận ĐƯỜNG
-    ("cl30-two-var", V, ["2"], False, {}, "exit2", 1, True),
-    ("cl31-embedded-word-var", V, ["embedded"], False, {}, "exit2", 1, True),
-    ("cl32-separate-word-var", V, ["separate"], False, {}, "exit2", 1, True),
-    ("cl26-eof-var", V, [EOF], False, {}, "var", 1, True),              # hết dữ liệu = không người
+    ("enter-var", V, [""], False, {}, "var", 1, True),
+    ("typed-var", V, ["TYPED"], False, {}, "typed", 1, True),
+    ("one-var", V, ["1"], False, {}, "exit2", 1, True),            # câu này nhận ĐƯỜNG, không nhận số thứ tự
+    ("two-var", V, ["2"], False, {}, "exit2", 1, True),
+    ("embedded-word-var", V, ["embedded"], False, {}, "exit2", 1, True),
+    ("separate-word-var", V, ["separate"], False, {}, "exit2", 1, True),
+    ("eof-var", V, [EOF], False, {}, "var", 1, True),              # hết dữ liệu = không người
     # ── không hỏi ──
-    ("cl08-yes", U, None, False, {"yes": True}, "embedded", 0),
-    ("cl22-yes-var", V, None, False, {"yes": True}, "var", 0, True),
-    ("cl08-yes-tty", U, None, True, {"yes": True, "never_ask": True}, "embedded", 0),
-    ("cl22-yes-tty-var", V, None, True, {"yes": True, "never_ask": True}, "var", 0, True),
-    ("cl09-ni-yes", U, None, False, {"non_interactive": True, "yes": True}, "embedded", 0),
-    ("cl23-ni-yes-var", V, None, False, {"non_interactive": True, "yes": True}, "var", 0, True),
-    ("cl11-ni", U, None, False, {"non_interactive": True}, "exit2", 0),  # không đoán chế độ
-    ("cl25-ni-var", V, None, False, {"non_interactive": True}, "var", 0, True),
-    ("cl25-ni-tty-var", V, None, True, {"non_interactive": True, "never_ask": True}, "var", 0,
+    ("yes", U, None, False, {"yes": True}, "embedded", 0),
+    ("yes-var", V, None, False, {"yes": True}, "var", 0, True),
+    ("yes-tty", U, None, True, {"yes": True, "never_ask": True}, "embedded", 0),
+    ("yes-tty-var", V, None, True, {"yes": True, "never_ask": True}, "var", 0, True),
+    ("ni-yes", U, None, False, {"non_interactive": True, "yes": True}, "embedded", 0),
+    ("ni-yes-var", V, None, False, {"non_interactive": True, "yes": True}, "var", 0, True),
+    ("ni", U, None, False, {"non_interactive": True}, "exit2", 0),  # không đoán chế độ
+    ("ni-var", V, None, False, {"non_interactive": True}, "var", 0, True),
+    ("ni-tty-var", V, None, True, {"non_interactive": True, "never_ask": True}, "var", 0,
      True),
-    ("cl10-notty-noflag", U, None, False, {}, "exit2", 0),               # không terminal, không --yes
-    ("cl24-notty-noflag-var", V, None, False, {}, "var", 0, True),
+    ("notty-noflag", U, None, False, {}, "exit2", 0),               # không terminal, không --yes
+    ("notty-noflag-var", V, None, False, {}, "var", 0, True),
     # ── --mode (lựa chọn tường minh đi trước nhánh trạm nhúng cũ) ──
-    ("cl37-sep-ni-var", V, None, False, {"mode": "separate", "non_interactive": True}, "var", 0),
-    ("cl15-sep-ni", U, None, False, {"mode": "separate", "non_interactive": True}, "exit2", 0),
-    ("cl37-sep-yes-var", V, None, False, {"mode": "separate", "yes": True}, "var", 0),
-    ("cl37-sep-yes-tty-var", V, None, True,
+    ("sep-ni-var", V, None, False, {"mode": "separate", "non_interactive": True}, "var", 0),
+    ("sep-ni", U, None, False, {"mode": "separate", "non_interactive": True}, "exit2", 0),
+    ("sep-yes-var", V, None, False, {"mode": "separate", "yes": True}, "var", 0),
+    ("sep-yes-tty-var", V, None, True,
      {"mode": "separate", "yes": True, "never_ask": True}, "var", 0),
-    ("cl15-sep-yes-tty", U, None, True,
+    ("sep-yes-tty", U, None, True,
      {"mode": "separate", "yes": True, "never_ask": True}, "exit2", 0),
     # `--mode separate` có người: đã mang dấu ⇒ dùng thẳng, 0 câu; chưa ⇒ 1 câu
-    ("cl36-sep-enter-var", V, [""], False, {"mode": "separate"}, "var",
+    ("sep-enter-var", V, [""], False, {"mode": "separate"}, "var",
      {"unmarked": 1, "marked": 0}),
-    ("cl13-sep-typed", U, ["TYPED"], False, {"mode": "separate"}, "typed", 1),
-    ("cl14-sep-enter-novar", U, [""], False, {"mode": "separate"}, "exit2", 1),
-    ("cl12-mode-embedded", U, None, False, {"mode": "embedded"}, "embedded", 0),
-    ("cl38-mode-embedded-yes-var", V, None, False, {"mode": "embedded", "yes": True},
+    ("sep-typed", U, ["TYPED"], False, {"mode": "separate"}, "typed", 1),
+    ("sep-enter-novar", U, [""], False, {"mode": "separate"}, "exit2", 1),
+    ("mode-embedded", U, None, False, {"mode": "embedded"}, "embedded", 0),
+    ("mode-embedded-yes-var", V, None, False, {"mode": "embedded", "yes": True},
      "embedded", 0),
 )
 LAYOUTS = ["none", "old", "new", "both"]
 
 
 @pytest.mark.parametrize("layout", LAYOUTS)
-@pytest.mark.parametrize("var,answers,tty,kw,want,asks,fr16", ROWS)
-def test_decision_table(world, monkeypatch, layout, var, answers, tty, kw, want, asks, fr16):
+@pytest.mark.parametrize("var,answers,tty,kw,want,asks,keeps_old", ROWS)
+def test_decision_table(world, monkeypatch, layout, var, answers, tty, kw, want, asks, keeps_old):
     if answers is not None:
         answers = [str(world["typed"]) if a == "TYPED" else a for a in answers]
-    if fr16 and layout in ("old", "both"):
+    if keeps_old and layout in ("old", "both"):
         # trạm nhúng cũ mang dấu thắng biến: giữ, không bao giờ dựng trạm OpcOS rỗng cạnh dữ liệu cũ.
         # `old`: có người thì có ĐÚNG MỘT câu giữ/chuyển (mọi câu trả lời khác `chuyen` = giữ);
         # `both` (mới chưa dấu): không câu nào.
@@ -231,32 +231,32 @@ def test_with_a_variable_the_only_question_names_the_path_and_has_no_table(world
 # ── lựa chọn đã ghi trong studio.local.json ───────────────────────────────────────────────
 # (đã ghi, tầng, biến, kwargs, kết quả). "rec" = đường đã ghi.
 REC_ROWS = [
-    pytest.param("embedded", "none", "unset", {"yes": True}, "embedded", id="cl20-rec-embedded-yes"),
+    pytest.param("embedded", "none", "unset", {"yes": True}, "embedded", id="rec-embedded-yes"),
     pytest.param("embedded", "none", "unset", {"non_interactive": True}, "embedded",
-                 id="cl20-rec-embedded-ni"),                          # đã chọn rồi: không mã 2
-    pytest.param("embedded", "none", "unset", {}, "embedded", id="cl20-rec-embedded-ask"),
-    pytest.param("embedded", "old", "unset", {}, "embedded", id="cl20-rec-embedded-old"),
+                 id="rec-embedded-ni"),                          # đã chọn rồi: không mã 2
+    pytest.param("embedded", "none", "unset", {}, "embedded", id="rec-embedded-ask"),
+    pytest.param("embedded", "old", "unset", {}, "embedded", id="rec-embedded-old"),
     pytest.param("embedded", "both", "unset", {"mode": "embedded"}, "embedded",
-                 id="cl20-rec-embedded-mode"),
+                 id="rec-embedded-mode"),
     pytest.param("separate", "none", "unset", {"non_interactive": True}, "rec",
-                 id="cl21-rec-separate-ni"),
-    pytest.param("separate", "new", "unset", {"yes": True}, "rec", id="cl21-rec-separate-yes-new"),
-    pytest.param(None, "none", "unset", {"non_interactive": True}, "exit2", id="cl11-rec-none-ni"),
-    # ── biến đặt: lựa chọn đã ghi thắng biến (ASSUMPTION của SPEC) ──
+                 id="rec-separate-ni"),
+    pytest.param("separate", "new", "unset", {"yes": True}, "rec", id="rec-separate-yes-new"),
+    pytest.param(None, "none", "unset", {"non_interactive": True}, "exit2", id="rec-none-ni"),
+    # ── biến đặt: lựa chọn đã ghi thắng biến ──
     pytest.param("embedded", "none", "unmarked", {"yes": True}, "embedded",
-                 id="cl39-rec-embedded-yes-unmarked"),
+                 id="rec-embedded-yes-unmarked"),
     pytest.param("embedded", "none", "marked", {"yes": True}, "embedded",
-                 id="cl39-rec-embedded-yes-marked"),
+                 id="rec-embedded-yes-marked"),
     pytest.param("embedded", "none", "unmarked", {"non_interactive": True, "yes": True},
-                 "embedded", id="cl39-rec-embedded-ni-yes-unmarked"),
-    pytest.param("embedded", "none", "marked", {}, "embedded", id="cl39-rec-embedded-ask-marked"),
+                 "embedded", id="rec-embedded-ni-yes-unmarked"),
+    pytest.param("embedded", "none", "marked", {}, "embedded", id="rec-embedded-ask-marked"),
     pytest.param("embedded", "old", "unmarked", {"yes": True}, "embedded",
-                 id="cl39-rec-embedded-yes-old-unmarked"),   # đã ghi embedded thắng cả nhánh "giữ"
-    pytest.param("embedded", "old", "marked", {}, "embedded", id="cl39-rec-embedded-ask-old-marked"),
+                 id="rec-embedded-yes-old-unmarked"),   # đã ghi embedded thắng cả nhánh "giữ"
+    pytest.param("embedded", "old", "marked", {}, "embedded", id="rec-embedded-ask-old-marked"),
     pytest.param("separate", "none", "unmarked", {"yes": True}, "rec",
-                 id="cl40-rec-separate-yes-unmarked"),
+                 id="rec-separate-yes-unmarked"),
     pytest.param("separate", "none", "marked", {"non_interactive": True}, "rec",
-                 id="cl40-rec-separate-ni-marked"),
+                 id="rec-separate-ni-marked"),
 ]
 
 
@@ -284,10 +284,10 @@ def test_a_recorded_choice_is_kept_without_asking(world, monkeypatch, prev, layo
 # cách gọi, có hay không có biến (không đoán trạm OpcOS, không hỏi đường).
 @pytest.mark.parametrize("var", ["unset", "unmarked", "marked"])
 @pytest.mark.parametrize("kw,answers", [
-    pytest.param({"yes": True}, None, id="cl41-yes"),
-    pytest.param({}, [""], id="cl41-person"),
-    pytest.param({"non_interactive": True}, None, id="cl41-ni"),
-    pytest.param({}, None, id="cl41-notty"),
+    pytest.param({"yes": True}, None, id="yes"),
+    pytest.param({}, [""], id="person"),
+    pytest.param({"non_interactive": True}, None, id="ni"),
+    pytest.param({}, None, id="notty"),
 ])
 def test_a_recorded_separate_choice_without_a_path_is_code_2_and_asks_nothing(
         world, monkeypatch, var, kw, answers):
@@ -347,9 +347,9 @@ def _assert_kept(world, layout, var, choice, err):
 @pytest.mark.parametrize("var", V)
 @pytest.mark.parametrize("layout", KEEP_LAYOUTS)
 @pytest.mark.parametrize("kw,tty", [
-    pytest.param({"yes": True, "never_ask": True}, False, id="cl51-keep-yes"),
-    pytest.param({}, False, id="cl52-keep-notty"),                     # không có ask nào để gọi
-    pytest.param({"non_interactive": True, "never_ask": True}, True, id="cl53-keep-ni"),
+    pytest.param({"yes": True, "never_ask": True}, False, id="keep-yes"),
+    pytest.param({}, False, id="keep-notty"),                     # không có ask nào để gọi
+    pytest.param({"non_interactive": True, "never_ask": True}, True, id="keep-ni"),
 ])
 def test_old_station_with_data_is_kept_without_asking(world, monkeypatch, capsys, kw, tty, layout,
                                                       var):
@@ -362,10 +362,10 @@ def test_old_station_with_data_is_kept_without_asking(world, monkeypatch, capsys
 @pytest.mark.parametrize("var", V)
 @pytest.mark.parametrize("layout", KEEP_LAYOUTS)
 @pytest.mark.parametrize("answer", [
-    pytest.param("", id="cl54-keep-enter"),
-    pytest.param("khong", id="cl54-keep-other-word"),
-    pytest.param("2", id="cl54-keep-digit"),
-    pytest.param("xin chuyen", id="cl54-keep-sentence"),
+    pytest.param("", id="keep-enter"),
+    pytest.param("khong", id="keep-other-word"),
+    pytest.param("2", id="keep-digit"),
+    pytest.param("xin chuyen", id="keep-sentence"),
 ])
 def test_a_person_who_says_nothing_special_keeps_the_old_station(world, monkeypatch, capsys,
                                                                  answer, layout, var):
@@ -378,10 +378,10 @@ def test_a_person_who_says_nothing_special_keeps_the_old_station(world, monkeypa
 @pytest.mark.parametrize("var", V)
 @pytest.mark.parametrize("layout", KEEP_LAYOUTS)
 @pytest.mark.parametrize("answer", [
-    pytest.param("chuyen", id="cl55-move-chuyen"),
-    pytest.param("chuyển", id="cl55-move-accented"),
-    pytest.param("c", id="cl55-move-c"),
-    pytest.param("  CHUYEN ", id="cl55-move-upper-padded"),
+    pytest.param("chuyen", id="move-chuyen"),
+    pytest.param("chuyển", id="move-accented"),
+    pytest.param("c", id="move-c"),
+    pytest.param("  CHUYEN ", id="move-upper-padded"),
 ])
 def test_typing_the_move_word_only_sets_the_flag_and_moves_nothing(world, monkeypatch, answer,
                                                                    layout, var):
@@ -420,9 +420,9 @@ def test_ctrl_c_at_the_keep_or_move_question_propagates(world, monkeypatch, layo
 
 @pytest.mark.parametrize("var", V)
 @pytest.mark.parametrize("kw,answers", [
-    pytest.param({"yes": True}, None, id="cl62-both-yes"),
-    pytest.param({}, None, id="cl62-both-notty"),
-    pytest.param({}, ["chuyen"], id="cl62-both-person"),
+    pytest.param({"yes": True}, None, id="both-yes"),
+    pytest.param({}, None, id="both-notty"),
+    pytest.param({}, ["chuyen"], id="both-person"),
 ])
 def test_both_layouts_keep_quietly_and_never_ask_to_move(world, monkeypatch, capsys, kw, answers,
                                                          var):
@@ -438,8 +438,8 @@ def test_both_layouts_keep_quietly_and_never_ask_to_move(world, monkeypatch, cap
 
 @pytest.mark.parametrize("layout", KEEP_LAYOUTS)
 @pytest.mark.parametrize("kw,answers,asks", [
-    pytest.param({"mode": "separate", "yes": True}, None, 0, id="cl64-sep-yes"),
-    pytest.param({"mode": "separate"}, [""], 1, id="cl64-sep-person"),
+    pytest.param({"mode": "separate", "yes": True}, None, 0, id="sep-yes"),
+    pytest.param({"mode": "separate"}, [""], 1, id="sep-person"),
 ])
 def test_an_explicit_mode_separate_still_builds_the_opcos_station(world, monkeypatch, kw, answers,
                                                                   asks, layout):
@@ -470,13 +470,13 @@ def _json_of(out):
     return json.loads([ln for ln in out.splitlines() if ln.strip()][-1])
 
 
-def test_cl45_a_blank_variable_counts_as_absent(world, monkeypatch, capsys):
+def test_a_blank_variable_counts_as_absent(world, monkeypatch, capsys):
     monkeypatch.setenv("OPCOS_WORKSPACES", "   ")
     rc, out, _err = _init(monkeypatch, capsys, "--yes")
     assert rc == 0 and _json_of(out)["station"] == str(world["repo"] / "workspaces")
 
 
-def test_cl46_a_relative_variable_gives_an_absolute_station(world, monkeypatch, capsys, tmp_path):
+def test_a_relative_variable_gives_an_absolute_station(world, monkeypatch, capsys, tmp_path):
     monkeypatch.chdir(tmp_path)
     monkeypatch.setenv("OPCOS_WORKSPACES", "relws")
     want = os.path.abspath(os.path.join("relws", "video"))
@@ -487,37 +487,41 @@ def test_cl46_a_relative_variable_gives_an_absolute_station(world, monkeypatch, 
 
 
 @pytest.mark.parametrize("argv", [
-    pytest.param(["--yes"], id="cl47-yes"),
-    pytest.param(["--non-interactive"], id="cl47-ni"),
-    pytest.param(["--mode", "separate", "--yes"], id="cl47-mode-separate-yes"),
+    pytest.param(["--yes"], id="yes"),
+    pytest.param(["--non-interactive"], id="ni"),
+    pytest.param(["--mode", "separate", "--yes"], id="mode-separate-yes"),
 ])
-def test_cl47_a_variable_that_is_a_file_is_code_2_and_names_the_variable(
+def test_a_variable_that_is_a_file_is_code_2_and_names_the_variable(
         world, monkeypatch, capsys, tmp_path, argv):
     f = tmp_path / "la-mot-file"
     f.write_text("khong phai thu muc", encoding="utf-8")
     monkeypatch.setenv("OPCOS_WORKSPACES", str(f))
-    rc, _out, err = _init(monkeypatch, capsys, *argv)
+    rc, out, err = _init(monkeypatch, capsys, *argv)
     assert rc == 2 and "OPCOS_WORKSPACES" in err and "Traceback" not in err
+    assert "FILE" in _json_of(out)["error"] and "separate: dùng" not in err
     assert f.read_text(encoding="utf-8") == "khong phai thu muc"
     assert not (world["repo"] / "studio.local.json").exists()
     assert not (world["repo"] / "workspaces").exists()
 
 
-def test_cl47_a_station_slot_that_is_a_file_is_code_2_and_names_the_variable(
+def test_a_station_slot_that_is_a_file_is_code_2_and_names_the_variable(
         world, monkeypatch, capsys):
     world["ws"].mkdir()
     (world["ws"] / "video").write_text("la mot file", encoding="utf-8")
     monkeypatch.setenv("OPCOS_WORKSPACES", str(world["ws"]))
-    rc, _out, err = _init(monkeypatch, capsys, "--yes")
+    rc, out, err = _init(monkeypatch, capsys, "--yes")
     assert rc == 2 and "OPCOS_WORKSPACES" in err and "Traceback" not in err
+    # chính dòng lỗi của chốt `<biến>/video`, không phải dòng thông tin "dùng …" đứng trước nó
+    assert "OPCOS_WORKSPACES/video là một FILE" in _json_of(out)["error"]
+    assert "separate: dùng" not in err
     assert (world["ws"] / "video").read_text(encoding="utf-8") == "la mot file"
     assert not (world["repo"] / "studio.local.json").exists()
 
 
-# Ba ô sau CHỈ ghi lại hành vi hiện tại (dựng, không chặn, không xoá gì). Security hẹp quyết có chặn
-# không — nếu chặn thì đổi kỳ vọng ba test này, không phải việc mới.
-def test_cl48_a_variable_inside_the_repo_builds_there_current_behaviour(world, monkeypatch, capsys):
-    """hành vi hiện tại — security hẹp quyết"""
+# Ba test sau CHỈ ghi lại hành vi hiện tại (dựng, không chặn, không xoá gì). Pinned as current
+# behaviour, not a contract: nếu sau này chặn các trường hợp này thì đổi kỳ vọng ba test, không phải việc mới.
+def test_a_variable_inside_the_repo_builds_there_current_behaviour(world, monkeypatch, capsys):
+    """Pinned as current behaviour, not a contract."""
     inside = world["repo"] / "ws"
     monkeypatch.setenv("OPCOS_WORKSPACES", str(inside))
     rc, out, _err = _init(monkeypatch, capsys, "--yes")
@@ -525,9 +529,9 @@ def test_cl48_a_variable_inside_the_repo_builds_there_current_behaviour(world, m
     assert (inside / "video" / "station.json").is_file()
 
 
-def test_cl49_a_variable_that_is_itself_a_station_nests_current_behaviour(world, monkeypatch,
+def test_a_variable_that_is_itself_a_station_nests_current_behaviour(world, monkeypatch,
                                                                          capsys):
-    """hành vi hiện tại — security hẹp quyết"""
+    """Pinned as current behaviour, not a contract."""
     world["ws"].mkdir()
     (world["ws"] / "station.json").write_text("{}", encoding="utf-8")
     monkeypatch.setenv("OPCOS_WORKSPACES", str(world["ws"]))
@@ -537,9 +541,9 @@ def test_cl49_a_variable_that_is_itself_a_station_nests_current_behaviour(world,
     assert (world["ws"] / "station.json").read_text(encoding="utf-8") == "{}"
 
 
-def test_cl50_a_non_empty_unmarked_slot_is_used_and_kept_current_behaviour(world, monkeypatch,
+def test_a_non_empty_unmarked_slot_is_used_and_kept_current_behaviour(world, monkeypatch,
                                                                           capsys):
-    """hành vi hiện tại — security hẹp quyết"""
+    """Pinned as current behaviour, not a contract."""
     (world["ws"] / "video").mkdir(parents=True)
     (world["ws"] / "video" / "cua-toi.txt").write_text("giu nguyen", encoding="utf-8")
     monkeypatch.setenv("OPCOS_WORKSPACES", str(world["ws"]))
@@ -558,10 +562,10 @@ def test_a_wheel_install_without_a_repo_has_no_embedded_station_to_keep(world, m
     assert (mode, path) == ("separate", _oc(world))
 
 
-# ── ô còn lại của bảng: huỷ, --station, trạm riêng, đường gõ là file ───────────────────────────
+# ── các tình huống còn lại: huỷ, --station, trạm riêng, đường gõ là file ───────────────────────────
 
 @pytest.mark.parametrize("var", ["unset", "unmarked", "marked"])
-def test_cl07_cl33_ctrl_c_at_the_first_question_propagates_and_writes_nothing(world, monkeypatch,
+def test_ctrl_c_at_the_first_question_propagates_and_writes_nothing(world, monkeypatch,
                                                                               var):
     """Bảng [1]/[2] (không biến) và câu nhận đường (có biến): `KeyboardInterrupt` lan ra khỏi hàm chọn
     chế độ — `contract.run` mới đổi nó thành mã 2 (xem `test_cli_contract.py`)."""
@@ -575,11 +579,11 @@ def test_cl07_cl33_ctrl_c_at_the_first_question_propagates_and_writes_nothing(wo
 
 @pytest.mark.parametrize("var", V)
 @pytest.mark.parametrize("kw,answers", [
-    pytest.param({"yes": True}, None, id="cl42-yes"),
-    pytest.param({"non_interactive": True}, None, id="cl42-ni"),
-    pytest.param({}, [""], id="cl42-person"),
+    pytest.param({"yes": True}, None, id="yes"),
+    pytest.param({"non_interactive": True}, None, id="ni"),
+    pytest.param({}, [""], id="person"),
 ])
-def test_cl42_the_station_flag_beats_the_variable_and_asks_nothing(world, monkeypatch, var, kw,
+def test_the_station_flag_beats_the_variable_and_asks_nothing(world, monkeypatch, var, kw,
                                                                   answers):
     seen = []
     choice = _run(world, monkeypatch, "none", var, answers, False, seen=seen,
@@ -591,11 +595,11 @@ def test_cl42_the_station_flag_beats_the_variable_and_asks_nothing(world, monkey
 @pytest.mark.parametrize("layout", ["none", "newm", "old"])
 @pytest.mark.parametrize("var", V)
 @pytest.mark.parametrize("kw,tty", [
-    pytest.param({"yes": True, "never_ask": True}, False, id="cl43-yes"),
-    pytest.param({"never_ask": True}, True, id="cl43-person"),
-    pytest.param({"non_interactive": True, "never_ask": True}, False, id="cl43-ni"),
+    pytest.param({"yes": True, "never_ask": True}, False, id="yes"),
+    pytest.param({"never_ask": True}, True, id="person"),
+    pytest.param({"non_interactive": True, "never_ask": True}, False, id="ni"),
 ])
-def test_cl43_a_chosen_outside_station_beats_the_variable_and_asks_nothing(
+def test_a_chosen_outside_station_beats_the_variable_and_asks_nothing(
         world, monkeypatch, layout, var, kw, tty):
     monkeypatch.setenv("VIDEO_STATION", str(world["typed"]))
     seen = []
@@ -605,7 +609,7 @@ def test_cl43_a_chosen_outside_station_beats_the_variable_and_asks_nothing(
 
 
 @pytest.mark.parametrize("var", V)
-def test_cl44_mode_embedded_next_to_a_chosen_outside_station_is_still_code_2(world, monkeypatch,
+def test_mode_embedded_next_to_a_chosen_outside_station_is_still_code_2(world, monkeypatch,
                                                                             var):
     monkeypatch.setenv("VIDEO_STATION", str(world["typed"]))
     with pytest.raises(ContractError) as e:
@@ -613,7 +617,7 @@ def test_cl44_mode_embedded_next_to_a_chosen_outside_station_is_still_code_2(wor
     assert "hai nguồn sự thật" in str(e.value)
 
 
-def test_cl16_a_relative_station_flag_is_recorded_as_an_absolute_path(world, monkeypatch, capsys,
+def test_a_relative_station_flag_is_recorded_as_an_absolute_path(world, monkeypatch, capsys,
                                                                      tmp_path):
     monkeypatch.chdir(tmp_path)
     monkeypatch.setenv("OPCOS_WORKSPACES", str(world["ws"]))
@@ -625,7 +629,7 @@ def test_cl16_a_relative_station_flag_is_recorded_as_an_absolute_path(world, mon
 
 
 @pytest.mark.parametrize("var", V)
-def test_cl34_a_typed_path_that_is_a_file_is_code_2_and_writes_nothing(world, monkeypatch, tmp_path,
+def test_a_typed_path_that_is_a_file_is_code_2_and_writes_nothing(world, monkeypatch, tmp_path,
                                                                       var):
     f = tmp_path / "la-mot-file"
     f.write_text("khong phai thu muc", encoding="utf-8")
@@ -636,3 +640,61 @@ def test_cl34_a_typed_path_that_is_a_file_is_code_2_and_writes_nothing(world, mo
     assert f.read_text(encoding="utf-8") == "khong phai thu muc"
     assert not (world["repo"] / "studio.local.json").exists()
     assert not (world["repo"] / "workspaces").exists()
+
+
+# ── câu đường không nhận số thứ tự, ở MỌI nhánh có gợi ý (kể cả `--mode separate`) ────────────
+
+@pytest.mark.parametrize("var", ["unmarked"])     # đã mang dấu thì `--mode separate` không hỏi gì
+@pytest.mark.parametrize("bare", ["1", "2", "embedded", "separate", " Separate "])
+def test_a_bare_choice_at_the_mode_separate_question_is_code_2_and_creates_nothing(
+        world, monkeypatch, tmp_path, var, bare):
+    monkeypatch.chdir(tmp_path)
+    seen = []
+    with pytest.raises(ContractError) as e:
+        _run(world, monkeypatch, "none", var, [bare], False, seen=seen, mode="separate")
+    assert len(seen) == 1 and "--mode embedded" in str(e.value) and "Chưa ghi gì" in str(e.value)
+    assert not (tmp_path / bare.strip()).exists() and not (tmp_path / bare.strip().lower()).exists()
+    assert not (world["repo"] / "studio.local.json").exists()
+
+
+# ── biến hỏng được phát hiện ngay từ đầu: mã 2 nêu tên biến, 0 câu hỏi, không traceback ─────────
+
+def _broken_variable(world, monkeypatch, tmp_path, kind):
+    f = tmp_path / "la-mot-file"
+    f.write_text("khong phai thu muc", encoding="utf-8")
+    if kind == "file":
+        value = f
+    elif kind == "under-a-file":
+        value = f / "con"
+    else:                                   # "slot": <biến>/video là một file
+        world["ws"].mkdir()
+        (world["ws"] / "video").write_text("la mot file", encoding="utf-8")
+        value = world["ws"]
+    monkeypatch.setenv("OPCOS_WORKSPACES", str(value))
+    return f
+
+
+@pytest.mark.parametrize("kind", ["file", "under-a-file", "slot"])
+@pytest.mark.parametrize("argv", [["--yes"], ["--non-interactive"], ["--mode", "separate", "--yes"]])
+def test_a_broken_variable_is_code_2_without_a_traceback(world, monkeypatch, capsys, tmp_path, kind,
+                                                        argv):
+    _broken_variable(world, monkeypatch, tmp_path, kind)
+    rc, out, err = _init(monkeypatch, capsys, *argv)
+    assert rc == 2 and "Traceback" not in err and "OPCOS_WORKSPACES" in err
+    assert "FILE" in _json_of(out)["error"] and "OPCOS_WORKSPACES" in _json_of(out)["error"]
+    assert "separate: dùng" not in err
+    assert not (world["repo"] / "studio.local.json").exists()
+
+
+@pytest.mark.parametrize("kind", ["file", "under-a-file", "slot"])
+@pytest.mark.parametrize("answers,kw", [
+    pytest.param([""], {}, id="enter"),
+    pytest.param(["TYPED"], {}, id="typed-path"),
+    pytest.param([""], {"mode": "separate"}, id="mode-separate"),
+])
+def test_a_broken_variable_stops_before_any_question(world, monkeypatch, tmp_path, kind, answers, kw):
+    _broken_variable(world, monkeypatch, tmp_path, kind)
+    seen = []
+    with pytest.raises(ContractError) as e:
+        _run(world, monkeypatch, "none", "unset", answers, False, seen=seen, **dict(kw))
+    assert seen == [] and "FILE" in str(e.value) and "OPCOS_WORKSPACES" in str(e.value)
