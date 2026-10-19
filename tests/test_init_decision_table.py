@@ -698,3 +698,17 @@ def test_a_broken_variable_stops_before_any_question(world, monkeypatch, tmp_pat
     with pytest.raises(ContractError) as e:
         _run(world, monkeypatch, "none", "unset", answers, False, seen=seen, **dict(kw))
     assert seen == [] and "FILE" in str(e.value) and "OPCOS_WORKSPACES" in str(e.value)
+
+
+@pytest.mark.parametrize("kw,answers,tty", [
+    pytest.param({}, None, False, id="notty-noflag"),
+    pytest.param({"non_interactive": True}, None, True, id="non-interactive"),
+    pytest.param({}, [EOF], False, id="eof-at-the-table"),
+])
+def test_with_no_variable_and_nobody_to_ask_the_error_names_station_and_yes(world, monkeypatch, kw,
+                                                                           answers, tty):
+    with pytest.raises(ContractError) as e:
+        _run(world, monkeypatch, "none", "unset", answers, tty, **dict(kw))
+    msg = str(e.value)
+    assert "--station <đường>" in msg and "--yes" in msg and "--mode" in msg
+    assert not (world["repo"] / "studio.local.json").exists()
