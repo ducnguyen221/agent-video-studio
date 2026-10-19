@@ -244,6 +244,14 @@ def _opcos_target():
     base = _env.opcos_base()
     if not base:
         return None
+    # Dấu nháy dính vào giá trị, hoặc `<>|?*` trong tên (Windows): từ chối ngay, một dòng, trước mọi câu hỏi.
+    # Phần ổ đĩa (cả tiền tố extended-length và UNC) được splitdrive tách riêng, nên dấu hỏi của tiền tố là hợp lệ.
+    bad = '"' if '"' in base else (
+        next((c for c in '<>|?*' if c in os.path.splitdrive(base)[1]), None) if os.name == "nt" else None)
+    if bad:
+        raise ContractError(
+            f"OPCOS_WORKSPACES có ký tự không hợp lệ trong đường dẫn ({bad!r}): {base}. Đặt lại biến là một đường "
+            "thư mục thuần, không kèm dấu nháy, hoặc chạy lại với --station DIR. Chưa ghi gì.")
     base = os.path.abspath(base)
     probe = base
     while not os.path.exists(probe) and os.path.dirname(probe) != probe:

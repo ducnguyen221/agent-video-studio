@@ -748,3 +748,38 @@ def test_migrate_with_a_variable_but_no_station_stops_with_code_3_and_says_what_
     assert rc == 3 and "separate: dùng" not in err
     assert "--station <đường" in msg and "bỏ --migrate" in msg and _oc(world) in msg
     assert not world["ws"].exists() and not (world["repo"] / "studio.local.json").exists()
+
+
+# ── biến có dấu nháy / ký tự cấm trong tên: từ chối ngay đầu, một dòng, 0 câu hỏi ──────────────
+
+@pytest.mark.skipif(os.name != "nt", reason="ký tự cấm trong tên chỉ áp dụng cho đường Windows")
+@pytest.mark.parametrize("raw", ['"{ws}"', "{ws}/a<b", "{ws}/a?b", "{ws}/a|b", "{ws}/a*b"],
+                         ids=["quoted", "lt", "question", "pipe", "star"])
+@pytest.mark.parametrize("argv", [["--yes"], ["--non-interactive"], ["--mode", "separate", "--yes"]])
+def test_a_malformed_variable_is_code_2_with_one_line_and_no_announcement(
+        world, monkeypatch, capsys, raw, argv):
+    monkeypatch.setenv("OPCOS_WORKSPACES", raw.format(ws=world["ws"]))
+    rc, out, err = _init(monkeypatch, capsys, *argv)
+    lines = [ln for ln in err.splitlines() if ln.strip()]
+    assert rc == 2 and "Traceback" not in err and len(lines) == 1, err
+    assert "OPCOS_WORKSPACES" in _json_of(out)["error"] and "Chưa ghi gì" in _json_of(out)["error"]
+    assert not (world["repo"] / "studio.local.json").exists() and not world["ws"].exists()
+
+
+@pytest.mark.skipif(os.name != "nt", reason="ký tự cấm trong tên chỉ áp dụng cho đường Windows")
+@pytest.mark.parametrize("layout", ["none", "newm", "old"])
+def test_a_malformed_variable_stops_before_any_question_even_with_an_old_station(
+        world, monkeypatch, layout):
+    monkeypatch.setenv("OPCOS_WORKSPACES", '"%s"' % world["ws"])
+    seen = []
+    with pytest.raises(ContractError) as e:
+        _run(world, monkeypatch, layout, "unset", [""], False, seen=seen)
+    assert seen == [] and "OPCOS_WORKSPACES" in str(e.value)
+
+
+@pytest.mark.skipif(os.name != "nt", reason="tiền tố extended-length chỉ có ở Windows")
+def test_an_extended_length_prefix_is_a_valid_variable(world, monkeypatch, capsys):
+    """Tiền tố extended-length (hai gạch chéo ngược, dấu hỏi, gạch chéo ngược) có `?` hợp lệ: không được báo ký tự không hợp lệ."""
+    monkeypatch.setenv("OPCOS_WORKSPACES", os.sep * 2 + "?" + os.sep + str(world["ws"]))
+    rc, out, err = _init(monkeypatch, capsys, "--yes")
+    assert rc == 0, err
