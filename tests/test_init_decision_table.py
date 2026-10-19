@@ -382,6 +382,7 @@ def test_a_person_who_says_nothing_special_keeps_the_old_station(world, monkeypa
     pytest.param("chuyển", id="move-accented"),
     pytest.param("c", id="move-c"),
     pytest.param("  CHUYEN ", id="move-upper-padded"),
+    pytest.param('"chuyen"', id="move-quoted"),
 ])
 def test_typing_the_move_word_only_sets_the_flag_and_moves_nothing(world, monkeypatch, answer,
                                                                    layout, var):
@@ -529,16 +530,39 @@ def test_a_variable_inside_the_repo_builds_there_current_behaviour(world, monkey
     assert (inside / "video" / "station.json").is_file()
 
 
-def test_a_variable_that_is_itself_a_station_nests_current_behaviour(world, monkeypatch,
-                                                                         capsys):
-    """Pinned as current behaviour, not a contract."""
+def test_a_variable_that_is_itself_a_station_is_code_2_and_builds_no_nested_station(
+        world, monkeypatch, capsys):
+    """`OPCOS_WORKSPACES` phải là thư mục CHA của các trạm; trỏ thẳng vào một trạm thì dựng
+    `<biến>/video` là lồng trạm trong trạm."""
     world["ws"].mkdir()
     (world["ws"] / "station.json").write_text("{}", encoding="utf-8")
     monkeypatch.setenv("OPCOS_WORKSPACES", str(world["ws"]))
-    rc, out, _err = _init(monkeypatch, capsys, "--yes")
-    assert rc == 0 and _json_of(out)["station"] == _oc(world)
-    assert (world["ws"] / "video" / "station.json").is_file()
+    for argv in (["--yes"], ["--non-interactive"], ["--mode", "separate", "--yes"]):
+        rc, out, err = _init(monkeypatch, capsys, *argv)
+        assert rc == 2 and "Traceback" not in err
+        assert "OPCOS_WORKSPACES" in _json_of(out)["error"] and "trạm video" in _json_of(out)["error"]
+        assert "Chưa ghi gì" in _json_of(out)["error"]
+    assert not (world["ws"] / "video").exists()
     assert (world["ws"] / "station.json").read_text(encoding="utf-8") == "{}"
+    assert not (world["repo"] / "studio.local.json").exists()
+
+
+def test_an_unreachable_variable_is_code_2_naming_the_variable_and_rolls_back(world, monkeypatch,
+                                                                            capsys):
+    """Đường mạng không tới được (WinError 67…): lỗi hợp đồng của biến, không phải mã 1 + traceback."""
+    monkeypatch.setenv("OPCOS_WORKSPACES", str(world["ws"]))
+    real = os.makedirs
+
+    def flaky(path, *a, **kw):
+        if str(world["ws"]) in str(path):
+            raise OSError(67, "Không tìm thấy tên mạng")
+        return real(path, *a, **kw)
+    monkeypatch.setattr(os, "makedirs", flaky)
+    rc, out, err = _init(monkeypatch, capsys, "--yes")
+    assert rc == 2 and "Traceback" not in err
+    msg = _json_of(out)["error"]
+    assert "OPCOS_WORKSPACES" in msg and "--station" in msg and str(world["ws"]) in msg
+    assert not (world["repo"] / "studio.local.json").exists()
 
 
 def test_a_non_empty_unmarked_slot_is_used_and_kept_current_behaviour(world, monkeypatch,

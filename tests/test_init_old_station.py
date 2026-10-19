@@ -226,10 +226,12 @@ def test_moving_into_a_variable_that_leads_back_into_the_station_is_code_2_befor
         scene, tmp_path, monkeypatch):
     import subprocess
     link = tmp_path / "lnk"
+    inner = scene["st"] / "sub"                              # thư mục con KHÔNG mang dấu trạm
+    inner.mkdir()
     try:
-        os.symlink(str(scene["st"]), str(link), target_is_directory=True)
+        os.symlink(str(inner), str(link), target_is_directory=True)
     except (OSError, NotImplementedError) as e:
-        if os.name != "nt" or subprocess.run(["cmd", "/c", "mklink", "/J", str(link), str(scene["st"])],
+        if os.name != "nt" or subprocess.run(["cmd", "/c", "mklink", "/J", str(link), str(inner)],
                                              capture_output=True).returncode:
             pytest.skip(f"máy này không tạo được liên kết mềm lẫn điểm nối: {e}")
     monkeypatch.setenv("OPCOS_WORKSPACES", str(link))

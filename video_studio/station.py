@@ -252,6 +252,11 @@ def _opcos_target():
         raise ContractError(
             f"OPCOS_WORKSPACES trỏ vào một FILE, không phải thư mục: {probe}. Đặt lại biến trỏ vào một "
             "thư mục (hoặc bỏ biến), hoặc chạy lại với --station DIR. Chưa ghi gì.")
+    if _env.has_marker(base):
+        raise ContractError(
+            f"OPCOS_WORKSPACES ({base}) đã là một trạm video, không phải thư mục CHA chứa các trạm: dựng "
+            f"{os.path.join(base, 'video')} sẽ lồng một trạm trong trạm. Đặt biến trỏ vào thư mục cha, "
+            "hoặc chạy lại với --station DIR. Chưa ghi gì.")
     oc = os.path.join(base, "video")
     if os.path.exists(oc) and not os.path.isdir(oc):
         raise ContractError(
@@ -937,8 +942,16 @@ def do_init(station=None, mode=None, yes=False, migrate=False, dry_run=False, as
     # không được bỏ qua vì thế: `studio.local.json`, `.env` và hook là những thứ người dùng
     # xoá nhầm hoặc chưa bao giờ có, và "chạy lại bộ cài" phải là đường sửa cho chúng.
     if pl["plan"]:
-        run = _execute(st, pl["plan"])
-        res["run_id"] = run.id
+        try:
+            run = _execute(st, pl["plan"])
+        except (OSError, contract.EngineError) as exc:
+            if not (_under_opcos_base(st) and isinstance(exc.__cause__ or exc, OSError)):
+                raise
+            # Đường mạng không tới được, ổ chưa gắn…: lỗi cấu hình của biến, không phải lỗi máy không lường.
+            raise ContractError(
+                f"không tạo được trạm ở {st} (OPCOS_WORKSPACES): {exc.__cause__ or exc}. Kiểm biến "
+                "OPCOS_WORKSPACES (đường mạng không tới được? ổ chưa gắn?) hoặc chạy lại với --station "
+                "DIR. Phần đã làm được hoàn tác; chưa ghi studio.local.json.") from exc
     repo = _env.repo_root()
     if repo and os.path.isdir(repo):
         local_path = os.path.join(repo, _env.LOCAL_CONFIG)
@@ -958,6 +971,11 @@ def do_init(station=None, mode=None, yes=False, migrate=False, dry_run=False, as
         if choice.then_migrate:
             _move_after_init(res, choice.then_migrate, ask, non_interactive)
     return res
+
+
+def _under_opcos_base(path):
+    base = _env.opcos_base()
+    return bool(base) and _is_inside(path, os.path.abspath(base))
 
 
 def _move_after_init(res, target, ask, non_interactive):

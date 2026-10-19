@@ -45,6 +45,13 @@ kiểm).
   `--station`, với mọi cách gọi (trước đây `init` đoán sang trạm OpcOS và hỏi lại).
 - `OPCOS_WORKSPACES` (hoặc `<biến>/video`) trỏ vào một FILE ⇒ mã 2 nêu tên biến, chưa ghi gì (trước đây
   mã 1 kèm traceback).
+- `migrate` (và đáp án `chuyen` của `init`) so ĐƯỜNG THẬT: đích đi qua điểm nối (junction) hoặc liên kết mềm vào
+  trạm đang dời, hoặc trạm chính là một điểm nối, nay bị từ chối mã 2 TRƯỚC câu `y/N` và trước byte nào (trước
+  đây hỏi `y/N` rồi mới hỏng). `init --migrate` khi chưa có trạm nêu cách đi tiếp (`--station <đường trạm đã
+  có>` hoặc bỏ `--migrate`) và không còn in dòng "dùng <biến>/video".
+- `OPCOS_WORKSPACES` chính nó đã là một trạm video (có `station.json`, `projects/`…) ⇒ mã 2 nêu tên biến, không dựng trạm
+  lồng `<biến>/video`; đường mạng không tới được hay ổ chưa gắn ⇒ mã 2 nêu biến và đường, phần đã làm được hoàn tác
+  (trước đây mã 1 kèm traceback).
 - Ctrl+C ở bất kỳ lệnh nào của `video-studio` ⇒ một dòng "đã huỷ (Ctrl+C)" và mã 2 (với `--json` là
   `{"ok": false, "code": 2, …}`), không traceback; `migrate` đang dời giữa chừng vẫn trả lại thư mục
   đích rỗng như trước rồi mới thoát.
