@@ -304,7 +304,7 @@ def choose_mode(station=None, mode=None, yes=False, ask=None, non_interactive=Fa
         if prev in MODES:
             mode, why = prev, "studio.local.json (lần chọn trước)"
         elif _opcos_target():
-            return _choose_with_opcos(repo, yes, user_ask, non_interactive)
+            return _choose_with_opcos(repo, yes, user_ask, non_interactive, migrate)
         elif yes:
             mode, why = "embedded", "--yes (nhận khuyến nghị)"
         else:
@@ -339,7 +339,7 @@ def choose_mode(station=None, mode=None, yes=False, ask=None, non_interactive=Fa
         # `VIDEO_STUDIO_REPO` trỏ vào chỗ không tồn tại cũng không có: tạo workspaces/ ở một
         # đường không có thật là cách làm mất dữ liệu người dùng mà không ai thấy.
         return Choice("embedded", _embedded_station(repo), why)
-    return _pick_separate_path(why, user_ask, non_interactive, yes)
+    return _pick_separate_path(why, user_ask, non_interactive, yes, quiet=migrate)
 
 
 def _kept_embedded_station(repo):
@@ -358,7 +358,7 @@ def _kept_embedded_station(repo):
     return _embedded_station(repo), quiet
 
 
-def _choose_with_opcos(repo, yes, ask, non_interactive):
+def _choose_with_opcos(repo, yes, ask, non_interactive, migrate=False):
     """Máy đặt `OPCOS_WORKSPACES`, chưa có `--station`/`--mode`/biến trạm riêng/lựa chọn đã ghi."""
     oc = _opcos_target()                 # biến hỏng ⇒ mã 2 ngay, trước mọi câu hỏi
     interactive = not yes and not non_interactive and (ask is not None or _stdin_is_tty())
@@ -381,18 +381,18 @@ def _choose_with_opcos(repo, yes, ask, non_interactive):
         contract.log((KEEP_TWO_LINE if _env.has_marker(oc) else KEEP_LINE).format(path=st, oc=oc))
         return Choice("embedded", st, why)
     return _pick_separate_path("--yes + OPCOS_WORKSPACES" if yes else "OPCOS_WORKSPACES đã đặt",
-                               ask, non_interactive, yes, confirm=True)
+                               ask, non_interactive, yes, confirm=True, quiet=migrate)
 
 
-def _use_opcos_station(why, suggest):
+def _use_opcos_station(why, suggest, quiet=False):
     """Dùng `<biến>/video` mà không hỏi: đã mang dấu ⇒ dùng thẳng (không dòng nào); chưa ⇒ dựng + MỘT dòng."""
-    if not _env.has_marker(suggest):
+    if not quiet and not _env.has_marker(suggest):
         contract.log(f"[init] separate: dùng {suggest} (OPCOS_WORKSPACES/video). "
                      "Muốn nơi khác: --station <đường>.")
     return Choice("separate", suggest, f"{why} — theo OPCOS_WORKSPACES")
 
 
-def _pick_separate_path(why, ask, non_interactive, yes=False, confirm=False):
+def _pick_separate_path(why, ask, non_interactive, yes=False, confirm=False, quiet=False):
     """`separate` mà chưa có `--station`: KHÔNG có đường mặc định ngầm. Gợi ý (nếu biến có) là
     `<OPCOS_WORKSPACES>/video` tuyệt đối.
 
@@ -409,7 +409,7 @@ def _pick_separate_path(why, ask, non_interactive, yes=False, confirm=False):
         return Choice("separate", suggest, f"{why} — {suggest} đã là một trạm (OPCOS_WORKSPACES)")
     if not interactive:
         if suggest:
-            return _use_opcos_station(why, suggest)
+            return _use_opcos_station(why, suggest, quiet)
         raise ContractError(
             "chọn separate mà chưa có đường trạm: --station DIR là bắt buộc khi chạy không "
             "tương tác. Agent: hỏi người dùng muốn đặt trạm ở đâu rồi chạy lại với --station.")
@@ -425,7 +425,7 @@ def _pick_separate_path(why, ask, non_interactive, yes=False, confirm=False):
         ans = _unquote((ask or _ask_console_text)(q))
     except EOFError:
         if suggest:
-            return _use_opcos_station(why, suggest)
+            return _use_opcos_station(why, suggest, quiet)
         raise ContractError("không đọc được câu trả lời (stdin không có người): --station DIR là "
                             "bắt buộc khi chạy không tương tác.")
     if suggest and ans.lower() in STATION_CONFIRM_REJECT:
@@ -497,7 +497,8 @@ def build_plan(st, mode, migrate, version):
         raise ContractError(f"{st} không phải thư mục")
     exists = os.path.isdir(st)
     if migrate and not exists:
-        raise StationMissing(f"--migrate nhưng không có trạm: {st}")
+        raise StationMissing(f"--migrate nhưng không có trạm: {st}. --migrate chỉ nhận một trạm ĐÃ CÓ: chạy lại "
+                              "với --station <đường trạm đã có>, hoặc bỏ --migrate để dựng trạm mới.")
     info, err = _env.read_json(os.path.join(st, _env.STATION_FILE))
     if err:
         raise ContractError(f"station.json hỏng, sửa tay hoặc xoá rồi chạy lại: {err}")

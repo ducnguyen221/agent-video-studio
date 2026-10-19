@@ -712,3 +712,15 @@ def test_with_no_variable_and_nobody_to_ask_the_error_names_station_and_yes(worl
     msg = str(e.value)
     assert "--station <đường>" in msg and "--yes" in msg and "--mode" in msg
     assert not (world["repo"] / "studio.local.json").exists()
+
+
+def test_migrate_with_a_variable_but_no_station_stops_with_code_3_and_says_what_to_do(
+        world, monkeypatch, capsys):
+    """`--migrate` chỉ nhận một trạm ĐÃ CÓ: không in dòng "dùng <biến>/video" (nghe như sắp dựng), và
+    thông báo nêu cách đi tiếp."""
+    monkeypatch.setenv("OPCOS_WORKSPACES", str(world["ws"]))
+    rc, out, err = _init(monkeypatch, capsys, "--migrate", "--yes")
+    msg = _json_of(out)["error"]
+    assert rc == 3 and "separate: dùng" not in err
+    assert "--station <đường" in msg and "bỏ --migrate" in msg and _oc(world) in msg
+    assert not world["ws"].exists() and not (world["repo"] / "studio.local.json").exists()
