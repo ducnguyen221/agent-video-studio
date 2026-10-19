@@ -1267,6 +1267,14 @@ class _MigrateDeclined(ContractError):
     """Người dùng trả lời không (hoặc để trống / hết dữ liệu) ở câu `y/N` của `migrate`."""
 
 
+def _is_inside(path, root):
+    """`path` nằm trong (hoặc chính là) `root`? So ĐƯỜNG THẬT (`realpath`) cả hai vế, không phân biệt
+    hoa/thường trên Windows: một điểm nối (junction) hay liên kết mềm ở đích HOẶC ở nguồn không được
+    lách qua phép so chuỗi. `realpath` đi được cả đường chưa tồn tại (gỡ phần đã có, giữ phần còn lại)."""
+    p, r = (os.path.normcase(os.path.realpath(x)) for x in (path, root))
+    return p == r or p.startswith(r.rstrip(os.sep) + os.sep)
+
+
 def _confirm_migrate(ws, target, ask, non_interactive):
     files = _files(ws)
     size = sum(os.path.getsize(os.path.join(ws, *r.split("/"))) for r in files)
@@ -1302,8 +1310,7 @@ def migrate_to_separate(target=None, ask=None, non_interactive=False, confirm=Fa
     if os.path.exists(target) and not os.path.isdir(target):
         raise ContractError(f"đích {target} đã có và không phải thư mục — chọn đường khác "
                             "(--station DIR); chưa đụng gì.")
-    wsn, tn = os.path.normcase(os.path.abspath(ws)), os.path.normcase(target)
-    if tn == wsn or tn.startswith(wsn + os.sep):
+    if _is_inside(target, ws):
         raise ContractError(f"đích {target} nằm trong trạm đang dời ({ws}) — chọn chỗ ngoài repo")
     if os.path.exists(target) and os.listdir(target):
         raise ContractError(f"thư mục đích không rỗng: {target} — chọn chỗ khác (--station)")

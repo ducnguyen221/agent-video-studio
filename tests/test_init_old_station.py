@@ -220,3 +220,22 @@ def test_a_plain_embedded_init_still_offers_its_undo(scene, capsys):
     capsys.readouterr()
     station._print_init(res)
     assert "--undo" in capsys.readouterr().err
+
+
+def test_moving_into_a_variable_that_leads_back_into_the_station_is_code_2_before_the_yes_no_question(
+        scene, tmp_path, monkeypatch):
+    import subprocess
+    link = tmp_path / "lnk"
+    try:
+        os.symlink(str(scene["st"]), str(link), target_is_directory=True)
+    except (OSError, NotImplementedError) as e:
+        if os.name != "nt" or subprocess.run(["cmd", "/c", "mklink", "/J", str(link), str(scene["st"])],
+                                             capture_output=True).returncode:
+            pytest.skip(f"máy này không tạo được liên kết mềm lẫn điểm nối: {e}")
+    monkeypatch.setenv("OPCOS_WORKSPACES", str(link))
+    before = _data(scene["st"])
+    ask = _script("chuyen")                                  # câu y/N mà bị hỏi ⇒ đỏ
+    with pytest.raises(ContractError, match="nằm trong trạm"):
+        station.do_init(ask=ask)
+    assert len(ask.seen) == 1 and _local(scene)["mode"] == "embedded"
+    assert _still_there(before, scene["st"])

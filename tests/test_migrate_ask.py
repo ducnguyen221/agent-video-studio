@@ -166,3 +166,62 @@ def test_an_existing_secret_env_is_reported_before_the_y_n_question(repo, tmp_pa
         station.migrate_to_separate(ask=ask)
     assert len(ask.seen) == 1                    # chỉ câu hỏi đường; chưa tới câu y/N
     assert (repo / "workspaces").is_dir()
+
+
+# ── đích đi qua điểm nối (junction) vào chính trạm đang dời ─────────────────────────────────────
+
+def _junction(link, target):
+    """Tạo điểm nối `link → target` (Windows `mklink /J`, không cần quyền nâng); symlink ở nơi khác."""
+    import subprocess
+    try:
+        os.symlink(str(target), str(link), target_is_directory=True)
+        return
+    except (OSError, NotImplementedError) as e:
+        if os.name != "nt" or subprocess.run(["cmd", "/c", "mklink", "/J", str(link), str(target)],
+                                             capture_output=True).returncode:
+            pytest.skip(f"máy này không tạo được liên kết mềm lẫn điểm nối: {e}")
+
+
+def test_a_target_through_a_junction_into_the_workspace_is_refused_before_touching_anything(
+        repo, tmp_path):
+    inside = repo / "workspaces" / "sub"
+    inside.mkdir()
+    (repo / "workspaces" / "data.txt").write_text("du lieu", encoding="utf-8")
+    link = tmp_path / "lnk"
+    _junction(link, inside)
+    local_before = (repo / "studio.local.json").read_text(encoding="utf-8")
+    with pytest.raises(ContractError, match="nằm trong trạm"):
+        station.migrate_to_separate(str(link / "new"))
+    assert (repo / "workspaces" / "data.txt").read_text(encoding="utf-8") == "du lieu"
+    assert (repo / "studio.local.json").read_text(encoding="utf-8") == local_before
+    assert not (inside / "new").exists() and not (link / "new").exists()
+
+
+def test_a_junction_that_is_itself_the_target_is_refused_before_the_yes_no_question(repo, tmp_path):
+    link = tmp_path / "lnk"
+    _junction(link, repo / "workspaces")
+    asked = []
+    with pytest.raises(ContractError, match="nằm trong trạm"):
+        station.migrate_to_separate(str(link), ask=lambda p: asked.append(p) or "y", confirm=True)
+    assert asked == []
+    assert (repo / "workspaces" / "projects" / "news" / "meta.json").is_file()
+
+
+def test_a_workspace_that_is_itself_a_junction_still_refuses_a_target_inside_the_real_folder(
+        repo, tmp_path):
+    real = tmp_path / "that-su"
+    os.rename(repo / "workspaces", real)
+    _junction(repo / "workspaces", real)
+    with pytest.raises(ContractError, match="nằm trong trạm"):
+        station.migrate_to_separate(str(real / "new"))
+    assert (real / "projects" / "news" / "meta.json").is_file()
+
+
+def test_is_inside_compares_real_paths_in_both_directions(tmp_path):
+    a = tmp_path / "a"
+    (a / "b").mkdir(parents=True)
+    link = tmp_path / "lnk"
+    _junction(link, a)
+    assert station._is_inside(str(link / "b"), str(a))
+    assert station._is_inside(str(a / "b"), str(link))
+    assert station._is_inside(str(a), str(link)) and not station._is_inside(str(tmp_path), str(a))
