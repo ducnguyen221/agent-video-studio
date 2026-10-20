@@ -228,6 +228,9 @@ Remove-Item Env:OMNIVOICE_ONLINE
 OMNIVOICE_ONLINE=1 .venv/bin/voice-studio make-profile --name giong-mau --instruct "female, young adult, moderate pitch" --set-default
 ```
 
+Máy đặt `OPCOS_WORKSPACES` thì `voice-studio init --yes` dựng trạm giọng ở `<biến>/voice`; muốn trạm
+giọng trong repo giọng (`<repo giọng>/workspaces/`) trên máy đó, chạy `voice-studio init --mode embedded --yes`.
+
 Giọng này là giọng **thiết kế**, không phải giọng người thật. Giọng của chính người dùng
 (`make-profile --audio`) là việc sau cài đặt, chỉ với bản ghi của họ hoặc người đã đồng ý.
 
@@ -240,22 +243,27 @@ video-studio init --yes
 video-studio init --station <thư mục trạm ngoài repo>
 ```
 
-- `--yes` (khuyến nghị cho người mới, và là đường chính trên Mac): trạm ở `workspaces/` ngay trong
-  repo, Git bỏ qua cả thư mục. **Không** đặt biến môi trường nào (`VIDEO_STATION`,
-  `VOICE_STATION`…): trạm video là `<repo>/workspaces/`, trạm giọng là
-  `<repo giọng>/workspaces/`, cả hai tự phân giải từ bản clone.
+- `--yes` (khuyến nghị cho người mới, và là đường chính trên Mac): không hỏi gì. Máy không đặt
+  `OPCOS_WORKSPACES` thì trạm ở `workspaces/` ngay trong repo, Git bỏ qua cả thư mục — **không** cần
+  đặt biến môi trường nào (`VIDEO_STATION`, `VOICE_STATION`…): trạm video là `<repo>/workspaces/`,
+  trạm giọng là `<repo giọng>/workspaces/`, cả hai tự phân giải từ bản clone. Máy cài cùng OpcOS (có
+  `OPCOS_WORKSPACES`) thì trạm ở `<biến>/video`; muốn trạm trong repo trên máy đó, chạy
+  `video-studio init --mode embedded --yes`.
 - `--station`: trạm ở thư mục riêng — khi người dùng đã có trạm, dùng nhiều máy, hoặc repo là bản
   public của chính họ. Trạm có sẵn từ bản cũ thì thêm `--migrate --dry-run`, đọc kế hoạch, rồi
   mới chạy thật; kế hoạch đó gồm cả việc gỡ bản skill mà bản cũ đã chép vào trạm.
 
 **Tên và chỗ đặt trạm:** thư mục gốc luôn tên `workspaces`. Cài riêng lẻ thì chính `<repo>/workspaces`
 là trạm (đã ở trong repo nên không cần thêm tên). Cài cùng OpcOS (biến `OPCOS_WORKSPACES`) thì trạm
-nằm ở `<OPCOS_WORKSPACES>/video`. Có `OPCOS_WORKSPACES` mà chạy tương tác thì Enter ở bảng chọn ra
-`<biến>/video` (có hỏi xác nhận/đổi đường), còn `--yes` luôn ra `<repo>/workspaces` và không
-hỏi gì. `--non-interactive` thiếu `--yes`/`--mode` thì thoát mã 2. Muốn trạm ở nơi khác: `--station
-<thư mục>` (hoặc `--migrate` để nhận bố cục cũ). Máy đã đặt `VIDEO_STATION` (máy chạy lịch) thì
-`init` dùng trạm đó như trước, không hỏi; bản cài đã ghi lựa chọn trong `studio.local.json` thì
-chạy lại `init` giữ nguyên lựa chọn đó.
+nằm ở `<OPCOS_WORKSPACES>/video`. Có `OPCOS_WORKSPACES` thì `--yes` và mọi lần chạy không người
+(pipe, `--non-interactive`) ra `<biến>/video` mà không hỏi (chưa có thì dựng và in một dòng nêu đường);
+chạy tương tác thì có đúng một câu (Enter nhận `<biến>/video`, hoặc gõ đường khác; gõ `1`/`2` thì mã 2).
+Không có `OPCOS_WORKSPACES` mà `--non-interactive` thiếu `--yes`/`--mode` thì thoát mã 2. Máy có biến
+nhưng trạm trong repo (`workspaces/`) đã có dữ liệu và chưa ghi lựa chọn thì dữ liệu có sẵn thắng biến:
+`init` giữ trạm đó (có người thì hỏi một câu "giữ hay chuyển" — gõ `chuyen` để dời vào `<biến>/video`).
+Muốn trạm ở nơi khác: `--station <thư mục>` (hoặc `--migrate` để nhận bố cục cũ). Máy đã đặt
+`VIDEO_STATION` (máy chạy lịch) thì `init` dùng trạm đó như trước, không hỏi; bản cài đã ghi lựa chọn
+trong `studio.local.json` thì chạy lại `init` giữ nguyên lựa chọn đó.
 
 **Bản cài cũ có `<repo>/workspace/` (số ít):** vẫn được nhận như trạm hiện có, kèm một dòng khuyến
 nghị đổi tên thành `workspaces`; `init` mới không bao giờ tạo thư mục số ít. Có cả hai thì
@@ -364,9 +372,11 @@ Dùng đúng khung này, lời thường, không rút gọn dòng doctor:
   định ở mục 4, cài lại.
 - **`init` báo mã 2 "hai nguồn sự thật":** máy đã chọn trạm ngoài (biến `VIDEO_STATION`) mà lại
   xin trạm trong repo. Hỏi người dùng giữ trạm nào; không tự xoá trạm nào.
-- **`init --non-interactive` (không `--yes`/`--mode`) báo mã 2:** chưa ai chọn chế độ — xem đoạn
-  *Tên và chỗ đặt trạm* ở mục 6. `init --yes` thì không hỏi và không mã 2: nó dùng trạm embedded
-  `<repo>/workspaces`; đừng tự thêm `--mode separate`.
+- **`init --non-interactive` (không `--yes`/`--mode`) báo mã 2:** máy không đặt `OPCOS_WORKSPACES` và
+  chưa ai chọn chế độ — xem đoạn *Tên và chỗ đặt trạm* ở mục 6. `init --yes` không hỏi; nó dùng
+  `<biến>/video` khi `OPCOS_WORKSPACES` hợp lệ; khi không đặt biến thì dùng trạm trong repo
+  `<repo>/workspaces`. Cấu hình biến không hợp lệ vẫn có thể khiến init báo mã 2; đừng tự thêm
+  `--mode separate` để che lỗi cấu hình.
 - **Render hỏng giữa chừng (mã 1):** chạy lại một lần; vẫn hỏng thì chép 15 dòng log cuối cho
   người dùng và chạy `video-studio doctor --hf <bản>` như lời khuyên in ra.
 

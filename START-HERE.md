@@ -62,11 +62,13 @@ python3.12 -m venv .venv
 Đặt repo ở thư mục cục bộ, **không** trong OneDrive, iCloud Drive, Google Drive hay Dropbox:
 đồng bộ đám mây làm hỏng `.venv` và đẩy cả nháp render lên mạng.
 
-`init --yes` tạo **trạm** ở `workspaces/` ngay trong repo — nơi chứa project đang dựng, nháp và
-cache. Git bỏ qua cả thư mục này, nên dữ liệu của bạn không bao giờ đi vào mã nguồn. Muốn đặt
-trạm ở chỗ khác (dùng chung giữa nhiều máy, hoặc repo là bản public của chính bạn): đặt biến
-`VIDEO_STATION` trỏ thư mục đó, hoặc `video-studio init --station <thư mục>`. Hai chế độ và cây
-thư mục của trạm: [docs/WORKSPACE.md](docs/WORKSPACE.md).
+`init --yes` tạo **trạm** — nơi chứa project đang dựng, nháp và cache. Máy bình thường (không đặt
+biến `OPCOS_WORKSPACES`) thì trạm ở `workspaces/` ngay trong repo; Git bỏ qua cả thư mục này, nên
+dữ liệu của bạn không bao giờ đi vào mã nguồn. Máy cài cùng OpcOS (có `OPCOS_WORKSPACES`) thì trạm ở
+`<biến>/video`; muốn giữ trạm trong repo trên máy đó, chạy `video-studio init --mode embedded --yes`.
+Muốn đặt trạm ở chỗ khác (dùng chung giữa nhiều máy, hoặc repo là bản public của chính bạn): đặt
+biến `VIDEO_STATION` trỏ thư mục đó, hoặc `video-studio init --station <thư mục>`. Hai chế độ và
+cây thư mục của trạm: [docs/WORKSPACE.md](docs/WORKSPACE.md).
 
 ## Đọc kết quả `doctor`
 

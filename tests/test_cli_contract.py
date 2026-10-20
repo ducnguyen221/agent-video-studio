@@ -103,3 +103,26 @@ def test_cleanup_is_a_real_command_not_a_placeholder():
     r = run_proc(["cleanup", "--help"])
     assert r.returncode == 0, r.stderr
     assert all(action in r.stdout for action in ("inspect", "preview", "apply", "verify"))
+
+
+# ── Ctrl+C ở biên CLI: mã 2, một dòng, không traceback ─────────────────────────────────────
+
+def _interrupted(_args):
+    raise KeyboardInterrupt
+
+
+def test_ctrl_c_at_the_cli_edge_is_code_2_with_one_line_and_no_traceback(capsys):
+    from video_studio import contract
+    assert contract.run(_interrupted, None) == 2
+    err = capsys.readouterr().err
+    assert "đã huỷ" in err and "Ctrl+C" in err and "Traceback" not in err
+    assert len([ln for ln in err.splitlines() if ln.strip()]) == 1
+
+
+def test_ctrl_c_with_json_ends_in_exactly_one_json_line(capsys):
+    from video_studio import contract
+    assert contract.run(_interrupted, None, as_json=True) == 2
+    cap = capsys.readouterr()
+    lines = [ln for ln in cap.out.splitlines() if ln.strip()]
+    assert len(lines) == 1
+    assert json.loads(lines[0]) == {"ok": False, "code": 2, "error": "đã huỷ (Ctrl+C)"}

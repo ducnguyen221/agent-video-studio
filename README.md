@@ -74,14 +74,16 @@ video-studio init            # presents the two-option table and waits; --statio
 video-studio doctor          # after init: before there is a station, doctor exits 3 by design
 ```
 
-`init` **presents a table before doing anything**, rather than asking an open question.
+`init` **presents a table when it needs an interactive choice**, rather than asking an open question. An explicit flag, a recorded choice, or a valid `OPCOS_WORKSPACES` setting may select the station without that table.
 `embedded` — station at `<repo>/workspaces/`, configuration in `<repo>/.env` — is the
-**recommendation**: press Enter and you are done, with no environment variables to set, and
-`init` copies `.env.example` to `.env` for you to fill in. Choose `separate` when you work
-across machines, are comfortable with the technical side, or this repository is your own public
-fork. With nobody to answer (CI, a scheduled task) `init` prints that table and **exits with
-code 2 without writing a byte** — an installing agent must show it to the user instead of
-choosing silently.
+**recommendation**: when the machine does not set `OPCOS_WORKSPACES`, press Enter and you are
+done, with no environment variables to set, and `init` copies `.env.example` to `.env` for you to
+fill in. Choose `separate` when you work across machines, are comfortable with the technical side,
+or this repository is your own public fork. With nobody to answer (CI, a scheduled task) and no
+`OPCOS_WORKSPACES`, `init` prints that table and **exits with code 2 without writing a byte** — an
+installing agent must show it to the user instead of choosing silently. A machine that sets
+`OPCOS_WORKSPACES` already knows where the station goes: `--yes` or an unattended run builds
+`<variable>/video`.
 
 HyperFrames is not a Python dependency: it runs through `npx hyperframes@$HYPERFRAMES_VERSION`,
 always an exact version (never `latest`).

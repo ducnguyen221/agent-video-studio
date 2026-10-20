@@ -5,6 +5,10 @@ tuyệt đối + số file/dung lượng rồi xin xác nhận y/N; không có n
 từ môi trường thật. Không còn đường mặc định ngầm vào thư mục ẩn ở home.
 """
 import os
+import errno
+import builtins
+import hashlib
+import json
 
 import pytest
 
@@ -166,3 +170,499 @@ def test_an_existing_secret_env_is_reported_before_the_y_n_question(repo, tmp_pa
         station.migrate_to_separate(ask=ask)
     assert len(ask.seen) == 1                    # chỉ câu hỏi đường; chưa tới câu y/N
     assert (repo / "workspaces").is_dir()
+
+
+def _tree_snapshot(root):
+    """Exact directory/file snapshot for migration failure assertions."""
+    result = {}
+    for current, dirs, files in os.walk(root):
+        rel = os.path.relpath(current, root)
+        for name in dirs:
+            result[os.path.normpath(os.path.join(rel, name))] = "<dir>"
+        for name in files:
+            path = os.path.join(current, name)
+            with builtins.open(path, "rb") as stream:
+                result[os.path.normpath(os.path.join(rel, name))] = hashlib.sha256(
+                    stream.read()).hexdigest()
+    return result
+
+
+def test_config_write_failure_after_tree_move_restores_all_migration_state(
+        repo, tmp_path, monkeypatch):
+    home = tmp_path / "fake-home"
+    home.mkdir()
+    monkeypatch.setenv("HOME", str(home))
+    monkeypatch.setenv("USERPROFILE", str(home))
+    source = repo / "workspaces"
+    target = tmp_path / "separate-station"
+    env = repo / ".env"
+    env.write_text("TEST_ONLY=not-a-secret\n", encoding="utf-8")
+    env_bytes = env.read_bytes()
+    config = repo / station._env.LOCAL_CONFIG
+    config.write_bytes(b'{"mode":"embedded","station_path":"old"}\n')
+    config_state = (config.exists(), config.read_bytes() if config.exists() else None)
+    source_before = _tree_snapshot(source)
+    marker = source / station._env.STATION_FILE
+    marker_state = (marker.exists(), marker.read_bytes() if marker.exists() else None)
+    secret_env = home / ".secret" / station.SECRET_DIR_NAME / ".env"
+    assert not target.exists() and not secret_env.exists()
+
+    real_move_tree = station._move_tree
+    moved = {"done": False}
+
+    def move_then_mark(src, dst):
+        real_move_tree(src, dst)
+        moved["done"] = True
+
+    real_open = builtins.open
+    injected = {"count": 0, "path": None, "stage": None}
+
+    class FailAfterPartialWrite:
+        def __init__(self, stream):
+            self.stream = stream
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *exc):
+            return self.stream.__exit__(*exc)
+
+        def write(self, data):
+            assert moved["done"], "local config injection must follow the completed workspace move"
+            written = self.stream.write(data[:3])
+            self.stream.flush()
+            injected.update(count=1, path=str(config), stage="after-move-config-known-short-write")
+            return written
+
+        def __getattr__(self, name):
+            return getattr(self.stream, name)
+
+    def fail_after_partial_config_write(path, mode="r", *args, **kwargs):
+        if (os.path.normcase(os.fspath(path)) == os.path.normcase(str(config)) and
+                mode == "r+b" and injected["count"] == 0):
+            return FailAfterPartialWrite(real_open(path, mode, *args, **kwargs))
+        return real_open(path, mode, *args, **kwargs)
+
+    monkeypatch.setattr(station, "_move_tree", move_then_mark)
+    monkeypatch.setattr(station, "open", fail_after_partial_config_write, raising=False)
+    with pytest.raises(OSError, match="metadata short write"):
+        station.migrate_to_separate(str(target))
+
+    assert moved["done"] and injected == {
+        "count": 1, "path": str(config), "stage": "after-move-config-known-short-write"}
+    expected = {
+        "source_tree": source_before,
+        "marker": marker_state,
+        "config": config_state,
+        "source_env": env_bytes,
+        "destination_exists": False,
+        "secret_dir_exists": False,
+        "secret_env_exists": False,
+    }
+    actual = {
+        "source_tree": _tree_snapshot(source) if source.is_dir() else None,
+        "marker": (marker.exists(), marker.read_bytes() if marker.exists() else None),
+        "config": (config.exists(), config.read_bytes() if config.exists() else None),
+        "source_env": env.read_bytes() if env.is_file() else None,
+        "destination_exists": target.exists(),
+        "secret_dir_exists": secret_env.parent.exists(),
+        "secret_env_exists": secret_env.exists(),
+    }
+    assert actual == expected
+
+
+def test_opaque_config_write_failure_retains_uncertain_artifacts(repo, tmp_path, monkeypatch):
+    home = tmp_path / "fake-home"
+    home.mkdir()
+    monkeypatch.setenv("HOME", str(home))
+    monkeypatch.setenv("USERPROFILE", str(home))
+    source = repo / "workspaces"
+    target = tmp_path / "separate-station"
+    env = repo / ".env"
+    env.write_text("TEST_ONLY=not-a-secret\n", encoding="utf-8")
+    config = repo / station._env.LOCAL_CONFIG
+    config.write_bytes(b'{"mode":"embedded","station_path":"old"}\n')
+    config_id = (config.stat().st_dev, config.stat().st_ino)
+    secret_env = home / ".secret" / station.SECRET_DIR_NAME / ".env"
+    assert not target.exists() and not secret_env.exists()
+
+    real_open = builtins.open
+    injected = {"count": 0, "foreign_bytes": None}
+
+    class OpaqueWriteThenRaise:
+        def __init__(self, stream):
+            self.stream = stream
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *exc):
+            return self.stream.__exit__(*exc)
+
+        def write(self, data):
+            self.stream.seek(0)
+            self.stream.write(data[:1])
+            self.stream.flush()
+            # Same-inode foreign content extends the prefix-shaped state after the write call
+            # began. Since write() never returned, its byte count is unknown to the transaction.
+            self.stream.seek(1)
+            self.stream.write(data[1:2])
+            self.stream.flush()
+            self.stream.seek(1)
+            self.stream.seek(0)
+            injected["foreign_bytes"] = self.stream.read()
+            injected["count"] += 1
+            raise OSError("injected opaque config write failure")
+
+        def __getattr__(self, name):
+            return getattr(self.stream, name)
+
+    def fail_opaquely_once(path, mode="r", *args, **kwargs):
+        if (os.path.normcase(os.fspath(path)) == os.path.normcase(str(config)) and
+                mode == "r+b" and injected["count"] == 0):
+            return OpaqueWriteThenRaise(real_open(path, mode, *args, **kwargs))
+        return real_open(path, mode, *args, **kwargs)
+
+    monkeypatch.setattr(station, "open", fail_opaquely_once, raising=False)
+    with pytest.raises(station.ContractError, match="rollback incomplete") as exc:
+        station.migrate_to_separate(str(target))
+
+    assert "injected opaque config write failure" in str(exc.value)
+    assert injected["count"] == 1
+    assert (config.stat().st_dev, config.stat().st_ino) == config_id
+    assert config.read_bytes() == injected["foreign_bytes"]
+    assert not source.exists() and target.is_dir()
+    assert not env.exists() and secret_env.read_text(encoding="utf-8") == "TEST_ONLY=not-a-secret\n"
+
+
+def test_absent_config_created_by_migration_is_retained_as_recovery_incomplete(
+        repo, tmp_path, monkeypatch):
+    home = tmp_path / "fake-home"
+    home.mkdir()
+    monkeypatch.setenv("HOME", str(home))
+    monkeypatch.setenv("USERPROFILE", str(home))
+    source = repo / "workspaces"
+    target = tmp_path / "separate-station"
+    env = repo / ".env"
+    env.write_text("TEST_ONLY=not-a-secret\n", encoding="utf-8")
+    config = repo / station._env.LOCAL_CONFIG
+    config.unlink(missing_ok=True)
+    marker = source / station._env.STATION_FILE
+    assert marker.is_file()
+    secret_env = home / ".secret" / station.SECRET_DIR_NAME / ".env"
+    real_open = builtins.open
+
+    def fail_before_marker_write(path, mode="r", *args, **kwargs):
+        if (os.path.normcase(os.fspath(path)) == os.path.normcase(
+                str(target / station._env.STATION_FILE)) and mode == "r+b"):
+            raise OSError("injected marker open failure")
+        return real_open(path, mode, *args, **kwargs)
+
+    monkeypatch.setattr(station, "open", fail_before_marker_write, raising=False)
+    with pytest.raises(station.ContractError, match="rollback incomplete") as exc:
+        station.migrate_to_separate(str(target))
+
+    assert "injected marker open failure" in str(exc.value)
+    assert "created during migration and is retained" in str(exc.value)
+    assert config.is_file() and json.loads(config.read_text(encoding="utf-8"))["mode"] == "separate"
+    assert not source.exists() and target.is_dir()
+    assert not env.exists() and secret_env.read_text(encoding="utf-8") == "TEST_ONLY=not-a-secret\n"
+
+
+@pytest.mark.parametrize("restore_case", ["collision", "exdev", "posix"])
+def test_env_restore_refuses_collision_cross_device_and_posix_overwrite(
+        repo, tmp_path, monkeypatch, restore_case):
+    home = tmp_path / "fake-home"
+    home.mkdir()
+    monkeypatch.setenv("HOME", str(home))
+    monkeypatch.setenv("USERPROFILE", str(home))
+    source = repo / "workspaces"
+    target = tmp_path / "separate-station"
+    env = repo / ".env"
+    env.write_text("TEST_ONLY=not-a-secret\n", encoding="utf-8")
+    config = repo / station._env.LOCAL_CONFIG
+    config.write_bytes(b'{"mode":"embedded","station_path":"old"}\n')
+    config_before = config.read_bytes()
+    secret_env = home / ".secret" / station.SECRET_DIR_NAME / ".env"
+    moved = {"done": False}
+    real_move = station._move_tree
+    real_open = builtins.open
+    injected = {"write": 0, "restore_attempt": 0}
+
+    def move_then_mark(src, dst):
+        real_move(src, dst)
+        moved["done"] = True
+
+    class KnownShortWrite:
+        def __init__(self, stream):
+            self.stream = stream
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *exc):
+            return self.stream.__exit__(*exc)
+
+        def write(self, data):
+            assert moved["done"]
+            count = self.stream.write(data[:3])
+            self.stream.flush()
+            injected["write"] += 1
+            return count
+
+        def __getattr__(self, name):
+            return getattr(self.stream, name)
+
+    def fail_config_write(path, mode="r", *args, **kwargs):
+        if (os.path.normcase(os.fspath(path)) == os.path.normcase(str(config)) and
+                mode == "r+b" and injected["write"] == 0):
+            return KnownShortWrite(real_open(path, mode, *args, **kwargs))
+        return real_open(path, mode, *args, **kwargs)
+
+    real_rename = os.rename
+    moved_env = home / ".secret" / station.SECRET_DIR_NAME / ".env"
+
+    def race_at_no_clobber_rename(src, dst):
+        if (os.path.normcase(os.fspath(src)) == os.path.normcase(str(moved_env)) and
+                os.path.normcase(os.fspath(dst)) == os.path.normcase(str(env)) and
+                injected["restore_attempt"] == 0):
+            injected["restore_attempt"] += 1
+            if restore_case == "collision":
+                env.write_bytes(b"FOREIGN-SOURCE")
+                raise FileExistsError("destination appeared at rename boundary")
+            if restore_case == "exdev":
+                raise OSError(errno.EXDEV, "cross-device restore")
+            raise AssertionError("POSIX guard must stop before os.rename")
+        return real_rename(src, dst)
+
+    monkeypatch.setattr(station, "_move_tree", move_then_mark)
+    monkeypatch.setattr(station, "open", fail_config_write, raising=False)
+    monkeypatch.setattr(os, "rename", race_at_no_clobber_rename)
+    if restore_case == "posix":
+        with monkeypatch.context() as platform_patch:
+            platform_patch.setattr(os, "name", "posix")
+            with pytest.raises(station.ContractError, match="rollback incomplete") as exc:
+                station.migrate_to_separate(str(target))
+    else:
+        with pytest.raises(station.ContractError, match="rollback incomplete") as exc:
+            station.migrate_to_separate(str(target))
+
+    assert "metadata short write" in str(exc.value)
+    if restore_case == "collision":
+        assert "destination appeared at rename boundary" in str(exc.value)
+        assert env.read_bytes() == b"FOREIGN-SOURCE"
+    elif restore_case == "exdev":
+        assert "cross-device restore" in str(exc.value)
+        assert not env.exists()
+    else:
+        assert "not available on this platform" in str(exc.value)
+        assert not env.exists()
+        assert injected["restore_attempt"] == 0
+    assert injected["write"] == 1
+    assert config.read_bytes() == config_before
+    assert injected["restore_attempt"] == (0 if restore_case == "posix" else 1)
+    assert secret_env.read_text(encoding="utf-8") == "TEST_ONLY=not-a-secret\n"
+    assert not source.exists() and target.is_dir()
+
+
+def test_dangling_source_symlink_is_retained_and_tree_move_back_is_skipped(
+        repo, tmp_path, monkeypatch):
+    home = tmp_path / "fake-home"
+    home.mkdir()
+    monkeypatch.setenv("HOME", str(home))
+    monkeypatch.setenv("USERPROFILE", str(home))
+    source = repo / "workspaces"
+    target = tmp_path / "separate-station"
+    config = repo / station._env.LOCAL_CONFIG
+    config.write_bytes(b'{"mode":"embedded","station_path":"old"}\n')
+    config_before = config.read_bytes()
+    referent = tmp_path / "link-referent"
+    referent.mkdir()
+    displaced_referent = tmp_path / "link-referent-displaced"
+    calls = []
+    real_move = station._move_tree
+    real_open = builtins.open
+    injected = {"count": 0}
+
+    def count_moves(src, dst):
+        calls.append((os.path.normcase(os.fspath(src)), os.path.normcase(os.fspath(dst))))
+        return real_move(src, dst)
+
+    class CreateDanglingSourceAfterKnownWrite:
+        def __init__(self, stream):
+            self.stream = stream
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *exc):
+            return self.stream.__exit__(*exc)
+
+        def write(self, data):
+            count = self.stream.write(data[:3])
+            self.stream.flush()
+            _junction(source, referent)
+            referent.rename(displaced_referent)
+            injected["count"] += 1
+            return count
+
+        def __getattr__(self, name):
+            return getattr(self.stream, name)
+
+    def inject_source_link(path, mode="r", *args, **kwargs):
+        if (os.path.normcase(os.fspath(path)) == os.path.normcase(str(config)) and
+                mode == "r+b" and injected["count"] == 0):
+            return CreateDanglingSourceAfterKnownWrite(real_open(path, mode, *args, **kwargs))
+        return real_open(path, mode, *args, **kwargs)
+
+    monkeypatch.setattr(station, "_move_tree", count_moves)
+    monkeypatch.setattr(station, "open", inject_source_link, raising=False)
+    with pytest.raises(station.ContractError, match="rollback incomplete") as exc:
+        station.migrate_to_separate(str(target))
+
+    assert "source station path was recreated" in str(exc.value)
+    assert injected["count"] == 1
+    assert calls == [(os.path.normcase(str(source)), os.path.normcase(str(target)))]
+    source_stat = os.lstat(source)
+    assert os.path.lexists(source) and not os.path.exists(source)
+    assert (os.path.islink(source) or
+            bool(getattr(source_stat, "st_file_attributes", 0) & 0x400))
+    assert displaced_referent.is_dir()
+    assert config.read_bytes() == config_before
+    assert target.is_dir()
+
+
+def test_rollback_failure_preserves_known_partial_metadata_and_moved_artifacts(
+        repo, tmp_path, monkeypatch):
+    home = tmp_path / "fake-home"
+    home.mkdir()
+    monkeypatch.setenv("HOME", str(home))
+    monkeypatch.setenv("USERPROFILE", str(home))
+    source = repo / "workspaces"
+    target = tmp_path / "separate-station"
+    env = repo / ".env"
+    env.write_text("TEST_ONLY=not-a-secret\n", encoding="utf-8")
+    config = repo / station._env.LOCAL_CONFIG
+    config.write_bytes(b'{"mode":"embedded","station_path":"old"}\n')
+    secret_env = home / ".secret" / station.SECRET_DIR_NAME / ".env"
+    real_open = builtins.open
+    injected = {"write": 0, "restore": 0}
+
+    class KnownShortWrite:
+        def __init__(self, stream):
+            self.stream = stream
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *exc):
+            return self.stream.__exit__(*exc)
+
+        def write(self, data):
+            count = self.stream.write(data[:3])
+            self.stream.flush()
+            injected["write"] += 1
+            return count
+
+        def __getattr__(self, name):
+            return getattr(self.stream, name)
+
+    def inject_write_and_rollback_failure(path, mode="r", *args, **kwargs):
+        if os.path.normcase(os.fspath(path)) == os.path.normcase(str(config)) and mode == "r+b":
+            if injected["write"] == 0:
+                return KnownShortWrite(real_open(path, mode, *args, **kwargs))
+            injected["restore"] += 1
+            raise OSError("injected rollback open failure")
+        return real_open(path, mode, *args, **kwargs)
+
+    monkeypatch.setattr(station, "open", inject_write_and_rollback_failure, raising=False)
+    with pytest.raises(station.ContractError, match="rollback incomplete") as exc:
+        station.migrate_to_separate(str(target))
+
+    assert "metadata short write" in str(exc.value)
+    assert "injected rollback open failure" in str(exc.value)
+    assert injected == {"write": 1, "restore": 1}
+    assert config.read_bytes() != b'{"mode":"embedded","station_path":"old"}\n'
+    assert not source.exists() and target.is_dir()
+    assert not env.exists() and secret_env.is_file()
+
+
+def test_directory_symlink_inside_station_is_rejected_before_move(repo, tmp_path, monkeypatch):
+    external = tmp_path / "external"
+    external.mkdir()
+    (external / "outside.txt").write_text("outside", encoding="utf-8")
+    link = repo / "workspaces" / "linked-dir"
+    _junction(link, external)
+    target = tmp_path / "separate-station"
+    called = {"move": 0}
+
+    def unexpected_move(_src, _dst):
+        called["move"] += 1
+        raise AssertionError("tree move must not run for a station containing a link")
+
+    monkeypatch.setattr(station, "_move_tree", unexpected_move)
+    with pytest.raises(station.ContractError, match="symlink/junction/reparse"):
+        station.migrate_to_separate(str(target))
+
+    assert called["move"] == 0
+    assert link.exists() and (external / "outside.txt").read_text(encoding="utf-8") == "outside"
+    assert not target.exists()
+
+
+# ── đích đi qua điểm nối (junction) vào chính trạm đang dời ─────────────────────────────────────
+
+def _junction(link, target):
+    """Tạo điểm nối `link → target` (Windows `mklink /J`, không cần quyền nâng); symlink ở nơi khác."""
+    import subprocess
+    try:
+        os.symlink(str(target), str(link), target_is_directory=True)
+        return
+    except (OSError, NotImplementedError) as e:
+        if os.name != "nt" or subprocess.run(["cmd", "/c", "mklink", "/J", str(link), str(target)],
+                                             capture_output=True).returncode:
+            pytest.skip(f"máy này không tạo được liên kết mềm lẫn điểm nối: {e}")
+
+
+def test_a_target_through_a_junction_into_the_workspace_is_refused_before_touching_anything(
+        repo, tmp_path):
+    inside = repo / "workspaces" / "sub"
+    inside.mkdir()
+    (repo / "workspaces" / "data.txt").write_text("du lieu", encoding="utf-8")
+    link = tmp_path / "lnk"
+    _junction(link, inside)
+    local_before = (repo / "studio.local.json").read_text(encoding="utf-8")
+    with pytest.raises(ContractError, match="nằm trong trạm"):
+        station.migrate_to_separate(str(link / "new"))
+    assert (repo / "workspaces" / "data.txt").read_text(encoding="utf-8") == "du lieu"
+    assert (repo / "studio.local.json").read_text(encoding="utf-8") == local_before
+    assert not (inside / "new").exists() and not (link / "new").exists()
+
+
+def test_a_junction_that_is_itself_the_target_is_refused_before_the_yes_no_question(repo, tmp_path):
+    link = tmp_path / "lnk"
+    _junction(link, repo / "workspaces")
+    asked = []
+    with pytest.raises(ContractError, match="nằm trong trạm"):
+        station.migrate_to_separate(str(link), ask=lambda p: asked.append(p) or "y", confirm=True)
+    assert asked == []
+    assert (repo / "workspaces" / "projects" / "news" / "meta.json").is_file()
+
+
+def test_a_workspace_that_is_itself_a_junction_still_refuses_a_target_inside_the_real_folder(
+        repo, tmp_path):
+    real = tmp_path / "that-su"
+    os.rename(repo / "workspaces", real)
+    _junction(repo / "workspaces", real)
+    with pytest.raises(ContractError, match="nằm trong trạm"):
+        station.migrate_to_separate(str(real / "new"))
+    assert (real / "projects" / "news" / "meta.json").is_file()
+
+
+def test_is_inside_compares_real_paths_in_both_directions(tmp_path):
+    a = tmp_path / "a"
+    (a / "b").mkdir(parents=True)
+    link = tmp_path / "lnk"
+    _junction(link, a)
+    assert station._is_inside(str(link / "b"), str(a))
+    assert station._is_inside(str(a / "b"), str(link))
+    assert station._is_inside(str(a), str(link)) and not station._is_inside(str(tmp_path), str(a))
