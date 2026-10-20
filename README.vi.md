@@ -69,7 +69,7 @@ video-studio init            # trình bảng hai lựa chọn rồi chờ bạn 
 video-studio doctor          # sau init: chưa có trạm thì doctor mã 3, đúng thiết kế
 ```
 
-`init` **trình bảng rồi mới làm**, chứ không hỏi trống: `embedded` (trạm ở `<repo>/workspaces/`,
+Khi cần người chọn, `init` **trình bảng lựa chọn**, chứ không hỏi trống: `embedded` (trạm ở `<repo>/workspaces/`,
 biến cấu hình ở `<repo>/.env`) là **khuyến nghị** — khi máy chưa đặt `OPCOS_WORKSPACES`, bấm Enter là
 xong, không phải đặt biến môi trường nào, và `init` chép sẵn `.env.example` thành `.env` cho bạn điền.
 Chọn `separate` khi bạn dùng nhiều máy, rành kỹ thuật, hoặc repo này là bản public của chính bạn.

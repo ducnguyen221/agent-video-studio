@@ -373,9 +373,10 @@ Dùng đúng khung này, lời thường, không rút gọn dòng doctor:
 - **`init` báo mã 2 "hai nguồn sự thật":** máy đã chọn trạm ngoài (biến `VIDEO_STATION`) mà lại
   xin trạm trong repo. Hỏi người dùng giữ trạm nào; không tự xoá trạm nào.
 - **`init --non-interactive` (không `--yes`/`--mode`) báo mã 2:** máy không đặt `OPCOS_WORKSPACES` và
-  chưa ai chọn chế độ — xem đoạn *Tên và chỗ đặt trạm* ở mục 6. `init --yes` thì không hỏi và không
-  mã 2: nó dùng `<biến>/video` khi máy đặt `OPCOS_WORKSPACES`, không thì trạm trong repo
-  `<repo>/workspaces`; đừng tự thêm `--mode separate`.
+  chưa ai chọn chế độ — xem đoạn *Tên và chỗ đặt trạm* ở mục 6. `init --yes` không hỏi; nó dùng
+  `<biến>/video` khi `OPCOS_WORKSPACES` hợp lệ; khi không đặt biến thì dùng trạm trong repo
+  `<repo>/workspaces`. Cấu hình biến không hợp lệ vẫn có thể khiến init báo mã 2; đừng tự thêm
+  `--mode separate` để che lỗi cấu hình.
 - **Render hỏng giữa chừng (mã 1):** chạy lại một lần; vẫn hỏng thì chép 15 dòng log cuối cho
   người dùng và chạy `video-studio doctor --hf <bản>` như lời khuyên in ra.
 

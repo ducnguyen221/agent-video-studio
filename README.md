@@ -74,7 +74,7 @@ video-studio init            # presents the two-option table and waits; --statio
 video-studio doctor          # after init: before there is a station, doctor exits 3 by design
 ```
 
-`init` **presents a table before doing anything**, rather than asking an open question.
+`init` **presents a table when it needs an interactive choice**, rather than asking an open question. An explicit flag, a recorded choice, or a valid `OPCOS_WORKSPACES` setting may select the station without that table.
 `embedded` — station at `<repo>/workspaces/`, configuration in `<repo>/.env` — is the
 **recommendation**: when the machine does not set `OPCOS_WORKSPACES`, press Enter and you are
 done, with no environment variables to set, and `init` copies `.env.example` to `.env` for you to
