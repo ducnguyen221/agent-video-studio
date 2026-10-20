@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pytest
 
-from video_studio import station
+from video_studio import __version__, station
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -68,7 +68,7 @@ def test_docs_say_how_to_keep_an_embedded_station_when_the_variable_is_set(rel):
 
 def test_the_unreleased_changelog_block_tells_the_whole_story():
     raw = (ROOT / "docs" / "CHANGELOG.md").read_text(encoding="utf-8")
-    m = re.search(r"## Chưa phát hành\n(.*?)(?=\n## )", raw, re.S)
+    m = re.search(rf"^## (?:Chưa phát hành|{re.escape(__version__)}(?: — [^\n]+)?)\n(.*?)(?=\n## |\Z)", raw, re.S | re.M)
     block = _flat(m.group(1)) if m else ""
     for needle in ("--mode embedded --yes",            # cách giữ trạm trong repo
                    "<biến>/video",                      # --yes / không người ra trạm OpcOS

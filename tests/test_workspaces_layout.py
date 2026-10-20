@@ -15,7 +15,7 @@ from pathlib import Path
 
 import pytest
 
-from video_studio import _env, precommit, station
+from video_studio import __version__, _env, precommit, station
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -138,7 +138,7 @@ def _walk_text_files(root):
 
 
 def _unreleased(text):
-    m = re.search(r"## Chưa phát hành\n(.*?)(?=\n## )", text, re.S)
+    m = re.search(rf"^## (?:Chưa phát hành|{re.escape(__version__)}(?: — [^\n]+)?)\n(.*?)(?=\n## |\Z)", text, re.S | re.M)
     return m.group(1) if m else ""
 
 
