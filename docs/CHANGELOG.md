@@ -5,7 +5,9 @@ chính nhưng chưa có tag; khi phát hành, mục đó đổi tên thành số
 `pyproject.toml`, `video_studio/__init__.py` cùng ba manifest plugin (`tests/test_version_sync.py`
 kiểm).
 
-## Chưa phát hành
+## 0.4.0 — 2026-10-20
+
+**Sửa lỗi dời trạm:** lỗi sau bước dời dữ liệu được hoàn tác theo trạng thái đã xác minh; nếu trạng thái không rõ hoặc phục hồi thất bại thì giữ dữ liệu và báo cách phục hồi, không dọn rộng.
 
 - **Bố cục `workspaces`:** thư mục gốc luôn tên `workspaces`. Cài riêng lẻ thì trạm nhúng là chính
   `<repo>/workspaces` (thay cho `<repo>/workspace`); cài cùng OpcOS thì trạm là
