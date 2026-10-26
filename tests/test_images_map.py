@@ -183,3 +183,15 @@ def test_duplicate_scene_key_in_images_file_is_code_2(tmp_path, monkeypatch, cap
     rc, _ = _run(tmp_path, monkeypatch, "repo-today", _spec(tmp_path), img_p)
     assert rc == contract.CONTRACT_ERROR
     assert "trùng" in last_json(capsys.readouterr().out)["error"]
+
+
+def test_bad_images_file_leaves_no_empty_out_dir(tmp_path, monkeypatch, capsys):
+    """RF-lo-5: kiểm images.json TRƯỚC khi tạo --out, để lỗi mã 2 không để lại thư mục rỗng."""
+    monkeypatch.setattr(render, "_template", lambda p: lambda spec, out: [])
+    out = tmp_path / "o"
+    rc = render.main(["--project", "repo-today", "--input", str(_spec(tmp_path)),
+                      "--images", str(_raw(tmp_path, "{hong")), "--out", str(out), "--json"])
+    assert rc == contract.CONTRACT_ERROR
+    assert last_json(capsys.readouterr().out)["code"] == 2
+    assert not out.exists()
+

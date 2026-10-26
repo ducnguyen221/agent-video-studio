@@ -252,10 +252,10 @@ def do_render(args):
         data["voice"] = {**spec_mod.voice_of(data), "profile": args.voice_profile}
     # Đường dẫn tương đối trong spec (ảnh, clip) neo vào THƯ MỤC CHỨA SPEC, không vào cwd.
     data["_spec_path"] = os.path.abspath(args.input)
+    if getattr(args, "images", ""):      # kiểm TRƯỚC khi tạo --out: lỗi mã 2 không để lại thư mục rỗng
+        spec_mod.apply_images(data, args.images, args.project)
     out_dir = os.path.abspath(args.out or ".")
     os.makedirs(out_dir, exist_ok=True)
-    if getattr(args, "images", ""):
-        spec_mod.apply_images(data, args.images, args.project)
     fn = _template(args.project)
     t0 = time.time()
     try:
