@@ -38,7 +38,8 @@ VOICE_KEYS = ("profile", "speed", "seed")
 OUTPUT_KINDS = ("long", "short")
 
 __all__ = ["SCHEMA_VERSION", "REQUIRED_BRAND", "OUTPUT_KINDS", "load", "validate",
-           "brand_of", "voice_of", "bgm_of", "outputs_of", "content_of", "apply_images"]
+           "brand_of", "voice_of", "bgm_of", "outputs_of", "content_of", "apply_images",
+           "copy_image_files"]
 
 
 def load(path, brand_file=None):
@@ -228,35 +229,53 @@ def content_of(spec):
 IMAGE_EXTS = (".png", ".jpg", ".jpeg", ".webp")
 
 
+def _read_images_file(images_path):
+    try:
+        with open(images_path, "r", encoding="utf-8-sig") as f:
+            obj = json.load(f)
+    except OSError as e:
+        raise ContractError(f"không đọc được file ảnh-theo-cảnh {images_path}: {e}") from e
+    except ValueError as e:
+        raise ContractError(f"{images_path}: JSON hỏng — {e}") from e
+    if not isinstance(obj, dict):
+        raise ContractError(f"{images_path}: phải là một object JSON")
+    if obj.get("schema_version") != SCHEMA_VERSION:
+        raise ContractError(f"{images_path}: cần \"schema_version\": {SCHEMA_VERSION} "
+                            f"(nhận {obj.get('schema_version')!r})")
+    extra = sorted(k for k in obj if k not in ("schema_version", "scenes"))
+    if extra:
+        raise ContractError(f"{images_path}: khoá lạ: {', '.join(extra)}")
+    mapping = obj.get("scenes")
+    if not isinstance(mapping, dict) or not mapping:
+        raise ContractError(f"{images_path}: cần object {{\"scenes\": {{\"1\": \"anh.png\"}}}}")
+    return mapping
+
+
 def apply_images(data, images_path, project):
     """Ghép ảnh cục bộ vào cảnh theo file `images.json`; mọi lỗi là ContractError (mã 2).
 
-    Định dạng: `{"schema_version": 1, "scenes": {"1": "anh/a.png"}}` — khoá là số cảnh 1-based,
-    đường tương đối neo vào thư mục chứa images.json. Chỉ project `repo-today` (có `scenes`).
-    Đặt `scene["hero_image"] = "img/<tên>"` và `data["_image_files"] = {"img/<tên>": <đường
-    tuyệt đối>}` để bước dựng chép ảnh vào `img/` của project. Không bỏ qua im lặng điều gì.
+    Định dạng: `{"schema_version": 1, "scenes": {"1": "anh/a.png"}}` — khoá là số cảnh 1-based
+    (chỉ chữ số ASCII, không số 0 đầu), đường tương đối neo vào thư mục chứa images.json, đường
+    tuyệt đối và `..` được chấp nhận (đầu vào cục bộ của người dùng). Chỉ project `repo-today`.
+    Đặt `scene["hero_image"] = "img/s<n>_<tên>"` (n là số cảnh nên tên đích duy nhất) và
+    `data["_image_files"] = {"img/s<n>_<tên>": <đường tuyệt đối>}`; bước dựng chép bằng
+    `copy_image_files`. Không bỏ qua im lặng điều gì.
     """
     if project != "repo-today":
         raise ContractError(f"--images chỉ dùng với project repo-today (nhận {project!r}): "
                             "chỉ project này có danh sách `scenes` để gán ảnh")
     if not os.path.isfile(images_path):
         raise ContractError(f"không có file ảnh-theo-cảnh: {images_path}")
-    try:
-        with open(images_path, "r", encoding="utf-8-sig") as f:
-            obj = json.load(f)
-    except ValueError as e:
-        raise ContractError(f"{images_path}: JSON hỏng — {e}") from e
-    mapping = obj.get("scenes") if isinstance(obj, dict) else None
-    if not isinstance(mapping, dict) or not mapping:
-        raise ContractError(f"{images_path}: cần object {{\"scenes\": {{\"1\": \"anh.png\"}}}}")
+    mapping = _read_images_file(images_path)
     scenes = data.get("scenes")
     if not isinstance(scenes, list) or not scenes:
         raise ContractError("--images cần spec có danh sách `scenes`")
     base = os.path.dirname(os.path.abspath(images_path))
-    files = {}
+    files, seen = {}, {}
     for key, rel in mapping.items():
-        if not (isinstance(key, str) and key.isdigit() and int(key) >= 1):
-            raise ContractError(f"{images_path}: khoá cảnh phải là số nguyên >= 1, nhận {key!r}")
+        if not re.fullmatch(r"[1-9][0-9]*", key):
+            raise ContractError(f"{images_path}: khoá cảnh phải là số nguyên >= 1 viết thường "
+                                f"(1, 2, 3…), nhận {key!r}")
         n = int(key)
         if n > len(scenes):
             raise ContractError(f"{images_path}: cảnh {n} vượt số cảnh của spec ({len(scenes)})")
@@ -267,13 +286,23 @@ def apply_images(data, images_path, project):
         src = os.path.normpath(rel if os.path.isabs(rel) else os.path.join(base, rel))
         if not os.path.isfile(src):
             raise ContractError(f"{images_path}: cảnh {n}: không có ảnh {src}")
-        name = os.path.basename(src)
-        if files.get(f"img/{name}", src) != src:
-            name = f"s{n}_{name}"
-        dst = f"img/{name}"
-        files[dst] = src
         if not isinstance(scenes[n - 1], dict):
             raise ContractError(f"spec: cảnh {n} phải là object")
+        dst = f"img/s{n}_{os.path.basename(src)}"
+        if dst.casefold() in seen:
+            raise ContractError(f"{images_path}: cảnh {n} và cảnh {seen[dst.casefold()]} "
+                                f"trùng tên đích {dst}")
+        seen[dst.casefold()] = n
+        files[dst] = src
         scenes[n - 1]["hero_image"] = dst
     data["_image_files"] = files
     return data
+
+
+def copy_image_files(project_dir, image_files):
+    """Chép ảnh đã lên kế hoạch bởi `apply_images` vào `<project>/img/`."""
+    import shutil
+    for dst, src in (image_files or {}).items():
+        dst_path = os.path.join(project_dir, *dst.split("/"))
+        os.makedirs(os.path.dirname(dst_path), exist_ok=True)
+        shutil.copy2(src, dst_path)

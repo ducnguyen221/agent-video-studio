@@ -207,8 +207,9 @@ Hai cờ đè lên spec, dùng khi một spec chạy cho nhiều kênh:
 
 Cờ `--images <images.json>` (chỉ project `repo-today`) ghép ảnh cục bộ của người dùng vào đúng cảnh:
 `{"schema_version": 1, "scenes": {"1": "anh/a.png", "3": "anh/b.jpg"}}` — khoá là số cảnh **1-based**,
-giá trị là ảnh png/jpg/webp, đường tương đối neo vào thư mục chứa `images.json`. Ảnh được chép vào
-`img/` của project và gán `hero_image` cho cảnh. File thiếu hoặc không đọc được, khoá không phải số
+giá trị là ảnh png/jpg/webp, đường tương đối neo vào thư mục chứa `images.json`; đường tuyệt đối
+và `..` được chấp nhận (đầu vào cục bộ của người dùng). `schema_version` phải là 1 và không có khoá
+lạ cấp trên cùng. Ảnh được chép vào `img/s<số cảnh>_<tên>` của project và gán `hero_image` cho cảnh. File thiếu hoặc không đọc được, khoá không phải số
 nguyên ≥ 1, số cảnh vượt `scenes`, ảnh không tồn tại, hoặc project không phải `repo-today` ⇒ mã 2.
 
 Đường dẫn tương đối trong spec (ảnh, clip) neo vào **thư mục chứa spec**, không vào thư mục

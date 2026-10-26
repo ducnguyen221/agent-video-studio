@@ -9,13 +9,12 @@ render_story(item, out_path, ...) — dựng 1 slide layout 'stat' cho 1 tin.
 """
 from __future__ import annotations
 import os
-import shutil
 import numpy as np
 import soundfile as sf
 
 from voice_studio import av, engine
 
-from ... import render
+from ... import render, spec as spec_mod
 from .news_video import _esc, _proj, _SENT_RE, _tts_normalize, resolve_brand
 
 ACCENTS = ["#00E5FF", "#A78BFA", "#F472B6", "#60A5FA", "#00E676", "#FFC857"]
@@ -280,10 +279,7 @@ def render_deepdive(scenes, out_path, epi="", model=None, voice_profile=None, br
     html = head + body + script + "</div></body></html>"
 
     proj = _proj()
-    for dst, src in (image_files or {}).items():     # ảnh người dùng (`render --images`)
-        dst_path = os.path.join(proj, *dst.split("/"))
-        os.makedirs(os.path.dirname(dst_path), exist_ok=True)
-        shutil.copy2(src, dst_path)
+    spec_mod.copy_image_files(proj, image_files)     # ảnh người dùng (render --images)
     render.write_index(proj, html)
     silent = os.path.join(proj, "_silent_dd.mp4")
     print(f"[v2dd] {len(scenes)} cảnh ~{total:.0f}s — render ...")
