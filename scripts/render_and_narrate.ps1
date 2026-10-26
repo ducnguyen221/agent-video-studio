@@ -17,7 +17,7 @@ param(
     [string]$Video,
     [string]$Text,
     [string]$TextFile,
-    [Parameter(Mandatory = $true)][string]$Out,
+    [string]$Out,
     [string]$Profile,
     [ValidateSet('fit', 'shortest')][string]$Mode = 'fit',
     [double]$Speed,
@@ -53,6 +53,7 @@ function Find-VideoStudio {
 }
 
 if ($Rest -and $Rest.Count -gt 0) { Fail 2 ("unknown parameter(s): " + ($Rest -join ' ')) }
+if (-not $Out) { Fail 2 "Give -Out <final.mp4>." }
 if (-not $Project -and -not $Video) { Fail 2 "Give -Project <name|dir> or -Video <silent.mp4>." }
 if (-not $Text -and -not $TextFile) { Fail 2 "Give -Text or -TextFile (the narration)." }
 
