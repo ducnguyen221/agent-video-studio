@@ -8,7 +8,8 @@ kiểm).
 ## Chưa phát hành
 
 - **Thêm `render --images <images.json>`:** ghép ảnh cục bộ vào đúng cảnh (số cảnh 1-based) cho project
-  `repo-today`; lỗi đầu vào là mã 2. Chưa hỗ trợ `news`/`topstory`, nhiều ảnh mỗi cảnh, ảnh URL.
+  `repo-today`; lỗi đầu vào là mã 2. Ảnh đích tên `img/s<số cảnh>_<tên>`; `schema_version` 1 bắt buộc.
+  Chưa hỗ trợ `news`/`topstory`, nhiều ảnh mỗi cảnh, ảnh URL.
 - **Sửa vỏ `render_and_narrate.ps1`:** máy có Python nhưng thiếu module `video_studio` nay thoát mã 3
   (cài thêm) thay vì mã 1 (thử lại); tham số lạ (vd `-Instruct`) nay thoát mã 2 kèm lời báo thay vì
   lỗi PowerShell. `video-routing` gọi chữ «mode» thay «lane».

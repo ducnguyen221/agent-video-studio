@@ -66,7 +66,7 @@ def test_docs_say_how_to_keep_an_embedded_station_when_the_variable_is_set(rel):
     assert "OPCOS_WORKSPACES" in text
 
 
-def test_the_unreleased_changelog_block_tells_the_whole_story():
+def test_the_current_version_changelog_block_tells_the_whole_story():
     raw = (ROOT / "docs" / "CHANGELOG.md").read_text(encoding="utf-8")
     m = re.search(rf"^## {re.escape(__version__)}(?: — [^\n]+)?\n(.*?)(?=\n## |\Z)", raw, re.S | re.M)
     block = _flat(m.group(1)) if m else ""

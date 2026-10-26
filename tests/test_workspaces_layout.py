@@ -137,7 +137,7 @@ def _walk_text_files(root):
             yield rel, p.read_text(encoding="utf-8", errors="replace")
 
 
-def _release_block(text):
+def _current_version_block(text):
     m = re.search(rf"^## {re.escape(__version__)}(?: — [^\n]+)?\n(.*?)(?=\n## |\Z)", text, re.S | re.M)
     return m.group(1) if m else ""
 
@@ -331,7 +331,7 @@ def test_the_helper_for_the_hidden_folder_is_gone():
 
 
 def test_the_changelog_says_the_change_in_one_clean_sentence():
-    text = _release_block((ROOT / "docs" / "CHANGELOG.md").read_text(encoding="utf-8"))
+    text = _current_version_block((ROOT / "docs" / "CHANGELOG.md").read_text(encoding="utf-8"))
     assert "thư mục trạm cũ ẩn trong thư mục cá nhân không còn được tự nhận" in text.lower()
     assert "--station <đường>" in text
     assert "<biến>/video" in text and "<repo>/workspaces" in text and "OPCOS_WORKSPACES" in text
