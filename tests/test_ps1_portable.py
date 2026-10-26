@@ -142,6 +142,11 @@ def test_narrate_wrapper_probes_the_module_and_rejects_unknown_params():
     assert "import video_studio" in text
     assert "ValueFromRemainingArguments" in text
     assert re.search(r"Fail 2 .*\$Rest", text)
+    # RF-8/9: thiếu -Out là mã 2 do vỏ tự kiểm (Mandatory làm PowerShell thoát 1); đối số tự do
+    # phải rơi vào $Rest — thiếu PositionalBinding = $false thì đối số trần bị báo lỗi bind, mã 1/3.
+    assert "Mandatory" not in text
+    assert "[CmdletBinding(PositionalBinding = $false)]" in text
+    assert re.search(r"if \(-not \$Out\) \{ Fail 2", text)
 
 
 @pytest.mark.parametrize("path", SH, ids=lambda p: p.name)

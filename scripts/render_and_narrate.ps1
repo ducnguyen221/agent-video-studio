@@ -12,6 +12,7 @@
 #   pwsh -File scripts/render_and_narrate.ps1 -Project demo -Text "..."  -Out final.mp4
 #   pwsh -File scripts/render_and_narrate.ps1 -Video silent.mp4 -TextFile script.txt -Out final.mp4 `
 #        -Profile my-profile -Mode fit -Bgm none
+[CmdletBinding(PositionalBinding = $false)]
 param(
     [string]$Project,
     [string]$Video,
