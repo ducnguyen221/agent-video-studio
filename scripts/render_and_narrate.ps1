@@ -23,7 +23,8 @@ param(
     [double]$Speed,
     [string]$Bgm,
     [switch]$KeepSilent,
-    [switch]$Json
+    [switch]$Json,
+    [Parameter(ValueFromRemainingArguments = $true)][string[]]$Rest
 )
 
 # Do NOT set ErrorActionPreference=Stop: the engines log to stderr on a healthy run.
@@ -45,12 +46,13 @@ function Find-VideoStudio {
     foreach ($name in $names) {
         $c = Get-Command $name -ErrorAction SilentlyContinue
         if (-not $c) { continue }
-        & $c.Source -c 'import sys' 2>$null | Out-Null
+        & $c.Source -c 'import video_studio' 2>$null | Out-Null
         if ($LASTEXITCODE -eq 0) { return , @($c.Source, '-m', 'video_studio') }
     }
     Fail 3 "video-studio not found. Install it: pip install -e <clone of agent-video-studio>"
 }
 
+if ($Rest -and $Rest.Count -gt 0) { Fail 2 ("unknown parameter(s): " + ($Rest -join ' ')) }
 if (-not $Project -and -not $Video) { Fail 2 "Give -Project <name|dir> or -Video <silent.mp4>." }
 if (-not $Text -and -not $TextFile) { Fail 2 "Give -Text or -TextFile (the narration)." }
 
@@ -66,7 +68,7 @@ if ($Json) { $argv += '--json' }
 
 $run = Find-VideoStudio
 $exe = $run[0]
-$rest = @()
-if ($run.Count -gt 1) { $rest = $run[1..($run.Count - 1)] }
-& $exe @($rest + $argv)
+$pre = @()
+if ($run.Count -gt 1) { $pre = $run[1..($run.Count - 1)] }
+& $exe @($pre + $argv)
 exit $LASTEXITCODE

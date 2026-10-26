@@ -5,6 +5,12 @@ chính nhưng chưa có tag; khi phát hành, mục đó đổi tên thành số
 `pyproject.toml`, `video_studio/__init__.py` cùng ba manifest plugin (`tests/test_version_sync.py`
 kiểm).
 
+## Chưa phát hành
+
+- **Sửa vỏ `render_and_narrate.ps1`:** máy có Python nhưng thiếu module `video_studio` nay thoát mã 3
+  (cài thêm) thay vì mã 1 (thử lại); tham số lạ (vd `-Instruct`) nay thoát mã 2 kèm lời báo thay vì
+  lỗi PowerShell. `video-routing` gọi chữ «mode» thay «lane».
+
 ## 0.4.0 — 2026-10-20
 
 **Sửa lỗi dời trạm:** lỗi sau bước dời dữ liệu được hoàn tác theo trạng thái đã xác minh; nếu trạng thái không rõ hoặc phục hồi thất bại thì giữ dữ liệu và báo cách phục hồi, không dọn rộng.

@@ -135,6 +135,15 @@ def test_wrapper_fatal_paths_pick_a_contract_exit_code(path):
     assert 3 in codes, f"{path.name}: 'chưa cài video-studio' phải là mã 3"
 
 
+def test_narrate_wrapper_probes_the_module_and_rejects_unknown_params():
+    """Python có mà module không có ⇒ phải Fail 3 (cài thêm), không rơi xuống mã 1 (thử lại)."""
+    path = next(p for p in SCRIPTS if p.name == "render_and_narrate.ps1")
+    text = path.read_text(encoding="utf-8")
+    assert "import video_studio" in text
+    assert "ValueFromRemainingArguments" in text
+    assert re.search(r"Fail 2 .*\$Rest", text)
+
+
 @pytest.mark.parametrize("path", SH, ids=lambda p: p.name)
 def test_shell_installer_is_posix_and_strict(path):
     text = path.read_text(encoding="utf-8")
