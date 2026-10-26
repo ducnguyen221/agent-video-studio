@@ -92,6 +92,7 @@ Lệnh "chưa có" trả mã `2` kèm lời báo — đừng thử lại, báo n
 - **Sắp chế một layout mới**: đọc skill `video-theme-library` + `docs/THEME-LIBRARY.md` TRƯỚC —
   chọn từ thư viện rồi mới sáng tác.
 - **Người dùng hỏi "đồ của tôi nằm đâu / xoá được không"**: `docs/WORKSPACE.md`.
+- **Deck HTML bài giảng/trình chiếu cần QA bố cục**: ngoài phạm vi video — plugin `agent-design-studio`, skill `design-routing`, lane `static-artifact`.
 
 ## Biến môi trường
 
