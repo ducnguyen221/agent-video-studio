@@ -205,6 +205,12 @@ Bốn `--project` hiện có:
 Hai cờ đè lên spec, dùng khi một spec chạy cho nhiều kênh:
 `--brand <brand.json>` (trộn lên khối `brand`) và `--voice-profile <tên>`.
 
+Cờ `--images <images.json>` (chỉ project `repo-today`) ghép ảnh cục bộ của người dùng vào đúng cảnh:
+`{"schema_version": 1, "scenes": {"1": "anh/a.png", "3": "anh/b.jpg"}}` — khoá là số cảnh **1-based**,
+giá trị là ảnh png/jpg/webp, đường tương đối neo vào thư mục chứa `images.json`. Ảnh được chép vào
+`img/` của project và gán `hero_image` cho cảnh. File thiếu hoặc không đọc được, khoá không phải số
+nguyên ≥ 1, số cảnh vượt `scenes`, ảnh không tồn tại, hoặc project không phải `repo-today` ⇒ mã 2.
+
 Đường dẫn tương đối trong spec (ảnh, clip) neo vào **thư mục chứa spec**, không vào thư mục
 hiện hành — để `cd` ở đâu thì kết quả vẫn như nhau.
 

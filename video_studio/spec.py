@@ -38,7 +38,7 @@ VOICE_KEYS = ("profile", "speed", "seed")
 OUTPUT_KINDS = ("long", "short")
 
 __all__ = ["SCHEMA_VERSION", "REQUIRED_BRAND", "OUTPUT_KINDS", "load", "validate",
-           "brand_of", "voice_of", "bgm_of", "outputs_of", "content_of"]
+           "brand_of", "voice_of", "bgm_of", "outputs_of", "content_of", "apply_images"]
 
 
 def load(path, brand_file=None):
@@ -221,3 +221,59 @@ def content_of(spec):
     """Phần nội dung (khuôn sidecar cũ) — mọi khoá không thuộc bốn khối hợp đồng."""
     skip = {"schema_version", "brand", "voice", "bgm", "outputs"}
     return {k: v for k, v in spec.items() if k not in skip}
+
+
+# ── ảnh người dùng → cảnh (`render --images`) ───────────────────────────────────────────
+
+IMAGE_EXTS = (".png", ".jpg", ".jpeg", ".webp")
+
+
+def apply_images(data, images_path, project):
+    """Ghép ảnh cục bộ vào cảnh theo file `images.json`; mọi lỗi là ContractError (mã 2).
+
+    Định dạng: `{"schema_version": 1, "scenes": {"1": "anh/a.png"}}` — khoá là số cảnh 1-based,
+    đường tương đối neo vào thư mục chứa images.json. Chỉ project `repo-today` (có `scenes`).
+    Đặt `scene["hero_image"] = "img/<tên>"` và `data["_image_files"] = {"img/<tên>": <đường
+    tuyệt đối>}` để bước dựng chép ảnh vào `img/` của project. Không bỏ qua im lặng điều gì.
+    """
+    if project != "repo-today":
+        raise ContractError(f"--images chỉ dùng với project repo-today (nhận {project!r}): "
+                            "chỉ project này có danh sách `scenes` để gán ảnh")
+    if not os.path.isfile(images_path):
+        raise ContractError(f"không có file ảnh-theo-cảnh: {images_path}")
+    try:
+        with open(images_path, "r", encoding="utf-8-sig") as f:
+            obj = json.load(f)
+    except ValueError as e:
+        raise ContractError(f"{images_path}: JSON hỏng — {e}") from e
+    mapping = obj.get("scenes") if isinstance(obj, dict) else None
+    if not isinstance(mapping, dict) or not mapping:
+        raise ContractError(f"{images_path}: cần object {{\"scenes\": {{\"1\": \"anh.png\"}}}}")
+    scenes = data.get("scenes")
+    if not isinstance(scenes, list) or not scenes:
+        raise ContractError("--images cần spec có danh sách `scenes`")
+    base = os.path.dirname(os.path.abspath(images_path))
+    files = {}
+    for key, rel in mapping.items():
+        if not (isinstance(key, str) and key.isdigit() and int(key) >= 1):
+            raise ContractError(f"{images_path}: khoá cảnh phải là số nguyên >= 1, nhận {key!r}")
+        n = int(key)
+        if n > len(scenes):
+            raise ContractError(f"{images_path}: cảnh {n} vượt số cảnh của spec ({len(scenes)})")
+        if not isinstance(rel, str) or not rel.strip():
+            raise ContractError(f"{images_path}: cảnh {n} cần đường dẫn ảnh dạng chuỗi")
+        if not rel.lower().endswith(IMAGE_EXTS):
+            raise ContractError(f"{images_path}: cảnh {n}: ảnh phải là {'/'.join(IMAGE_EXTS)}")
+        src = os.path.normpath(rel if os.path.isabs(rel) else os.path.join(base, rel))
+        if not os.path.isfile(src):
+            raise ContractError(f"{images_path}: cảnh {n}: không có ảnh {src}")
+        name = os.path.basename(src)
+        if files.get(f"img/{name}", src) != src:
+            name = f"s{n}_{name}"
+        dst = f"img/{name}"
+        files[dst] = src
+        if not isinstance(scenes[n - 1], dict):
+            raise ContractError(f"spec: cảnh {n} phải là object")
+        scenes[n - 1]["hero_image"] = dst
+    data["_image_files"] = files
+    return data

@@ -9,6 +9,7 @@ render_story(item, out_path, ...) — dựng 1 slide layout 'stat' cho 1 tin.
 """
 from __future__ import annotations
 import os
+import shutil
 import numpy as np
 import soundfile as sf
 
@@ -211,7 +212,8 @@ def _sc_inner(sc):
             f'<div class="cards">{cards}</div>')
 
 
-def render_deepdive(scenes, out_path, epi="", model=None, voice_profile=None, brand=None):
+def render_deepdive(scenes, out_path, epi="", model=None, voice_profile=None, brand=None,
+                    image_files=None):
     """Dựng video deep-dive nhiều cảnh (1 composition, nền động persist, phụ đề sync)."""
     brand = resolve_brand(brand)
     model = model or engine.load()
@@ -278,6 +280,10 @@ def render_deepdive(scenes, out_path, epi="", model=None, voice_profile=None, br
     html = head + body + script + "</div></body></html>"
 
     proj = _proj()
+    for dst, src in (image_files or {}).items():     # ảnh người dùng (`render --images`)
+        dst_path = os.path.join(proj, *dst.split("/"))
+        os.makedirs(os.path.dirname(dst_path), exist_ok=True)
+        shutil.copy2(src, dst_path)
     render.write_index(proj, html)
     silent = os.path.join(proj, "_silent_dd.mp4")
     print(f"[v2dd] {len(scenes)} cảnh ~{total:.0f}s — render ...")

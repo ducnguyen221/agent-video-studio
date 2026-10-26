@@ -67,7 +67,7 @@ Trạm là nơi chứa project, seed, skill cho agent, nháp, cache — **không
 |---|---|---|
 | Kiểm máy + trạm | `video-studio doctor [--json] [--hf x.y.z] [--check-updates] [--offline]` | có |
 | Dựng / di trú / hoàn tác trạm | `video-studio init [--station DIR] [--migrate] [--dry-run] [--undo]` | có |
-| Spec JSON → video theo template | `video-studio render --project <template> --input <spec> --out <thư mục>` | có |
+| Spec JSON → video theo template | `video-studio render --project <template> --input <spec> --out <thư mục> [--images <images.json>]` | có |
 | Lồng tiếng cho video câm | `video-studio narrate --video <mp4>\|--project <tên> --text\|--file … --out <mp4>` | có |
 | Xem trước project | `video-studio preview [--project <tên\|thư mục>]` | có |
 | Chỉnh footage quay thật | `video-studio edit --footage <dir> --out <dir> [--edl edl.json]` | có |

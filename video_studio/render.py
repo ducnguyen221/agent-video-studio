@@ -254,6 +254,8 @@ def do_render(args):
     data["_spec_path"] = os.path.abspath(args.input)
     out_dir = os.path.abspath(args.out or ".")
     os.makedirs(out_dir, exist_ok=True)
+    if getattr(args, "images", ""):
+        spec_mod.apply_images(data, args.images, args.project)
     fn = _template(args.project)
     t0 = time.time()
     try:
@@ -282,6 +284,8 @@ def main(argv=None):
     ap.add_argument("--out", required=True, help="thư mục nhận file ra")
     ap.add_argument("--brand", default="", help="file brand.json đè khối brand của spec")
     ap.add_argument("--voice-profile", default="", help="đè voice.profile của spec")
+    ap.add_argument("--images", default="",
+                    help="images.json: ghép ảnh cục bộ vào cảnh (chỉ project repo-today)")
     ap.add_argument("--json", action="store_true", help="in một dòng JSON kết quả ra stdout")
     args, code = contract.parse(ap, argv)
     if args is None:

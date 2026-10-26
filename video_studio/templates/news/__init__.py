@@ -188,5 +188,5 @@ def render_repo_today(spec, out_dir):
     default = out_name(spec, "long", f"{stem}.mp4")
     p = _out_path(out_dir, default, "outputs.long")
     news_v2.render_deepdive(scenes, p, epi=epi, voice_profile=name,
-                            brand=spec.get("brand"))
+                            brand=spec.get("brand"), image_files=spec.get("_image_files"))
     return [_result("long", p)]
