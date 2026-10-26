@@ -229,10 +229,20 @@ def content_of(spec):
 IMAGE_EXTS = (".png", ".jpg", ".jpeg", ".webp")
 
 
+def _no_dup_keys(pairs):
+    """`object_pairs_hook`: khoá trùng trong images.json là lỗi, không để cái sau đè cái trước."""
+    out = {}
+    for k, v in pairs:
+        if k in out:
+            raise ValueError(f"khoá trùng {k!r}")
+        out[k] = v
+    return out
+
+
 def _read_images_file(images_path):
     try:
         with open(images_path, "r", encoding="utf-8-sig") as f:
-            obj = json.load(f)
+            obj = json.load(f, object_pairs_hook=_no_dup_keys)
     except OSError as e:
         raise ContractError(f"không đọc được file ảnh-theo-cảnh {images_path}: {e}") from e
     except ValueError as e:
@@ -271,7 +281,7 @@ def apply_images(data, images_path, project):
     if not isinstance(scenes, list) or not scenes:
         raise ContractError("--images cần spec có danh sách `scenes`")
     base = os.path.dirname(os.path.abspath(images_path))
-    files, seen = {}, {}
+    files = {}
     for key, rel in mapping.items():
         if not re.fullmatch(r"[1-9][0-9]*", key):
             raise ContractError(f"{images_path}: khoá cảnh phải là số nguyên >= 1 viết thường "
@@ -289,10 +299,6 @@ def apply_images(data, images_path, project):
         if not isinstance(scenes[n - 1], dict):
             raise ContractError(f"spec: cảnh {n} phải là object")
         dst = f"img/s{n}_{os.path.basename(src)}"
-        if dst.casefold() in seen:
-            raise ContractError(f"{images_path}: cảnh {n} và cảnh {seen[dst.casefold()]} "
-                                f"trùng tên đích {dst}")
-        seen[dst.casefold()] = n
         files[dst] = src
         scenes[n - 1]["hero_image"] = dst
     data["_image_files"] = files

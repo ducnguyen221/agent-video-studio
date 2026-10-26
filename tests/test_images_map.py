@@ -6,8 +6,10 @@ cảnh 1-based, đường tương đối neo vào thư mục chứa images.json.
 """
 import json
 
+import pytest
+
 from conftest import last_json
-from video_studio import contract, render
+from video_studio import contract, render, spec as spec_mod
 
 
 def _spec(tmp_path, project_scenes=3):
@@ -92,9 +94,6 @@ def test_relative_path_is_anchored_to_the_images_file_not_cwd_or_spec(tmp_path, 
 
 # ── vòng sửa theo review (RF-1…RF-7) ─────────────────────────────────────────────────────
 
-import pytest
-
-
 def _raw(folder, text, name="images.json"):
     folder.mkdir(parents=True, exist_ok=True)
     p = folder / name
@@ -168,11 +167,19 @@ def test_wrong_extension_is_code_2(tmp_path, monkeypatch, capsys):
     assert ".png" in last_json(capsys.readouterr().out)["error"]
 
 
-def test_deepdive_copies_planned_images_into_project_img(tmp_path):
+def test_copy_image_files_puts_planned_images_into_project_img(tmp_path):
     """RF-7: `apply_images` chỉ ghi kế hoạch; việc chép nằm ở `copy_image_files`."""
-    from video_studio import spec as news_v2
     src = _png(tmp_path / "anh" / "a.png")
     proj = tmp_path / "proj"
     proj.mkdir()
-    news_v2.copy_image_files(str(proj), {"img/s1_a.png": str(src)})
+    spec_mod.copy_image_files(str(proj), {"img/s1_a.png": str(src)})
     assert (proj / "img" / "s1_a.png").read_bytes() == src.read_bytes()
+
+def test_duplicate_scene_key_in_images_file_is_code_2(tmp_path, monkeypatch, capsys):
+    """RF-r2-2: `json.load` thường để khoá sau đè khoá trước — im lặng bỏ một ảnh."""
+    _png(tmp_path / "a.png")
+    _png(tmp_path / "b.png")
+    img_p = _raw(tmp_path, '{"schema_version": 1, "scenes": {"1": "a.png", "1": "b.png"}}')
+    rc, _ = _run(tmp_path, monkeypatch, "repo-today", _spec(tmp_path), img_p)
+    assert rc == contract.CONTRACT_ERROR
+    assert "trùng" in last_json(capsys.readouterr().out)["error"]
