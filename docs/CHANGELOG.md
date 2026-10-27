@@ -15,6 +15,11 @@ kiểm).
 - **Sửa vỏ `render_and_narrate.ps1`:** máy có Python nhưng thiếu module `video_studio` nay thoát mã 3
   (cài thêm) thay vì mã 1 (thử lại); tham số lạ (vd `-Instruct`) nay thoát mã 2 kèm lời báo thay vì
   lỗi PowerShell. `video-routing` gọi chữ «mode» thay «lane».
+- **Nhắc lại khi nâng cấp từ 0.4.0 (bố cục trạm, không đổi ở 0.5.0):**
+  - Thư mục trạm cũ ẩn trong thư mục cá nhân không còn được tự nhận; trỏ vào bằng `--station <đường>`.
+  - Máy đặt `OPCOS_WORKSPACES` thì `init --yes`, chạy không người và `< NUL` ra trạm OpcOS `<biến>/video`; ai muốn giữ trạm `<repo>/workspaces` trong repo thì chạy `init --mode embedded --yes`.
+  - Trạm cũ trong repo đã có dữ liệu thì dữ liệu thắng biến; có người thì hỏi giữ hay chuyển, gõ `chuyen` để dời vào `<biến>/video`. Nếu cả `<biến>/video` cũng đã mang dấu trạm thì có hai trạm: giữ trạm trong repo và nhắc gộp tay.
+  - Bản ghi `separate` thiếu `station_path` thoát mã 2 nêu `--station`; Ctrl+C ở câu hỏi thoát mã 2 một dòng, không traceback.
 
 ## 0.4.0 — 2026-10-20
 

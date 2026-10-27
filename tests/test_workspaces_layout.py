@@ -138,7 +138,7 @@ def _walk_text_files(root):
 
 
 def _current_version_block(text):
-    m = re.search(r"^## 0\.4\.0(?: — [^\n]+)?\n(.*?)(?=\n## |\Z)", text, re.S | re.M)
+    m = re.search(rf"^## {re.escape(__version__)}(?: — [^\n]+)?\n(.*?)(?=\n## |\Z)", text, re.S | re.M)
     return m.group(1) if m else ""
 
 
