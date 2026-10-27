@@ -1261,12 +1261,19 @@ def _restore_file_no_clobber(src, dst):
     Windows: `os.rename` đã từ chối khi đích tồn tại. POSIX: `rename` đè im lặng, nên tạo
     hard link (`link` hỏng với EEXIST nếu đích có — kiểm và tạo là một bước) rồi mới gỡ tên ở
     nguồn; inode giữ nguyên nên phép kiểm danh tính sau đó vẫn đúng. Khác ổ (EXDEV) hay hệ
-    tệp không có hard link thì hỏng và để nguyên — không bao giờ rơi về chép."""
+    tệp không có hard link thì hỏng và để nguyên — không bao giờ rơi về chép.
+    Link xong mà gỡ tên nguồn hỏng: hai đường giờ là MỘT file — thông báo phải nói rõ điều đó."""
     if os.name == "nt":
         os.rename(src, dst)
         return
     os.link(src, dst)
-    os.unlink(src)
+    try:
+        os.unlink(src)
+    except OSError as e:
+        raise OSError(
+            f"restored by hard link but the old name could not be removed ({e}): {dst} and {src} "
+            f"are now two names for the SAME file, so editing either edits both; check {dst}, then "
+            f"delete {src} by hand") from e
 
 
 def _human_size(n):

@@ -369,7 +369,7 @@ def test_absent_config_created_by_migration_is_retained_as_recovery_incomplete(
     assert not env.exists() and secret_env.read_text(encoding="utf-8") == "TEST_ONLY=not-a-secret\n"
 
 
-@pytest.mark.parametrize("restore_case", ["collision", "exdev", "posix"])
+@pytest.mark.parametrize("restore_case", ["collision", "exdev", "posix", "posix_unlink_fails"])
 def test_env_restore_refuses_collision_cross_device_and_restores_posix_by_link(
         repo, tmp_path, monkeypatch, restore_case):
     home = tmp_path / "fake-home"
@@ -432,7 +432,7 @@ def test_env_restore_refuses_collision_cross_device_and_restores_posix_by_link(
         # same race into whichever one the platform uses.
         def restore(src, dst):
             if is_env_restore(src, dst) and injected["restore_attempt"] == 0:
-                if restore_case == "posix":
+                if restore_case.startswith("posix"):
                     if primitive is real_rename:
                         raise AssertionError("POSIX restore must never call overwriting os.rename")
                     injected["restore_attempt"] += 1
@@ -449,10 +449,20 @@ def test_env_restore_refuses_collision_cross_device_and_restores_posix_by_link(
     monkeypatch.setattr(station, "open", fail_config_write, raising=False)
     monkeypatch.setattr(os, "rename", race_at_no_clobber_restore(real_rename))
     monkeypatch.setattr(os, "link", race_at_no_clobber_restore(real_link))
-    if restore_case == "posix":
+    real_unlink = os.unlink
+
+    def fail_unlink_of_moved_env(path, *args, **kwargs):
+        if os.path.normcase(os.fspath(path)) == os.path.normcase(str(moved_env)):
+            raise PermissionError(errno.EACCES, "injected unlink failure", str(path))
+        return real_unlink(path, *args, **kwargs)
+
+    if restore_case == "posix_unlink_fails":
+        monkeypatch.setattr(os, "unlink", fail_unlink_of_moved_env)
+    if restore_case.startswith("posix"):
+        expected = OSError if restore_case == "posix" else station.ContractError
         with monkeypatch.context() as platform_patch:
             platform_patch.setattr(os, "name", "posix")
-            with pytest.raises(OSError, match="metadata short write") as exc:
+            with pytest.raises(expected, match="metadata short write") as exc:
                 station.migrate_to_separate(str(target))
     else:
         with pytest.raises(station.ContractError, match="rollback incomplete") as exc:
@@ -465,6 +475,11 @@ def test_env_restore_refuses_collision_cross_device_and_restores_posix_by_link(
     elif restore_case == "exdev":
         assert "cross-device restore" in str(exc.value)
         assert not env.exists()
+    elif restore_case == "posix_unlink_fails":
+        assert "rollback incomplete" in str(exc.value)
+        assert "injected unlink failure" in str(exc.value)
+        assert "two names for the SAME file" in str(exc.value)
+        assert str(env) in str(exc.value) and str(moved_env) in str(exc.value)
     else:
         assert "rollback incomplete" not in str(exc.value)
     assert injected["write"] == 1
@@ -475,6 +490,11 @@ def test_env_restore_refuses_collision_cross_device_and_restores_posix_by_link(
         assert env.read_text(encoding="utf-8") == "TEST_ONLY=not-a-secret\n"
         assert not secret_env.exists()
         assert source.is_dir() and not target.exists()
+    elif restore_case == "posix_unlink_fails":
+        # Both names now refer to the one restored file; later steps stay where they are.
+        assert os.path.samefile(env, secret_env)
+        assert env.read_text(encoding="utf-8") == "TEST_ONLY=not-a-secret\n"
+        assert not source.exists() and target.is_dir()
     else:
         assert secret_env.read_text(encoding="utf-8") == "TEST_ONLY=not-a-secret\n"
         assert not source.exists() and target.is_dir()
