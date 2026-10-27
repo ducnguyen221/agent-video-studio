@@ -9,7 +9,7 @@
 phiên bản phát hành của repo. Đổi chữ ký lệnh/spec công khai ⇒ tăng số đầu.
 """
 
-__version__ = "0.4.0"
+__version__ = "0.5.0"
 API_VERSION = "1.0.0"
 
 __all__ = ["API_VERSION", "__version__"]

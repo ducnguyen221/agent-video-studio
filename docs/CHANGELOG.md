@@ -5,8 +5,10 @@ chính nhưng chưa có tag; khi phát hành, mục đó đổi tên thành số
 `pyproject.toml`, `video_studio/__init__.py` cùng ba manifest plugin (`tests/test_version_sync.py`
 kiểm).
 
-## Chưa phát hành
+## 0.5.0 — 2026-10-27
 
+- **`video-routing` chỉ đường giọng/video:** thêm một dòng chỉ đường cho việc lồng tiếng và dựng video đi kèm
+  chiến dịch marketing (đợt P5 SPR-42; giữ nguyên lệnh và hành vi).
 - **Thêm `render --images <images.json>`:** ghép ảnh cục bộ vào đúng cảnh (số cảnh 1-based) cho project
   `repo-today`; lỗi đầu vào là mã 2. Ảnh đích tên `img/s<số cảnh>_<tên>`; `schema_version` 1 bắt buộc.
   Chưa hỗ trợ `news`/`topstory`, nhiều ảnh mỗi cảnh, ảnh URL.
