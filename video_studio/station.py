@@ -1255,6 +1255,20 @@ def _move_file(src, dst):
         os.remove(src)
 
 
+def _restore_file_no_clobber(src, dst):
+    """Trả MỘT file về chỗ cũ mà KHÔNG BAO GIỜ đè một `dst` vừa xuất hiện.
+
+    Windows: `os.rename` đã từ chối khi đích tồn tại. POSIX: `rename` đè im lặng, nên tạo
+    hard link (`link` hỏng với EEXIST nếu đích có — kiểm và tạo là một bước) rồi mới gỡ tên ở
+    nguồn; inode giữ nguyên nên phép kiểm danh tính sau đó vẫn đúng. Khác ổ (EXDEV) hay hệ
+    tệp không có hard link thì hỏng và để nguyên — không bao giờ rơi về chép."""
+    if os.name == "nt":
+        os.rename(src, dst)
+        return
+    os.link(src, dst)
+    os.unlink(src)
+
+
 def _human_size(n):
     for unit in ("B", "KB", "MB", "GB"):
         if n < 1024 or unit == "GB":
@@ -1598,11 +1612,9 @@ def migrate_to_separate(target=None, ask=None, non_interactive=False, confirm=Fa
                 if (unsupported_entry(env_stat) or not stat.S_ISREG(env_stat.st_mode) or
                         identity(env_stat) != env_target_id or read_bytes(moved_env) != env_before["bytes"]):
                     raise OSError("moved .env is no longer operation-owned; retained for recovery")
-                # Windows os.rename is no-clobber when the destination exists. Never fall back
-                # to copy2 here: a newly appeared source path must remain untouched.
-                if os.name != "nt":
-                    raise OSError("no-clobber .env restore is not available on this platform")
-                os.rename(moved_env, env_file)
+                # No-clobber restore on every platform. Never fall back to copy2 here: a newly
+                # appeared source path must remain untouched.
+                _restore_file_no_clobber(moved_env, env_file)
                 restored_stat = os.lstat(env_file)
                 if (unsupported_entry(restored_stat) or not stat.S_ISREG(restored_stat.st_mode) or
                         identity(restored_stat) != env_target_id or

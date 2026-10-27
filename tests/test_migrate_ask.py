@@ -370,7 +370,7 @@ def test_absent_config_created_by_migration_is_retained_as_recovery_incomplete(
 
 
 @pytest.mark.parametrize("restore_case", ["collision", "exdev", "posix"])
-def test_env_restore_refuses_collision_cross_device_and_posix_overwrite(
+def test_env_restore_refuses_collision_cross_device_and_restores_posix_by_link(
         repo, tmp_path, monkeypatch, restore_case):
     home = tmp_path / "fake-home"
     home.mkdir()
@@ -420,28 +420,39 @@ def test_env_restore_refuses_collision_cross_device_and_posix_overwrite(
         return real_open(path, mode, *args, **kwargs)
 
     real_rename = os.rename
+    real_link = os.link
     moved_env = home / ".secret" / station.SECRET_DIR_NAME / ".env"
 
-    def race_at_no_clobber_rename(src, dst):
-        if (os.path.normcase(os.fspath(src)) == os.path.normcase(str(moved_env)) and
-                os.path.normcase(os.fspath(dst)) == os.path.normcase(str(env)) and
-                injected["restore_attempt"] == 0):
-            injected["restore_attempt"] += 1
-            if restore_case == "collision":
-                env.write_bytes(b"FOREIGN-SOURCE")
-                raise FileExistsError("destination appeared at rename boundary")
-            if restore_case == "exdev":
+    def is_env_restore(src, dst):
+        return (os.path.normcase(os.fspath(src)) == os.path.normcase(str(moved_env)) and
+                os.path.normcase(os.fspath(dst)) == os.path.normcase(str(env)))
+
+    def race_at_no_clobber_restore(primitive):
+        # The restore primitive is os.rename on Windows and os.link on POSIX; inject the
+        # same race into whichever one the platform uses.
+        def restore(src, dst):
+            if is_env_restore(src, dst) and injected["restore_attempt"] == 0:
+                if restore_case == "posix":
+                    if primitive is real_rename:
+                        raise AssertionError("POSIX restore must never call overwriting os.rename")
+                    injected["restore_attempt"] += 1
+                    return primitive(src, dst)
+                injected["restore_attempt"] += 1
+                if restore_case == "collision":
+                    env.write_bytes(b"FOREIGN-SOURCE")
+                    raise FileExistsError("destination appeared at rename boundary")
                 raise OSError(errno.EXDEV, "cross-device restore")
-            raise AssertionError("POSIX guard must stop before os.rename")
-        return real_rename(src, dst)
+            return primitive(src, dst)
+        return restore
 
     monkeypatch.setattr(station, "_move_tree", move_then_mark)
     monkeypatch.setattr(station, "open", fail_config_write, raising=False)
-    monkeypatch.setattr(os, "rename", race_at_no_clobber_rename)
+    monkeypatch.setattr(os, "rename", race_at_no_clobber_restore(real_rename))
+    monkeypatch.setattr(os, "link", race_at_no_clobber_restore(real_link))
     if restore_case == "posix":
         with monkeypatch.context() as platform_patch:
             platform_patch.setattr(os, "name", "posix")
-            with pytest.raises(station.ContractError, match="rollback incomplete") as exc:
+            with pytest.raises(OSError, match="metadata short write") as exc:
                 station.migrate_to_separate(str(target))
     else:
         with pytest.raises(station.ContractError, match="rollback incomplete") as exc:
@@ -455,14 +466,18 @@ def test_env_restore_refuses_collision_cross_device_and_posix_overwrite(
         assert "cross-device restore" in str(exc.value)
         assert not env.exists()
     else:
-        assert "not available on this platform" in str(exc.value)
-        assert not env.exists()
-        assert injected["restore_attempt"] == 0
+        assert "rollback incomplete" not in str(exc.value)
     assert injected["write"] == 1
     assert config.read_bytes() == config_before
-    assert injected["restore_attempt"] == (0 if restore_case == "posix" else 1)
-    assert secret_env.read_text(encoding="utf-8") == "TEST_ONLY=not-a-secret\n"
-    assert not source.exists() and target.is_dir()
+    assert injected["restore_attempt"] == 1
+    if restore_case == "posix":
+        # Hard-link restore is no-clobber, so POSIX completes the whole rollback.
+        assert env.read_text(encoding="utf-8") == "TEST_ONLY=not-a-secret\n"
+        assert not secret_env.exists()
+        assert source.is_dir() and not target.exists()
+    else:
+        assert secret_env.read_text(encoding="utf-8") == "TEST_ONLY=not-a-secret\n"
+        assert not source.exists() and target.is_dir()
 
 
 def test_dangling_source_symlink_is_retained_and_tree_move_back_is_skipped(
