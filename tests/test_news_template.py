@@ -299,3 +299,118 @@ def test_top_story_short_uses_shared_normalized_caption_mapping(news, monkeypatc
     assert result == "rendered"
     section = next(block for block in captured["blocks"] if block["kind"] == "sec")
     assert section["caps_words"] == [("XZ", 2.3, 2.9)]
+
+
+# ── ảnh người dùng (render --images) ────────────────────────────────────────────────────
+
+class _Resp:
+    """Phản hồi `urlopen` giả: một ảnh PNG đủ lớn để qua ngưỡng 4000 byte."""
+    headers = {"Content-Type": "image/png"}
+
+    def read(self, n=-1):
+        return b"\x89PNG" + b"0" * 5000
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        return False
+
+
+def _user_png(tmp_path, name="a.png"):
+    src = tmp_path / "m" / name
+    src.parent.mkdir(parents=True, exist_ok=True)
+    src.write_bytes(b"\x89PNG\r\n\x1a\n")
+    return src
+
+
+def test_local_images_are_copied_by_the_news_downloader(news, monkeypatch, tmp_path):
+    src = _user_png(tmp_path)
+    dest = tmp_path / "proj" / "img"
+    monkeypatch.setattr(news.urllib.request, "urlopen", lambda req, timeout=20: _Resp())
+    got = news._download_images([str(src), "https://x/y.png"], str(dest), 2)
+    assert got == ["img/s2_0.png", "img/s2_1.png"]
+    assert (dest / "s2_0.png").read_bytes() == src.read_bytes()
+    assert (dest / "s2_1.png").is_file()
+
+
+def test_a_missing_local_image_warns_and_does_not_raise(news, tmp_path, capsys):
+    dest = tmp_path / "proj" / "img"
+    got = news._download_images([str(tmp_path / "m" / "khong-co.png")], str(dest), 1)
+    assert got == []
+    assert "missing" in capsys.readouterr().out
+
+
+def test_a_non_image_local_file_is_not_copied(news, tmp_path, capsys):
+    txt = tmp_path / "m" / "a.txt"
+    txt.parent.mkdir(parents=True)
+    txt.write_text("x", encoding="utf-8")
+    dest = tmp_path / "proj" / "img"
+    got = news._download_images([str(txt)], str(dest), 1)
+    assert got == []
+    assert "không phải ảnh" in capsys.readouterr().out
+    assert not (dest / "s1_0.txt").exists()
+
+
+def test_a_file_url_still_goes_through_urlopen(news, monkeypatch, tmp_path):
+    src = _user_png(tmp_path)
+    seen = []
+
+    def fake_urlopen(req, timeout=20):
+        seen.append(req.full_url)
+        return _Resp()
+
+    monkeypatch.setattr(news.urllib.request, "urlopen", fake_urlopen)
+    got = news._download_images(["file:///" + str(src).replace("\\", "/")], str(tmp_path / "proj" / "img"), 1)
+    assert len(seen) == 1 and seen[0].startswith("file:")
+    assert got == ["img/s1_0.png"]
+
+
+def test_a_failing_url_still_leaves_the_local_image(news, monkeypatch, tmp_path):
+    src = _user_png(tmp_path)
+
+    def boom(req, timeout=20):
+        raise OSError("x")
+
+    monkeypatch.setattr(news.urllib.request, "urlopen", boom)
+    got = news._download_images([str(src), "https://x/y.png"], str(tmp_path / "proj" / "img"), 1)
+    assert got == ["img/s1_0.png"]
+
+
+def test_a_failing_copy_warns_instead_of_a_traceback(news, monkeypatch, tmp_path, capsys):
+    """Lỗi chép (khoá file, quyền) là MỘT dòng cảnh báo như nhánh URL, không phải traceback giữa lúc dựng."""
+    src = _user_png(tmp_path)
+
+    def boom(*a, **k):
+        raise PermissionError("khoá")
+
+    monkeypatch.setattr(news.shutil, "copy2", boom)
+    assert news._download_images([str(src)], str(tmp_path / "proj" / "img"), 3) == []
+    assert "[warn] image 3/0 failed: PermissionError" in capsys.readouterr().out
+
+
+def test_short_only_render_uses_the_user_image_not_the_stale_one(news, monkeypatch, tmp_path):
+    src = _user_png(tmp_path)
+    img_dir = tmp_path / "proj" / "img"
+    img_dir.mkdir(parents=True)
+    (img_dir / "s1_cu.png").write_bytes(b"cu")
+    (img_dir / "s2_cu.png").write_bytes(b"cu")
+    calls = []
+    monkeypatch.setattr(news, "_download_images",
+                        lambda urls, d, i, max_n=3: calls.append((i, list(urls))) or ["img/s1_0.png"])
+    result = news._short_segment_images(
+        [{"images": [str(src)]}, {"images": ["https://x/y.png"]}], str(img_dir))
+    assert calls == [(1, [str(src)])]            # đoạn 1 có ảnh người dùng ⇒ KHÔNG tái dùng s1_cu.png
+    assert result[1] == ["img/s1_0.png"]
+    assert result[2] == ["img/s2_cu.png"]        # đoạn 2 không có ảnh người dùng ⇒ tái dùng như trước
+
+
+def test_topstory_prep_media_copies_an_absolute_local_image(news, monkeypatch, tmp_path):
+    """Khẳng định hành vi có sẵn (xanh ngay): `--images` của topstory dựa vào nhánh này."""
+    import importlib
+    ts = importlib.import_module("video_studio.templates.news.top_story_video")
+    src = _user_png(tmp_path)
+    monkeypatch.setattr(ts, "_proj", lambda: str(tmp_path / "proj"))
+    got = ts._prep_media({"media": [{"type": "image", "src": str(src)}]}, 1, str(tmp_path), 10.0, "S")
+    assert got == [{"kind": "image", "src": "media/S1_0.png"}]
+    assert (tmp_path / "proj" / "media" / "S1_0.png").is_file()
