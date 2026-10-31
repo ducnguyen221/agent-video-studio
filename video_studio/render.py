@@ -285,7 +285,8 @@ def main(argv=None):
     ap.add_argument("--brand", default="", help="file brand.json đè khối brand của spec")
     ap.add_argument("--voice-profile", default="", help="đè voice.profile của spec")
     ap.add_argument("--images", default="",
-                    help="images.json: ghép ảnh cục bộ vào cảnh (chỉ project repo-today)")
+                    help="images.json: ghép ảnh của người dùng vào đúng cảnh/đoạn/phần "
+                         "(repo-today, news, news-weekly, topstory), một ảnh mỗi cảnh; xem docs/CONTRACT.md")
     ap.add_argument("--json", action="store_true", help="in một dòng JSON kết quả ra stdout")
     args, code = contract.parse(ap, argv)
     if args is None:

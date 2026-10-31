@@ -311,3 +311,11 @@ def test_bad_scene_values_are_code_2(tmp_path, monkeypatch, capsys, project, seg
     assert rc == contract.CONTRACT_ERROR
     payload = last_json(capsys.readouterr().out)
     assert payload["code"] == 2 and needle in payload["error"], payload
+
+
+def test_render_help_describes_images_for_four_projects(capsys):
+    assert render.main(["--help"]) == contract.OK
+    out = " ".join(capsys.readouterr().out.split())
+    assert "chỉ project repo-today" not in out
+    for w in ("news-weekly", "topstory", "một ảnh"):
+        assert w in out
