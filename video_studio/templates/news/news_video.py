@@ -33,7 +33,7 @@ from voice_studio import av, engine, profiles
 
 from ... import _env, projects, render
 from ...contract import ContractError
-from ...spec import REQUIRED_BRAND
+from ...spec import REQUIRED_BRAND, USER_IMAGE_KEY
 
 PROJECT = "news"
 
@@ -739,12 +739,32 @@ def _synth_long(model, text, prompt, max_chunk=240):
     return engine.normalize(out)
 
 
+#: Đuôi ảnh nhận ở nhánh cục bộ (nhánh URL đã nhận cả gif).
+_LOCAL_EXTS = (".png", ".jpg", ".jpeg", ".webp", ".gif")
+
+
 def _download_images(urls, dest_dir, seg_idx, max_n=3):
-    """Best-effort download of segment images. Returns project-relative paths."""
+    """Best-effort download of segment images. Returns project-relative paths.
+
+    Phần tử là đường **tuyệt đối** (từ `render --images`) được chép thẳng, không ngưỡng kích thước;
+    mọi chuỗi khác đi `urlopen` như trước."""
     os.makedirs(dest_dir, exist_ok=True)
     out = []
     for j, u in enumerate((urls or [])[:max_n]):
         try:
+            if isinstance(u, str) and os.path.isabs(u):
+                ext = os.path.splitext(u)[1].lower()
+                if ext not in _LOCAL_EXTS:
+                    print(f"    [warn] image {seg_idx}/{j} không phải ảnh: {ext or '(không đuôi)'}")
+                    continue
+                if not os.path.isfile(u):
+                    print(f"    [warn] image {seg_idx}/{j} missing: {u}")
+                    continue
+                fp = os.path.join(dest_dir, f"s{seg_idx}_{j}{ext}")
+                shutil.copy2(u, fp)
+                out.append(f"img/{os.path.basename(fp)}")
+                print(f"    image s{seg_idx}_{j} ok (cục bộ)")
+                continue
             req = urllib.request.Request(u, headers={
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
                 "Accept": "image/*,*/*;q=0.8"})
@@ -752,8 +772,10 @@ def _download_images(urls, dest_dir, seg_idx, max_n=3):
                 ct = (r.headers.get("Content-Type") or "").lower()
                 data = r.read(12_000_000)
             if len(data) < 4000:
+                print(f"    [warn] image {seg_idx}/{j} bỏ: phản hồi quá nhỏ ({len(data)} byte)")
                 continue
             if "image" not in ct and not re.search(r"\.(jpe?g|png|webp|gif)([?#]|$)", u, re.I):
+                print(f"    [warn] image {seg_idx}/{j} bỏ: không phải ảnh ({ct or 'không rõ loại'})")
                 continue
             ext = ".jpg"
             for k, v in (("png", ".png"), ("webp", ".webp"), ("gif", ".gif"), ("jpeg", ".jpg")):
@@ -1142,6 +1164,27 @@ _SHORT_HEAD = """<!doctype html>
 """
 
 
+def _short_segment_images(segments, img_dir):
+    """Ảnh của từng đoạn cho bản short dựng riêng: {số đoạn 1-based: [đường tương đối]}.
+
+    Đoạn có ảnh người dùng (được `render --images` đánh dấu, hoặc ảnh là đường tuyệt đối) luôn tải/chép
+    ảnh đó — URL lẫn cục bộ —, không tái dùng ảnh cũ trong `img/`; đoạn khác tái dùng ảnh bản long đã tải nếu có, chưa có thì tải."""
+    seg_imgs = {}
+    for i, seg in enumerate(segments, 1):
+        imgs = seg.get("images") or []
+        user = seg.get(USER_IMAGE_KEY) or (
+            isinstance(imgs, list) and imgs and isinstance(imgs[0], str) and os.path.isabs(imgs[0]))
+        if user:
+            seg_imgs[i] = _download_images(imgs, img_dir, i)
+            continue
+        have = sorted(glob.glob(os.path.join(img_dir, f"s{i}_*"))) if os.path.isdir(img_dir) else []
+        if have:
+            seg_imgs[i] = ["img/" + os.path.basename(p) for p in have]
+        else:
+            seg_imgs[i] = _download_images(seg.get("images"), img_dir, i)
+    return seg_imgs
+
+
 def make_weekly_short(video_obj, out_path, date, week="", range_="", model=None, prompt=None, brand=None):
     """Render the ~60-90s VERTICAL (1080x1920) weekly summary short: intro +
     one quick slide per TOP-5 story (headline + first narration sentence) +
@@ -1181,14 +1224,7 @@ def make_weekly_short(video_obj, out_path, date, week="", range_="", model=None,
     total = round(sum(b[3] for b in blocks), 2)
     print(f"  [short] total ~{total:.0f}s")
 
-    # reuse images downloaded by the long recap when present; fetch if missing
-    seg_imgs = {}
-    for i, seg in enumerate(segments, 1):
-        have = sorted(glob.glob(os.path.join(img_dir, f"s{i}_*"))) if os.path.isdir(img_dir) else []
-        if have:
-            seg_imgs[i] = ["img/" + os.path.basename(p) for p in have]
-        else:
-            seg_imgs[i] = _download_images(seg.get("images"), img_dir, i)
+    seg_imgs = _short_segment_images(segments, img_dir)
 
     segs_html, anim, caps_ev, kcaps_html = [], [], [], []
     t = 0.0

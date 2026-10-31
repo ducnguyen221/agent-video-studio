@@ -15,6 +15,7 @@ from pathlib import Path
 
 import pytest
 
+from conftest import LAYOUT_VERSION, changelog_block
 from video_studio import __version__, _env, precommit, station
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -137,9 +138,9 @@ def _walk_text_files(root):
             yield rel, p.read_text(encoding="utf-8", errors="replace")
 
 
-def _current_version_block(text):
-    m = re.search(rf"^## {re.escape(__version__)}(?: — [^\n]+)?\n(.*?)(?=\n## |\Z)", text, re.S | re.M)
-    return m.group(1) if m else ""
+def _layout_block(text):
+    """Thân mục CHANGELOG của bản đưa ra bố cục `workspaces` — nơi duy nhất các câu về bố cục trạm phải có."""
+    return changelog_block(text, LAYOUT_VERSION)
 
 
 def _unreleased(text):
@@ -331,7 +332,15 @@ def test_the_helper_for_the_hidden_folder_is_gone():
 
 
 def test_the_changelog_says_the_change_in_one_clean_sentence():
-    text = _current_version_block((ROOT / "docs" / "CHANGELOG.md").read_text(encoding="utf-8"))
+    text = _layout_block((ROOT / "docs" / "CHANGELOG.md").read_text(encoding="utf-8"))
+    assert text, "CHANGELOG mất mục 0.4.0"
     assert "thư mục trạm cũ ẩn trong thư mục cá nhân không còn được tự nhận" in text.lower()
     assert "--station <đường>" in text
     assert "<biến>/video" in text and "<repo>/workspaces" in text and "OPCOS_WORKSPACES" in text
+
+
+def test_the_layout_sentences_are_pinned_to_the_release_that_introduced_them():
+    fake = ("## Chưa phát hành\n\n## 9.9.9 — 2099-01-01\n- gì đó\n\n"
+            "## 0.4.0 — 2026-10-20\n- Thư mục trạm cũ ẩn trong thư mục cá nhân không còn được tự nhận\n")
+    assert "không còn được tự nhận" in _layout_block(fake)
+    assert _layout_block(fake.replace("## 0.4.0", "## 0.3.9")) == ""

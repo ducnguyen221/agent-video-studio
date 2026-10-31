@@ -10,7 +10,8 @@ from pathlib import Path
 
 import pytest
 
-from video_studio import __version__, station
+from conftest import LAYOUT_VERSION, changelog_block
+from video_studio import station
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -66,20 +67,39 @@ def test_docs_say_how_to_keep_an_embedded_station_when_the_variable_is_set(rel):
     assert "OPCOS_WORKSPACES" in text
 
 
-def test_the_current_version_changelog_block_tells_the_whole_story():
+LAYOUT_NEEDLES = ("--mode embedded --yes",            # cách giữ trạm trong repo
+                  "<biến>/video",                      # --yes / không người ra trạm OpcOS
+                  "< NUL",                             # EOF khi có biến ⇒ trạm OpcOS
+                  "chuyen",                            # trạm cũ có dữ liệu: giữ hoặc chuyển
+                  "Ctrl+C",                            # mã 2 một dòng, không traceback
+                  "hai trạm",                          # hai trạm cùng mang dấu
+                  "station_path")                      # bản ghi separate hỏng ⇒ mã 2
+
+
+def _layout_story_gaps(raw):
+    """Những gì mục CHANGELOG của bản đưa ra bố cục `workspaces` còn thiếu hoặc nói sai (rỗng = đủ)."""
+    block = _flat(changelog_block(raw, LAYOUT_VERSION))
+    if not block:
+        return ["(mất mục " + LAYOUT_VERSION + ")"]
+    gaps = [n for n in LAYOUT_NEEDLES if n not in block]
+    gaps += [f"câu cũ: {old}" for old in OLD_CLAIMS if _near_yes(block, old)]
+    return gaps
+
+
+def test_the_layout_release_block_tells_the_whole_story():
     raw = (ROOT / "docs" / "CHANGELOG.md").read_text(encoding="utf-8")
-    m = re.search(rf"^## {re.escape(__version__)}(?: — [^\n]+)?\n(.*?)(?=\n## |\Z)", raw, re.S | re.M)
-    block = _flat(m.group(1)) if m else ""
-    for needle in ("--mode embedded --yes",            # cách giữ trạm trong repo
-                   "<biến>/video",                      # --yes / không người ra trạm OpcOS
-                   "< NUL",                             # EOF khi có biến ⇒ trạm OpcOS
-                   "chuyen",                            # trạm cũ có dữ liệu: giữ hoặc chuyển
-                   "Ctrl+C",                            # mã 2 một dòng, không traceback
-                   "hai trạm",                          # hai trạm cùng mang dấu
-                   "station_path"):                     # bản ghi separate hỏng ⇒ mã 2
-        assert needle in block, needle
-    for old in OLD_CLAIMS:
-        assert not _near_yes(block, old), old
+    assert _layout_story_gaps(raw) == []
+
+
+def test_a_new_release_block_without_layout_sentences_is_not_a_gap():
+    raw = (ROOT / "docs" / "CHANGELOG.md").read_text(encoding="utf-8")
+    mutated = ("## Chưa phát hành\n- chỉ có dòng này\n\n## 9.9.9 — 2099-01-01\n- không nói gì về trạm\n\n" + raw)
+    assert _layout_story_gaps(mutated) == []
+
+
+def test_losing_the_layout_release_block_is_a_gap():
+    raw = (ROOT / "docs" / "CHANGELOG.md").read_text(encoding="utf-8")
+    assert _layout_story_gaps(raw.replace("## 0.4.0", "## 0.3.9")) != []
 
 
 def test_the_cli_help_matches_the_behaviour(capsys):

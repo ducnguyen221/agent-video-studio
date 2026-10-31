@@ -39,7 +39,7 @@ OUTPUT_KINDS = ("long", "short")
 
 __all__ = ["SCHEMA_VERSION", "REQUIRED_BRAND", "OUTPUT_KINDS", "load", "validate",
            "brand_of", "voice_of", "bgm_of", "outputs_of", "content_of", "apply_images",
-           "copy_image_files"]
+           "copy_image_files", "video_obj_of", "scene_list_of", "USER_IMAGE_KEY"]
 
 
 def load(path, brand_file=None):
@@ -224,6 +224,48 @@ def content_of(spec):
     return {k: v for k, v in spec.items() if k not in skip}
 
 
+def video_obj_of(spec):
+    """Object nội dung của bản tin: `daily_video` → `weekly_video` → chính spec (có `segments`)."""
+    vo = spec.get("daily_video") or spec.get("weekly_video")
+    if not vo and spec.get("segments"):
+        vo = spec
+    if not vo or not vo.get("segments"):
+        raise ContractError(
+            "spec không có đoạn tin nào: cần \"daily_video\"/\"weekly_video\" có \"segments\", "
+            "hoặc \"segments\" ngay ở cấp cao nhất.")
+    return vo
+
+
+def scene_list_of(data, project):
+    """Danh sách cảnh MÀ TEMPLATE của `project` sẽ đọc (cùng đối tượng, để sửa tại chỗ); sai kiểu ⇒ ContractError.
+
+    `repo-today`: `scenes` · `news`/`news-weekly`: `segments` của `daily_video`/`weekly_video`/cấp cao
+    nhất · `topstory`: `top_story.sections` (hoặc `story.sections`). Không kiểm từng phần tử.
+    """
+    if project == "repo-today":
+        lst = data.get("scenes")
+        if not isinstance(lst, list) or not lst:
+            raise ContractError("--images cần spec có danh sách `scenes` (project repo-today)")
+    elif project in ("news", "news-weekly"):
+        raw = data.get("daily_video") or data.get("weekly_video")
+        if raw and not isinstance(raw, dict):
+            raise ContractError("spec: `daily_video`/`weekly_video` phải là object")
+        vo = video_obj_of(data)
+        lst = vo.get("segments")
+        if not isinstance(lst, list) or not lst:
+            raise ContractError(f"--images cần spec có danh sách `segments` (project {project})")
+    elif project == "topstory":
+        story = data.get("top_story") or data.get("story")
+        if not isinstance(story, dict):
+            raise ContractError("spec: `top_story` phải là object có `sections`")
+        lst = story.get("sections")
+        if not isinstance(lst, list) or not lst:
+            raise ContractError("--images cần spec có `top_story.sections` (project topstory)")
+    else:
+        raise ContractError(f"--images chưa hỗ trợ project {project!r}")
+    return lst
+
+
 # ── ảnh người dùng → cảnh (`render --images`) ───────────────────────────────────────────
 
 IMAGE_EXTS = (".png", ".jpg", ".jpeg", ".webp")
@@ -261,47 +303,78 @@ def _read_images_file(images_path):
     return mapping
 
 
+_URL_RE = re.compile(r"^https?://", re.I)
+
+#: Khoá nội bộ `apply_images` đặt vào đoạn `news` được ánh xạ: bản short dựng riêng đọc nó để không tái dùng
+#: ảnh cũ trong `img/`. Chỉ sống trong bộ nhớ giữa CLI và template — không bao giờ là một phần của spec ghi ra.
+USER_IMAGE_KEY = "_user_image"
+
+
+def _scene_image(images_path, key, value, base, project):
+    """Chuẩn hoá giá trị của MỘT cảnh thành đúng một ảnh: đường tuyệt đối hoặc URL `http(s)://`."""
+    where = f"{images_path}: cảnh {key}"
+    items = [value] if isinstance(value, str) else value
+    if not isinstance(items, list):
+        raise ContractError(f"{where}: giá trị phải là chuỗi hoặc danh sách một chuỗi")
+    if not items:
+        raise ContractError(f"{where}: danh sách ảnh rỗng")
+    if len(items) > 1:
+        raise ContractError(f"{where}: template chỉ hiện một ảnh mỗi cảnh (nhận {len(items)}); "
+                            "chưa hỗ trợ nhiều ảnh mỗi cảnh")
+    rel = items[0]
+    if not isinstance(rel, str) or not rel.strip():
+        raise ContractError(f"{where}: ảnh phải là chuỗi đường dẫn hoặc URL")
+    if _URL_RE.match(rel):
+        if project == "repo-today":
+            raise ContractError(f"{where}: repo-today chỉ nhận ảnh cục bộ, không nhận URL")
+        return rel
+    if not rel.lower().endswith(IMAGE_EXTS):
+        raise ContractError(f"{where}: ảnh phải là {'/'.join(IMAGE_EXTS)}")
+    src = os.path.normpath(rel if os.path.isabs(rel) else os.path.join(base, rel))
+    if not os.path.isfile(src):
+        raise ContractError(f"{where}: không có ảnh {src}")
+    return src
+
+
 def apply_images(data, images_path, project):
-    """Ghép ảnh cục bộ vào cảnh theo file `images.json`; mọi lỗi là ContractError (mã 2).
+    """Ghép ảnh vào cảnh theo file `images.json`; mọi lỗi là ContractError (mã 2).
 
     Định dạng: `{"schema_version": 1, "scenes": {"1": "anh/a.png"}}` — khoá là số cảnh 1-based
-    (chỉ chữ số ASCII, không số 0 đầu), đường tương đối neo vào thư mục chứa images.json, đường
-    tuyệt đối và `..` được chấp nhận (đầu vào cục bộ của người dùng). Chỉ project `repo-today`.
-    Đặt `scene["hero_image"] = "img/s<n>_<tên>"` (n là số cảnh nên tên đích duy nhất) và
-    `data["_image_files"] = {"img/s<n>_<tên>": <đường tuyệt đối>}`; bước dựng chép bằng
-    `copy_image_files`. Không bỏ qua im lặng điều gì.
+    (chỉ chữ số ASCII, không số 0 đầu) trong danh sách cảnh của project (`scene_list_of`); giá trị là
+    MỘT ảnh, viết dạng chuỗi hoặc danh sách một chuỗi: ảnh cục bộ (đường tương đối neo vào thư mục
+    chứa images.json, đường tuyệt đối và `..` được chấp nhận) hoặc URL `http(s)://` (trừ `repo-today`).
+    Ảnh người dùng THAY toàn bộ ảnh/clip spec khai cho cảnh đó; cảnh không có trong file giữ nguyên.
+    `repo-today`: `scene["hero_image"] = "img/s<n>_<tên>"` + `data["_image_files"]` (bước dựng chép
+    bằng `copy_image_files`); `news`/`news-weekly`: `segment["images"] = [ảnh]` (template tải/chép);
+    `topstory`: `section["media"] = [{"type": "image", "src": ảnh}]`. Không bỏ qua im lặng điều gì.
     """
-    if project != "repo-today":
-        raise ContractError(f"--images chỉ dùng với project repo-today (nhận {project!r}): "
-                            "chỉ project này có danh sách `scenes` để gán ảnh")
     if not os.path.isfile(images_path):
         raise ContractError(f"không có file ảnh-theo-cảnh: {images_path}")
     mapping = _read_images_file(images_path)
-    scenes = data.get("scenes")
-    if not isinstance(scenes, list) or not scenes:
-        raise ContractError("--images cần spec có danh sách `scenes`")
+    targets = scene_list_of(data, project)
     base = os.path.dirname(os.path.abspath(images_path))
     files = {}
-    for key, rel in mapping.items():
+    for key, value in mapping.items():
         if not re.fullmatch(r"[1-9][0-9]*", key):
             raise ContractError(f"{images_path}: khoá cảnh phải là số nguyên >= 1 viết thường "
                                 f"(1, 2, 3…), nhận {key!r}")
         n = int(key)
-        if n > len(scenes):
-            raise ContractError(f"{images_path}: cảnh {n} vượt số cảnh của spec ({len(scenes)})")
-        if not isinstance(rel, str) or not rel.strip():
-            raise ContractError(f"{images_path}: cảnh {n} cần đường dẫn ảnh dạng chuỗi")
-        if not rel.lower().endswith(IMAGE_EXTS):
-            raise ContractError(f"{images_path}: cảnh {n}: ảnh phải là {'/'.join(IMAGE_EXTS)}")
-        src = os.path.normpath(rel if os.path.isabs(rel) else os.path.join(base, rel))
-        if not os.path.isfile(src):
-            raise ContractError(f"{images_path}: cảnh {n}: không có ảnh {src}")
-        if not isinstance(scenes[n - 1], dict):
+        if n > len(targets):
+            raise ContractError(f"{images_path}: cảnh {n} vượt số cảnh của spec ({len(targets)})")
+        img = _scene_image(images_path, n, value, base, project)
+        if not isinstance(targets[n - 1], dict):
             raise ContractError(f"spec: cảnh {n} phải là object")
-        dst = f"img/s{n}_{os.path.basename(src)}"
-        files[dst] = src
-        scenes[n - 1]["hero_image"] = dst
-    data["_image_files"] = files
+        if project == "repo-today":
+            dst = f"img/s{n}_{os.path.basename(img)}"
+            files[dst] = img
+            targets[n - 1]["hero_image"] = dst
+        elif project == "topstory":
+            targets[n - 1]["media"] = [{"type": "image", "src": img}]
+        else:
+            targets[n - 1]["images"] = [img]
+            targets[n - 1][USER_IMAGE_KEY] = True
+    if project == "repo-today":
+        data["_image_files"] = files
     return data
 
 

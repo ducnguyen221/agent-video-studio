@@ -18,6 +18,7 @@ import os
 
 from ... import _paths
 from ...contract import ContractError
+from ...spec import video_obj_of  # dời sang spec.py; nhập lại để bên gọi cũ không đổi
 
 #: Lời khuyên riêng của họ template bản tin, nối vào cuối lỗi của `_paths`.
 _HINT = ("Dùng dạng ISO \"2026-01-02\" cho \"date\" (dạng đọc cho người để ở "
@@ -38,18 +39,6 @@ def _duration(path):
 
 def _result(kind, path):
     return {"kind": kind, "path": path, "duration": _duration(path)}
-
-
-def video_obj_of(spec):
-    """Object nội dung của bản tin: `daily_video` → `weekly_video` → chính spec (có `segments`)."""
-    vo = spec.get("daily_video") or spec.get("weekly_video")
-    if not vo and spec.get("segments"):
-        vo = spec
-    if not vo or not vo.get("segments"):
-        raise ContractError(
-            "spec không có đoạn tin nào: cần \"daily_video\"/\"weekly_video\" có \"segments\", "
-            "hoặc \"segments\" ngay ở cấp cao nhất.")
-    return vo
 
 
 def _plain_name(value, field):

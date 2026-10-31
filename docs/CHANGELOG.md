@@ -5,6 +5,15 @@ chính nhưng chưa có tag; khi phát hành, mục đó đổi tên thành số
 `pyproject.toml`, `video_studio/__init__.py` cùng ba manifest plugin (`tests/test_version_sync.py`
 kiểm).
 
+## 0.6.0 — 2026-10-31
+
+- **`render --images` cho cả `news`, `news-weekly`, `topstory`:** một ảnh mỗi cảnh, viết dạng chuỗi hoặc danh sách
+  một phần tử, nhận cả URL `http(s)://` (trừ `repo-today`); ảnh người dùng thay ảnh/clip mà spec khai cho cảnh đó;
+  bản short của `news` dựng riêng cũng dùng ảnh người dùng; mọi lỗi đầu vào (kể cả hơn một ảnh) là mã 2 trước khi
+  tạo `--out`. Chưa hỗ trợ: nhiều ảnh mỗi cảnh. Chưa kiểm bằng một lần dựng video thật có ảnh người dùng.
+- **Test CHANGELOG dò mục cố định:** hai test về bố cục trạm đọc mục `0.4.0` thay vì mục bản hiện hành — bản sau
+  không phải chép lại đoạn «Nhắc lại khi nâng cấp từ 0.4.0». Trang giới thiệu bỏ con số test.
+
 ## 0.5.0 — 2026-10-27
 
 - **`video-routing` chỉ đường giọng/video:** thêm một dòng chỉ đường cho việc lồng tiếng và dựng video đi kèm
