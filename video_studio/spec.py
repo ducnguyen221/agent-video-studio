@@ -39,7 +39,7 @@ OUTPUT_KINDS = ("long", "short")
 
 __all__ = ["SCHEMA_VERSION", "REQUIRED_BRAND", "OUTPUT_KINDS", "load", "validate",
            "brand_of", "voice_of", "bgm_of", "outputs_of", "content_of", "apply_images",
-           "copy_image_files", "video_obj_of", "scene_list_of"]
+           "copy_image_files", "video_obj_of", "scene_list_of", "USER_IMAGE_KEY"]
 
 
 def load(path, brand_file=None):
@@ -253,7 +253,7 @@ def scene_list_of(data, project):
         vo = video_obj_of(data)
         lst = vo.get("segments")
         if not isinstance(lst, list) or not lst:
-            raise ContractError("--images cần spec có danh sách `segments` (project news)")
+            raise ContractError(f"--images cần spec có danh sách `segments` (project {project})")
     elif project == "topstory":
         story = data.get("top_story") or data.get("story")
         if not isinstance(story, dict):
@@ -305,6 +305,10 @@ def _read_images_file(images_path):
 
 _URL_RE = re.compile(r"^https?://", re.I)
 
+#: Khoá nội bộ `apply_images` đặt vào đoạn `news` được ánh xạ: bản short dựng riêng đọc nó để không tái dùng
+#: ảnh cũ trong `img/`. Chỉ sống trong bộ nhớ giữa CLI và template — không bao giờ là một phần của spec ghi ra.
+USER_IMAGE_KEY = "_user_image"
+
 
 def _scene_image(images_path, key, value, base, project):
     """Chuẩn hoá giá trị của MỘT cảnh thành đúng một ảnh: đường tuyệt đối hoặc URL `http(s)://`."""
@@ -316,7 +320,7 @@ def _scene_image(images_path, key, value, base, project):
         raise ContractError(f"{where}: danh sách ảnh rỗng")
     if len(items) > 1:
         raise ContractError(f"{where}: template chỉ hiện một ảnh mỗi cảnh (nhận {len(items)}); "
-                            "nhiều ảnh mỗi cảnh là RQ-003")
+                            "chưa hỗ trợ nhiều ảnh mỗi cảnh")
     rel = items[0]
     if not isinstance(rel, str) or not rel.strip():
         raise ContractError(f"{where}: ảnh phải là chuỗi đường dẫn hoặc URL")
@@ -368,6 +372,7 @@ def apply_images(data, images_path, project):
             targets[n - 1]["media"] = [{"type": "image", "src": img}]
         else:
             targets[n - 1]["images"] = [img]
+            targets[n - 1][USER_IMAGE_KEY] = True
     if project == "repo-today":
         data["_image_files"] = files
     return data

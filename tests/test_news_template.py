@@ -464,3 +464,25 @@ def test_weekly_clears_img_before_it_downloads_the_user_images(news, monkeypatch
     with pytest.raises(_Stop):
         news.make_weekly(vo, str(tmp_path / "o" / "w.mp4"), "2026-01-02", "1", "", model, None, MIN)
     assert seen == [([str(src)], False)]       # ảnh cũ đã bị xoá khi bộ tải được gọi
+
+
+# ── vòng sửa 2: short dựng riêng — đoạn được ánh xạ (URL lẫn cục bộ) không tái dùng ảnh cũ ──
+
+def test_short_only_render_downloads_a_mapped_url_instead_of_the_stale_image(news, monkeypatch, tmp_path):
+    img_dir = tmp_path / "proj" / "img"
+    img_dir.mkdir(parents=True)
+    (img_dir / "s1_cu.jpg").write_bytes(b"cu")
+    calls = []
+    monkeypatch.setattr(news, "_download_images",
+                        lambda urls, d, i, max_n=3: calls.append((i, list(urls))) or ["img/s1_0.png"])
+    seg = {"images": ["https://x/y.png"], news.USER_IMAGE_KEY: True}
+    assert news._short_segment_images([seg], str(img_dir)) == {1: ["img/s1_0.png"]}
+    assert calls == [(1, ["https://x/y.png"])]
+
+
+def test_short_only_render_still_reuses_images_of_segments_the_user_did_not_map(news, monkeypatch, tmp_path):
+    img_dir = tmp_path / "proj" / "img"
+    img_dir.mkdir(parents=True)
+    (img_dir / "s1_cu.jpg").write_bytes(b"cu")
+    monkeypatch.setattr(news, "_download_images", lambda *a, **k: pytest.fail("không được tải"))
+    assert news._short_segment_images([{"images": ["https://x/y.png"]}], str(img_dir)) == {1: ["img/s1_cu.jpg"]}

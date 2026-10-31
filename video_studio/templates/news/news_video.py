@@ -33,7 +33,7 @@ from voice_studio import av, engine, profiles
 
 from ... import _env, projects, render
 from ...contract import ContractError
-from ...spec import REQUIRED_BRAND
+from ...spec import REQUIRED_BRAND, USER_IMAGE_KEY
 
 PROJECT = "news"
 
@@ -1167,12 +1167,13 @@ _SHORT_HEAD = """<!doctype html>
 def _short_segment_images(segments, img_dir):
     """Ảnh của từng đoạn cho bản short dựng riêng: {số đoạn 1-based: [đường tương đối]}.
 
-    Đoạn có ảnh người dùng (đường tuyệt đối từ `render --images`) luôn chép ảnh đó, không tái dùng
-    ảnh cũ trong `img/`; đoạn khác tái dùng ảnh bản long đã tải nếu có, chưa có thì tải."""
+    Đoạn có ảnh người dùng (được `render --images` đánh dấu, hoặc ảnh là đường tuyệt đối) luôn tải/chép
+    ảnh đó — URL lẫn cục bộ —, không tái dùng ảnh cũ trong `img/`; đoạn khác tái dùng ảnh bản long đã tải nếu có, chưa có thì tải."""
     seg_imgs = {}
     for i, seg in enumerate(segments, 1):
         imgs = seg.get("images") or []
-        user = isinstance(imgs, list) and imgs and isinstance(imgs[0], str) and os.path.isabs(imgs[0])
+        user = seg.get(USER_IMAGE_KEY) or (
+            isinstance(imgs, list) and imgs and isinstance(imgs[0], str) and os.path.isabs(imgs[0]))
         if user:
             seg_imgs[i] = _download_images(imgs, img_dir, i)
             continue

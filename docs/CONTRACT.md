@@ -220,7 +220,7 @@ phải ảnh thì chỉ in một dòng cảnh báo `[warn]` và cảnh đó dự
 khung), không đổi mã thoát. File `images.json` thiếu hoặc hỏng, khoá không phải số
 nguyên ≥ 1, số cảnh vượt danh sách, ảnh cục bộ không tồn tại hoặc sai đuôi, danh sách rỗng, hơn một ảnh, phần tử
 không phải chuỗi, URL cho `repo-today`, hoặc spec thiếu/sai kiểu danh sách cảnh của project ⇒ mã 2, chưa tạo `--out`.
-Nhiều ảnh mỗi cảnh chưa hỗ trợ (sổ repo RQ-003).
+Nhiều ảnh mỗi cảnh chưa hỗ trợ.
 
 Đường dẫn tương đối trong spec (ảnh, clip) neo vào **thư mục chứa spec**, không vào thư mục
 hiện hành — để `cd` ở đâu thì kết quả vẫn như nhau.

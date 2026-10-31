@@ -317,5 +317,31 @@ def test_render_help_describes_images_for_four_projects(capsys):
     assert render.main(["--help"]) == contract.OK
     out = " ".join(capsys.readouterr().out.split())
     assert "chỉ project repo-today" not in out
-    for w in ("news-weekly", "topstory", "một ảnh"):
+    for w in ("news-weekly", "topstory", "một ảnh", "URL", "thay ảnh/clip"):
         assert w in out
+
+
+def test_mapped_news_segments_are_marked_as_user_images_and_others_are_not(tmp_path, monkeypatch):
+    segs = [{"title": "a"}, {"title": "b"}, {"title": "c"}]
+    img_p = _images(tmp_path, {"1": "https://x/y.png"})
+    rc, seen = _run(tmp_path, monkeypatch, "news", _spec(tmp_path, segments=segs), img_p)
+    assert rc == contract.OK
+    seg = seen["spec"]["daily_video"]["segments"]
+    assert seg[0][spec_mod.USER_IMAGE_KEY] is True
+    assert spec_mod.USER_IMAGE_KEY not in seg[1] and spec_mod.USER_IMAGE_KEY not in seg[2]
+
+
+def test_the_segments_error_names_the_real_project(tmp_path):
+    with pytest.raises(contract.ContractError) as e:
+        spec_mod.scene_list_of({"weekly_video": {"segments": "x"}}, "news-weekly")
+    assert "project news-weekly" in str(e.value)
+
+
+def test_the_many_images_error_does_not_cite_an_internal_ledger_code(tmp_path, monkeypatch, capsys):
+    _png(tmp_path / "a.png")
+    _png(tmp_path / "b.png")
+    rc, _ = _run(tmp_path, monkeypatch, "news", _spec(tmp_path, segments=[{}] * 2),
+                 _images(tmp_path, {"1": ["a.png", "b.png"]}))
+    assert rc == contract.CONTRACT_ERROR
+    err = last_json(capsys.readouterr().out)["error"]
+    assert "chưa hỗ trợ nhiều ảnh mỗi cảnh" in err and "RQ-" not in err
