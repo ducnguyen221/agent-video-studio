@@ -211,11 +211,13 @@ trong danh sách cảnh của project (`repo-today`: `scenes`; `news`/`news-week
 `top_story.sections`); giá trị là **một ảnh** mỗi cảnh, viết dạng chuỗi hoặc danh sách một phần tử: ảnh cục bộ
 `.png`/`.jpg`/`.jpeg`/`.webp` (đường tương đối neo vào thư mục chứa `images.json`; đường tuyệt đối và `..` được
 chấp nhận) hoặc URL `http(s)://` (không cho `repo-today`). `schema_version` phải là 1 và không có khoá lạ cấp trên
-cùng. Ảnh người dùng **thay** ảnh (và clip) mà spec khai cho cảnh đó — template chỉ hiện một ảnh mỗi cảnh; cảnh
+cùng. Ảnh người dùng **thay** ảnh mà spec khai cho cảnh đó (ở `topstory` thay cả clip của phần — clip chỉ có ở
+`topstory`) — template chỉ hiện một ảnh mỗi cảnh; cảnh
 không có trong `images.json` giữ nguyên spec. `repo-today` chép ảnh vào `img/s<số cảnh>_<tên>` và gán `hero_image`;
 `news`/`news-weekly` chép vào `img/s<đoạn>_0<đuôi>` (bản short dựng riêng cũng dùng ảnh này); `topstory` đưa ảnh vào
-`media` của phần. URL được tải **từ máy dựng** lúc dựng theo cơ chế sẵn có của template: tải hỏng chỉ in một dòng
-cảnh báo rồi template dùng ảnh lấp khung, không đổi mã thoát. File `images.json` thiếu hoặc hỏng, khoá không phải số
+`media` của phần. URL được tải **từ máy dựng** lúc dựng theo cơ chế sẵn có của template: tải hỏng hoặc phản hồi không
+phải ảnh thì chỉ in một dòng cảnh báo `[warn]` và cảnh đó dựng không có ảnh (riêng bản short của `news` dùng ảnh lấp
+khung), không đổi mã thoát. File `images.json` thiếu hoặc hỏng, khoá không phải số
 nguyên ≥ 1, số cảnh vượt danh sách, ảnh cục bộ không tồn tại hoặc sai đuôi, danh sách rỗng, hơn một ảnh, phần tử
 không phải chuỗi, URL cho `repo-today`, hoặc spec thiếu/sai kiểu danh sách cảnh của project ⇒ mã 2, chưa tạo `--out`.
 Nhiều ảnh mỗi cảnh chưa hỗ trợ (sổ repo RQ-003).

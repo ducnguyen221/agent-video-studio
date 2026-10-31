@@ -772,8 +772,10 @@ def _download_images(urls, dest_dir, seg_idx, max_n=3):
                 ct = (r.headers.get("Content-Type") or "").lower()
                 data = r.read(12_000_000)
             if len(data) < 4000:
+                print(f"    [warn] image {seg_idx}/{j} bỏ: phản hồi quá nhỏ ({len(data)} byte)")
                 continue
             if "image" not in ct and not re.search(r"\.(jpe?g|png|webp|gif)([?#]|$)", u, re.I):
+                print(f"    [warn] image {seg_idx}/{j} bỏ: không phải ảnh ({ct or 'không rõ loại'})")
                 continue
             ext = ".jpg"
             for k, v in (("png", ".png"), ("webp", ".webp"), ("gif", ".gif"), ("jpeg", ".jpg")):

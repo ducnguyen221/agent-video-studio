@@ -18,7 +18,7 @@ import os
 
 from ... import _paths
 from ...contract import ContractError
-from ...spec import video_obj_of  # noqa: F401 — dời sang spec.py; nhập lại để bên gọi cũ không đổi
+from ...spec import video_obj_of  # dời sang spec.py; nhập lại để bên gọi cũ không đổi
 
 #: Lời khuyên riêng của họ template bản tin, nối vào cuối lỗi của `_paths`.
 _HINT = ("Dùng dạng ISO \"2026-01-02\" cho \"date\" (dạng đọc cho người để ở "

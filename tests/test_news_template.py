@@ -414,3 +414,53 @@ def test_topstory_prep_media_copies_an_absolute_local_image(news, monkeypatch, t
     got = ts._prep_media({"media": [{"type": "image", "src": str(src)}]}, 1, str(tmp_path), 10.0, "S")
     assert got == [{"kind": "image", "src": "media/S1_0.png"}]
     assert (tmp_path / "proj" / "media" / "S1_0.png").is_file()
+
+
+# ── vòng sửa 1: URL bị bỏ phải có cảnh báo; thứ tự xoá img/ rồi mới tải/chép ảnh ────────────
+
+def _resp(content_type, size):
+    class R(_Resp):
+        headers = {"Content-Type": content_type}
+
+        def read(self, n=-1):
+            return b"\x89PNG" + b"0" * (size - 4)
+    return R()
+
+
+@pytest.mark.parametrize("content_type,size,needle", [
+    ("image/png", 100, "quá nhỏ"),
+    ("text/html", 9000, "không phải ảnh"),
+])
+def test_a_url_response_that_is_dropped_leaves_a_warning(news, monkeypatch, tmp_path, capsys,
+                                                         content_type, size, needle):
+    monkeypatch.setattr(news.urllib.request, "urlopen", lambda req, timeout=20: _resp(content_type, size))
+    got = news._download_images(["https://x/y"], str(tmp_path / "proj" / "img"), 2)
+    assert got == []
+    out = capsys.readouterr().out
+    assert "[warn] image 2/0 bỏ" in out and needle in out
+
+
+class _Stop(Exception):
+    pass
+
+
+def test_weekly_clears_img_before_it_downloads_the_user_images(news, monkeypatch, tmp_path):
+    """Ảnh người dùng chỉ sống sót nếu `rmtree(img/)` chạy TRƯỚC `_download_images` (dừng sớm sau bước ảnh)."""
+    src = _user_png(tmp_path)
+    img_dir = tmp_path / "proj" / "img"
+    img_dir.mkdir(parents=True)
+    (img_dir / "s1_cu.png").write_bytes(b"cu")
+    monkeypatch.setattr(news, "_proj", lambda: str(tmp_path / "proj"))
+    monkeypatch.setattr(news, "_synth_long", lambda model, text, prompt, max_chunk=240: [0] * 1000)
+    seen = []
+
+    def fake_download(urls, dest, i, max_n=3):
+        seen.append((list(urls), os.path.exists(str(img_dir / "s1_cu.png"))))
+        raise _Stop
+
+    monkeypatch.setattr(news, "_download_images", fake_download)
+    model = type("M", (), {"sampling_rate": 1000})()
+    vo = {"intro": "a", "outro": "b", "segments": [{"headline": "h", "narration": "n", "images": [str(src)]}]}
+    with pytest.raises(_Stop):
+        news.make_weekly(vo, str(tmp_path / "o" / "w.mp4"), "2026-01-02", "1", "", model, None, MIN)
+    assert seen == [([str(src)], False)]       # ảnh cũ đã bị xoá khi bộ tải được gọi
