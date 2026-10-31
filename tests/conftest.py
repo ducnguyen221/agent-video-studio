@@ -176,3 +176,14 @@ def last_json(text):
     lines = [ln for ln in text.splitlines() if ln.strip()]
     assert lines, "stdout rỗng — hợp đồng đòi một dòng JSON cuối"
     return json.loads(lines[-1])
+
+
+# Bản đưa ra bố cục `workspaces`; mục này là nơi duy nhất các câu về bố cục trạm phải có — bản sau không chép lại.
+LAYOUT_VERSION = "0.4.0"
+
+
+def changelog_block(text, heading):
+    """Thân mục `## <heading>` (hoặc `## <heading> — …`) của CHANGELOG; chuỗi rỗng khi không có mục."""
+    import re
+    m = re.search(rf"^## {re.escape(heading)}(?: — [^\n]+)?\n(.*?)(?=\n## |\Z)", text, re.S | re.M)
+    return m.group(1) if m else ""
