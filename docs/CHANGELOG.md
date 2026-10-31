@@ -5,7 +5,7 @@ chính nhưng chưa có tag; khi phát hành, mục đó đổi tên thành số
 `pyproject.toml`, `video_studio/__init__.py` cùng ba manifest plugin (`tests/test_version_sync.py`
 kiểm).
 
-## Chưa phát hành
+## 0.6.0 — 2026-10-31
 
 - **`render --images` cho cả `news`, `news-weekly`, `topstory`:** một ảnh mỗi cảnh, viết dạng chuỗi hoặc danh sách
   một phần tử, nhận cả URL `http(s)://` (trừ `repo-today`); ảnh người dùng thay ảnh/clip mà spec khai cho cảnh đó;
