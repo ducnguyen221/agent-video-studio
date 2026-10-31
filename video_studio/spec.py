@@ -39,7 +39,7 @@ OUTPUT_KINDS = ("long", "short")
 
 __all__ = ["SCHEMA_VERSION", "REQUIRED_BRAND", "OUTPUT_KINDS", "load", "validate",
            "brand_of", "voice_of", "bgm_of", "outputs_of", "content_of", "apply_images",
-           "copy_image_files"]
+           "copy_image_files", "video_obj_of", "scene_list_of"]
 
 
 def load(path, brand_file=None):
@@ -222,6 +222,48 @@ def content_of(spec):
     """Phần nội dung (khuôn sidecar cũ) — mọi khoá không thuộc bốn khối hợp đồng."""
     skip = {"schema_version", "brand", "voice", "bgm", "outputs"}
     return {k: v for k, v in spec.items() if k not in skip}
+
+
+def video_obj_of(spec):
+    """Object nội dung của bản tin: `daily_video` → `weekly_video` → chính spec (có `segments`)."""
+    vo = spec.get("daily_video") or spec.get("weekly_video")
+    if not vo and spec.get("segments"):
+        vo = spec
+    if not vo or not vo.get("segments"):
+        raise ContractError(
+            "spec không có đoạn tin nào: cần \"daily_video\"/\"weekly_video\" có \"segments\", "
+            "hoặc \"segments\" ngay ở cấp cao nhất.")
+    return vo
+
+
+def scene_list_of(data, project):
+    """Danh sách cảnh MÀ TEMPLATE của `project` sẽ đọc (cùng đối tượng, để sửa tại chỗ); sai kiểu ⇒ ContractError.
+
+    `repo-today`: `scenes` · `news`/`news-weekly`: `segments` của `daily_video`/`weekly_video`/cấp cao
+    nhất · `topstory`: `top_story.sections` (hoặc `story.sections`). Không kiểm từng phần tử.
+    """
+    if project == "repo-today":
+        lst = data.get("scenes")
+        if not isinstance(lst, list) or not lst:
+            raise ContractError("--images cần spec có danh sách `scenes` (project repo-today)")
+    elif project in ("news", "news-weekly"):
+        raw = data.get("daily_video") or data.get("weekly_video")
+        if raw and not isinstance(raw, dict):
+            raise ContractError("spec: `daily_video`/`weekly_video` phải là object")
+        vo = video_obj_of(data)
+        lst = vo.get("segments")
+        if not isinstance(lst, list) or not lst:
+            raise ContractError("--images cần spec có danh sách `segments` (project news)")
+    elif project == "topstory":
+        story = data.get("top_story") or data.get("story")
+        if not isinstance(story, dict):
+            raise ContractError("spec: `top_story` phải là object có `sections`")
+        lst = story.get("sections")
+        if not isinstance(lst, list) or not lst:
+            raise ContractError("--images cần spec có `top_story.sections` (project topstory)")
+    else:
+        raise ContractError(f"--images chưa hỗ trợ project {project!r}")
+    return lst
 
 
 # ── ảnh người dùng → cảnh (`render --images`) ───────────────────────────────────────────

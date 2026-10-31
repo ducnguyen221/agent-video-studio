@@ -195,3 +195,34 @@ def test_bad_images_file_leaves_no_empty_out_dir(tmp_path, monkeypatch, capsys):
     assert last_json(capsys.readouterr().out)["code"] == 2
     assert not out.exists()
 
+
+
+# ── danh sách cảnh theo project (`scene_list_of`) ───────────────────────────────────────
+
+@pytest.mark.parametrize("project,spec_dict,expect_len", [
+    ("repo-today", {"scenes": [{}, {}]}, 2),
+    ("news", {"daily_video": {"segments": [{}, {}, {}]}}, 3),
+    ("news-weekly", {"weekly_video": {"segments": [{}]}}, 1),
+    ("news", {"segments": [{}]}, 1),
+    ("topstory", {"top_story": {"sections": [{}, {}]}}, 2),
+    ("topstory", {"story": {"sections": [{}]}}, 1),
+])
+def test_scene_list_of_picks_the_list_each_template_reads(project, spec_dict, expect_len):
+    assert len(spec_mod.scene_list_of(spec_dict, project)) == expect_len
+
+
+@pytest.mark.parametrize("project,spec_dict,needle", [
+    ("repo-today", {}, "scenes"),
+    ("repo-today", {"scenes": "x"}, "scenes"),
+    ("news", {}, "đoạn tin"),
+    ("news", {"daily_video": {"segments": {"a": 1}}}, "segments"),
+    ("news", {"daily_video": "x"}, "object"),
+    ("topstory", {}, "top_story"),
+    ("topstory", {"top_story": "x"}, "object"),
+    ("topstory", {"top_story": {"sections": "x"}}, "sections"),
+    ("lạ", {}, "lạ"),
+])
+def test_scene_list_of_names_the_missing_field(project, spec_dict, needle):
+    with pytest.raises(contract.ContractError) as e:
+        spec_mod.scene_list_of(spec_dict, project)
+    assert needle in str(e.value)
