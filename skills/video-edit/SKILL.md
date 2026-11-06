@@ -95,7 +95,11 @@ yêu cầu) · `none` · hoặc một chuỗi filter ffmpeg.
   `pip install -e ".[edit]"` + ffmpeg. Không phân biệt người nói.
 - **`--backend vendored`**: gọi bản `video-use` đã cài ở trạm (`station.json: video_use`). Dùng
   khi cần phân biệt người nói hoặc bản ASR chi tiết tới từng từ đệm — đường đó gọi dịch vụ trả
-  phí và đòi khoá API. Cài: `scripts/install-video-use.ps1` / `.sh`.
+  phí và đòi khoá API. Cài: `scripts/install-video-use.ps1` / `.sh`. Máy có OpcOS: venv ở
+  `$OPCOS_RUNTIME/venvs/agent-video-studio/video-use`, tạo bằng `install-video-use.ps1 -VenvOnly`
+  (`.sh --venv-only`), gói cài **sao chép**, không `-e`; không có OpcOS: venv trong trạm như trước
+  (`<trạm>/video-use/.venv`). Mã nguồn `video-use` vẫn clone trong trạm tới khi chuyển sang
+  `plugins/vendor-video-use`.
 
 Không có đường nào chạy được thì lệnh trả **mã 3** và in cả hai cách cài — đừng thử lại, hãy cài.
 

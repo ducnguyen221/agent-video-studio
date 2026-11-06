@@ -214,6 +214,12 @@ def tool_checks():
             filter_check(ff)]
 
 
+def _under_station(st, p):
+    """Đường tuyệt đối (venv ngoài trạm, FR7.2) dùng nguyên; đường tương đối tính từ trạm."""
+    p = str(p)
+    return p if os.path.isabs(p) else os.path.join(st, *p.replace("\\", "/").split("/"))
+
+
 def station_checks(st, src):
     if not st:
         # Bản cài wheel, không biến: không có tầng mặc định nào để đoán.
@@ -242,8 +248,8 @@ def station_checks(st, src):
         else:
             out.append(_check("station-json", True, f"{sj} (contract {info.get('contract')})"))
         vu = (info.get("video_use") or {}) if isinstance(info.get("video_use"), dict) else {}
-        vdir = os.path.join(st, vu["dir"]) if vu.get("dir") else None
-        vpy = os.path.join(st, *vu["python"].split("/")) if vu.get("python") else None
+        vdir = _under_station(st, vu["dir"]) if vu.get("dir") else None
+        vpy = _under_station(st, vu["python"]) if vu.get("python") else None
         out.append(_check("video-use", bool(vdir and os.path.isdir(vdir) and vpy and os.path.isfile(vpy)),
                           vdir or "(chưa khai trong station.json)", level="warn",
                           hint="tuỳ chọn — chỉ cần cho `video-studio edit` bằng bản vendored"))

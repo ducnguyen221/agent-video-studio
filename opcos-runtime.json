@@ -1,0 +1,17 @@
+{
+  "schema": "opcos-runtime-needs/1",
+  "repoKey": "agent-video-studio",
+  "needs": [
+    {
+      "scope": "own",
+      "category": "venvs",
+      "key": "video-use",
+      "python": "3.12",
+      "install": {
+        "requirements": ["scripts/requirements-video-use.txt"],
+        "constraints": {"windows": ["locks/video-use-windows.txt"]}
+      },
+      "paths": {"dir_rel": 95, "file_rel": 149}
+    }
+  ]
+}

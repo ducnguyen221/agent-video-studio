@@ -5,6 +5,16 @@ chính nhưng chưa có tag; khi phát hành, mục đó đổi tên thành số
 `pyproject.toml`, `video_studio/__init__.py` cùng ba manifest plugin (`tests/test_version_sync.py`
 kiểm).
 
+## Chưa phát hành
+
+- **Venv của video-use ra khỏi trạm khi máy có OpcOS:** `scripts/install-video-use.ps1 -VenvOnly`
+  (`.sh --venv-only`) dựng venv ở `$OPCOS_RUNTIME/venvs/agent-video-studio/video-use` (bộ giải: `OPCOS_RUNTIME`
+  → `OPCOS_ROOT/runtime` → `~/OpcOS/runtime` khi có `~/OpcOS/paths.json`), cài gói **sao chép** từ bản sao tạm
+  của clone, không `-e`, không clone/pull, không gọi git; có công cụ `opcos-runtime` thì nhờ nó theo
+  `opcos-runtime.json`. Thêm `-PrintPlan` / `--print-plan` (chỉ in kế hoạch). `station.json` ghi `video_use.python`
+  tuyệt đối khi venv runtime có thật, `doctor` nhận đường tuyệt đối. Máy không có OpcOS: hành vi cũ nguyên vẹn
+  (venv trong trạm, cài `-e`). Chưa kiểm bằng một lần cài thật: test chạy trên cây giả.
+
 ## 0.6.0 — 2026-10-31
 
 - **`render --images` cho cả `news`, `news-weekly`, `topstory`:** một ảnh mỗi cảnh, viết dạng chuỗi hoặc danh sách

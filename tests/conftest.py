@@ -21,7 +21,7 @@ CONTRACT_VARS = (
     "VIDEO_STATION", "VIDEO_ROOT", "VOICE_STATION", "OMNIVOICE_DIR",
     "HYPERFRAMES_VERSION", "HYPERFRAMES_WORKDIR", "NODE_DIR", "FFMPEG_DIR",
     "VIDEO_FONT", "CHROME_BIN", "VIDEO_STUDIO_REPO",
-    "OPCOS_WORKSPACES", "OPCOS_ROOT",
+    "OPCOS_WORKSPACES", "OPCOS_ROOT", "OPCOS_RUNTIME",
 )
 
 
@@ -33,6 +33,10 @@ def _clean_contract_env(monkeypatch, tmp_path):
     home.mkdir()
     monkeypatch.setenv("HOME", str(home))
     monkeypatch.setenv("USERPROFILE", str(home))
+    # Máy có OpcOS (~/OpcOS/paths.json) KHÔNG được làm đổi kết quả test: HOME giả ⇒ không thấy nó.
+    drive, tail = os.path.splitdrive(str(home))
+    monkeypatch.setenv("HOMEDRIVE", drive)
+    monkeypatch.setenv("HOMEPATH", tail)
     # Bản clone đang chạy test có thể có workspace/ hoặc studio.local.json thật — trỏ "repo"
     # sang một thư mục tạm rỗng; test nào cần repo thì tự dựng.
     monkeypatch.setenv("VIDEO_STUDIO_REPO", str(tmp_path / "no-repo"))

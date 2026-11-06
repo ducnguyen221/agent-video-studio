@@ -164,6 +164,16 @@ video-studio init --station <trạm>              # ghi lại vào station.json
 video-studio edit --footage <dir> --out <dir> --backend vendored
 ```
 
+Máy có OpcOS: venv của video-use ở `$OPCOS_RUNTIME/venvs/agent-video-studio/video-use`, tạo bằng
+`install-video-use.ps1 -VenvOnly` (`install-video-use.sh --venv-only`; gọi `opcos-runtime ensure
+--repo-dir <repo>` theo `opcos-runtime.json` khi có công cụ). Gói được cài **sao chép**, không `-e`.
+Không có OpcOS: venv ở trong trạm như trước (`<trạm>/video-use/.venv`). Mã nguồn `video-use` vẫn
+clone trong trạm tới khi chuyển sang `plugins/vendor-video-use`. Chỉ khi máy có OpcOS, venv
+cài từ bản sao nên không ghi gì vào clone; không có OpcOS thì cài `-e` như cũ, có ghi vào clone.
+`-VenvOnly` không clone và không gọi git (cần clone `<trạm>/video-use` có sẵn); `-PrintPlan` chỉ in kế hoạch (`station=`, `venv=`, `clone=`, `installer=`) rồi thoát, không cài gì.
+Thứ tự tìm nơi đặt venv: `OPCOS_RUNTIME` → `OPCOS_ROOT/runtime` → `~/OpcOS/runtime` (khi có
+`~/OpcOS/paths.json`) → không có OpcOS.
+
 ## 6. macOS: những chỗ khác Windows
 
 1. **`python3` là 3.9** trên Mac mới — tạo venv bằng `python3.12`, không bằng `python3`.
