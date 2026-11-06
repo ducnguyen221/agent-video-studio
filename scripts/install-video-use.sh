@@ -116,12 +116,12 @@ install_from_copy() {
   trap 'rm -rf "$TMP_COPY"; exit 130' INT TERM
   for item in "$DEST"/* "$DEST"/.[!.]*; do
     [ -e "$item" ] || continue
-    case "$(basename "$item")" in .venv) continue ;; esac
+    case "$(basename "$item")" in .venv|.git) continue ;; esac
     cp -R "$item" "$TMP_COPY/"
   done
-  # .git IS kept (the opcos-runtime tool reads the commit from it for its spec hash and source_commit;
-  # this script itself never runs git). *.egg-info and __pycache__ are pruned so the copy has a clean
-  # `git status`; build/ is kept (it may be tracked source).
+  # .git is NOT copied: the need's package is "@source", which the opcos-runtime tool hashes by file
+  # tree (skipping .git) and never checks with git. *.egg-info and __pycache__ are pruned so stale
+  # build metadata cannot confuse pip; build/ is kept (it may be source).
   find "$TMP_COPY" \( -name __pycache__ -o -name '*.egg-info' \) -type d -prune -exec rm -rf {} + 2>/dev/null || true
   if [ -n "$CLI" ]; then
     echo "[opcos-runtime] ensure venvs/video-use"
@@ -134,7 +134,9 @@ install_from_copy() {
     [ -x "$VENV_PY" ] || { echo "[venv] creating"; "$PY" -m venv "$VENV"; }
     echo "[pip] installing video-use (copy, not editable) and local ASR dependencies"
     "$VENV_PY" -m pip install --quiet --upgrade pip
-    "$VENV_PY" -m pip install --quiet "$TMP_COPY" faster-whisper
+    PIP_C=""
+    case "$(uname -s 2>/dev/null)" in MINGW*|MSYS*|CYGWIN*) PIP_C="$REPO_ROOT/locks/video-use-windows.txt" ;; esac
+    "$VENV_PY" -m pip install --quiet "$TMP_COPY" -r "$REPO_ROOT/scripts/requirements-video-use.txt" ${PIP_C:+-c "$PIP_C"}
   fi
   rm -rf "$TMP_COPY"
   trap - EXIT INT TERM

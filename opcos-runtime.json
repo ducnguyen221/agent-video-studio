@@ -8,7 +8,7 @@
       "key": "video-use",
       "python": "3.12",
       "install": {
-        "package": ".",
+        "package": "@source",
         "requirements": ["scripts/requirements-video-use.txt"],
         "constraints": {"windows": ["locks/video-use-windows.txt"]}
       },

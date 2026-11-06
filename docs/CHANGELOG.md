@@ -14,7 +14,9 @@ kiểm).
   `opcos-runtime.json`. Thêm `-PrintPlan` / `--print-plan` (chỉ in kế hoạch). `station.json` ghi `video_use.python`
   tuyệt đối khi venv runtime có thật, `doctor` nhận đường tuyệt đối. Máy không có OpcOS: hành vi cũ nguyên vẹn
   (venv trong trạm, cài `-e`). Công cụ `opcos-runtime` được tìm ở `$OPCOS_ROOT/system/operations/runtime/` trước,
-  rồi cạnh `R`; nhu cầu khai `package: "."` (gói luôn đến từ `--source-dir`); thành bại của lời gọi ngoài chỉ theo mã
+  rồi cạnh `R`; nhu cầu khai `package: "@source"` (gói luôn đến từ `--source-dir`, băm theo cây, bản sao không mang `.git`);
+  venv Windows có thêm ba gói `nvidia-*-cu12` (cublas, nvrtc, cudnn); bóc lời rơi CPU vì lỗi tải thư viện CUDA nay
+  cảnh báo rõ ra stderr; thành bại của lời gọi ngoài chỉ theo mã
   thoát (log uv/pip ra stderr không làm hỏng). Chưa kiểm bằng một lần cài thật: test chạy trên cây giả.
 
 ## 0.6.0 — 2026-10-31

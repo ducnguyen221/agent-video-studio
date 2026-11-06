@@ -78,13 +78,51 @@ def _add_cuda_dll_dirs():
     if not hasattr(os, "add_dll_directory"):
         return
     for base in sys.path:
-        for pkg in ("cublas", "cudnn"):
+        for pkg in ("cublas", "cudnn", "cuda_nvrtc"):
             d = os.path.join(base, "nvidia", pkg, "bin")
             if os.path.isdir(d):
                 try:
                     os.add_dll_directory(d)
                 except OSError:
                     pass
+
+
+_CUDA_LIB_NAMES = ("cublas", "cudnn", "nvrtc", "libcu", "cuda")
+_CUDA_LOAD_WORDS = (".dll", ".so", "library", "not found", "cannot be loaded", "shared object")
+
+
+def _is_cuda_library_error(exc):
+    """Lỗi do THIẾU/không tải được thư viện CUDA (khác với không có GPU/driver): phải có CẢ tên
+    thư viện CUDA lẫn từ khoá nạp thư viện. ctranslate2 nạp cuBLAS lười nên lỗi có thể ném ở
+    lần `transcribe` đầu, không phải lúc dựng model."""
+    text = str(exc).lower()
+    return any(n in text for n in _CUDA_LIB_NAMES) and any(w in text for w in _CUDA_LOAD_WORDS)
+
+
+def _warn_cuda_library(exc):
+    log(f"[edit] CẢNH BÁO: thư viện CUDA không tải được ({exc}) — cài nvidia-cublas-cu12, "
+        "nvidia-cuda-nvrtc-cu12, nvidia-cudnn-cu12 vào venv này; tạm chạy CPU (chậm hơn)")
+
+
+def _is_cuda_model(model):
+    device = getattr(model, "device", None) or (_model_device if model is _model else None)
+    return device == "cuda"
+
+
+def _reload_cpu_model(model):
+    """Bỏ model GPU, nạp lại bản CPU (cùng tên model) và đặt nó làm model chung của tiến trình."""
+    global _model
+    name = getattr(model, "model_size_or_path", None)
+    name = name if isinstance(name, str) and name else (_model_name or DEFAULT_MODEL)
+    _model = None
+    return load_model(name, prefer_gpu=False)
+
+
+def _transcribe_wav(model, wav, identity, language):
+    segments, info = model.transcribe(
+        wav, language=identity["language"] if identity else
+        (None if language in (None, "auto") else language), **ASR_SETTINGS)
+    return list(segments), info     # generator: lỗi nạp thư viện cũng có thể nổ ở lúc duyệt
 
 
 def load_model(name=None, prefer_gpu=True):
@@ -104,8 +142,11 @@ def load_model(name=None, prefer_gpu=True):
             _model_name = name
             _model_device, _model_compute_type = "cuda", "float16"
             return _model
-        except Exception:      # noqa: BLE001 — không có GPU/driver là chuyện thường, lùi về CPU
-            log("[edit] không dùng được GPU cho bóc lời — chạy CPU (chậm hơn)")
+        except Exception as e:  # noqa: BLE001 — không có GPU/driver là chuyện thường, lùi về CPU
+            if _is_cuda_library_error(e):
+                _warn_cuda_library(e)
+            else:
+                log("[edit] không dùng được GPU cho bóc lời — chạy CPU (chậm hơn)")
     _model = WhisperModel(name, device="cpu", compute_type="int8")
     _model_name = name
     _model_device, _model_compute_type = "cpu", "int8"
@@ -407,10 +448,18 @@ def transcribe_one(video, work_dir, language=DEFAULT_LANGUAGE, force=False, mode
         wav = os.path.join(tmp, "audio.wav")
         extract_audio(snapshot, wav)
         log(f"[edit] bóc lời {os.path.basename(video)} …")
-        segments, info = m.transcribe(wav, language=identity["language"] if identity else
-                                      (None if language in (None, "auto") else language),
-                                      **ASR_SETTINGS)
-        payload = _to_scribe(list(segments), info,
+        try:
+            segments, info = _transcribe_wav(m, wav, identity, language)
+        except Exception as exc:   # noqa: BLE001 — chỉ lỗi thư viện CUDA của model GPU được cứu
+            if not (_is_cuda_model(m) and _is_cuda_library_error(exc)):
+                raise
+            _warn_cuda_library(exc)
+            m = _reload_cpu_model(m)
+            model_metadata = _effective_model_metadata(m)
+            identity = (_transcript_identity(source_hash, model_metadata, language)
+                        if model_metadata is not None else None)
+            segments, info = _transcribe_wav(m, wav, identity, language)
+        payload = _to_scribe(segments, info,
                              (model_metadata or {}).get("name", _model_name or DEFAULT_MODEL))
         _require_live_source_matches(video, source_hash, "trong khi bóc lời")
         if not _valid_payload(payload):

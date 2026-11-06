@@ -87,14 +87,14 @@ def test_needs_file_schema():
     assert (need["scope"], need["category"], need["key"]) == ("own", "venvs", "video-use")
     assert need["paths"] == {"dir_rel": 95, "file_rel": 149}
     inst = need["install"]
-    # L4: CLI chỉ dùng `--source-dir` khi `package` bắt đầu bằng `.` hoặc `repo:`; "." = bản sao do
-    # install-video-use truyền qua `--source-dir venvs/video-use=<bản sao>`.
-    assert inst["package"] == "."
+    # Hợp đồng runtime-resource-v1 (OpcOS 0d1ceb4b): "@source" = bản sao từ `--source-dir
+    # venvs/video-use=<bản sao>` do install-video-use truyền; thiếu --source-dir ⇒ RT_BAD_NEEDS.
+    assert inst["package"] == "@source"
     assert not any(r.startswith("-e") for r in inst["requirements"])
     for rel in inst["requirements"] + inst["constraints"]["windows"]:
         assert (ROOT / rel).is_file(), rel
-    req = (ROOT / inst["requirements"][0]).read_text(encoding="utf-8").split()
-    assert req == ["faster-whisper"]
+    req = (ROOT / inst["requirements"][0]).read_text(encoding="utf-8").splitlines()
+    assert req[0] == "faster-whisper"                  # gói CUDA Windows: xem test_requirements_pin_cuda_libs
     lock = (ROOT / inst["constraints"]["windows"][0]).read_text(encoding="utf-8").splitlines()
     assert len(lock) >= 40 and lock == sorted(lock, key=str.lower)
     assert all("==" in ln and ln == ln.strip() for ln in lock)
@@ -426,13 +426,13 @@ def test_venv_only_never_runs_git(tmp_path, runner, args):
     copy = src_arg.split("=", 1)[1]
     listing = next(ln for ln in lines if ln.startswith("LISTING:"))[len("LISTING:"):].strip(",").split(",")
     assert "pyproject.toml" in listing and "src" in listing
-    assert ".git" in listing                           # giu .git: CLI doc commit de ghi spec_hash/source_commit
+    assert ".git" not in listing                       # "@source": bam theo cay, khong kiem git ⇒ khong can .git
     for junk in (".venv", "video_use.egg-info"):
         assert junk not in listing, junk
     assert "build" in listing                          # build/ co the la ma da theo doi: khong tia
     tree_line = next(ln for ln in lines if ln.startswith("TREE:"))
     assert "__pycache__" not in tree_line and "egg-info" not in tree_line
-    assert "HEAD:ref: refs/heads/main" in lines        # noi dung .git duoc chep nguyen
+    assert not any(ln.startswith("HEAD:") for ln in lines)
     assert not os.path.exists(copy), "bản sao tạm phải bị xoá"
     plan = _plan(r.stdout)                              # venv ở R ⇒ in python tuyệt đối + nhắc station.json
     assert os.path.isabs(plan["python"]) and "agent-video-studio" in plan["python"]
@@ -596,3 +596,170 @@ def test_install_doc_says_package_comes_from_source_dir():
     text = (ROOT / "docs" / "INSTALL.md").read_text(encoding="utf-8")
     assert "--source-dir" in text and "ensure" in text and "agent-video-studio" in text
     assert "ensure` trần" in text
+
+
+# ── L8: thư viện CUDA của Windows ─────────────────────────────────────────────────────
+
+def _req_names(text):
+    out = []
+    for ln in text.splitlines():
+        ln = ln.split("#", 1)[0].strip()
+        if ln:
+            out.append(ln)
+    return out
+
+
+def _norm(name):
+    return name.replace("_", "-").lower()
+
+
+def test_requirements_pin_cuda_libs_on_windows_only():
+    lines = _req_names((ROOT / "scripts" / "requirements-video-use.txt").read_text(encoding="utf-8"))
+    by_name = {_norm(ln.split(";")[0].strip()): ln for ln in lines}
+    assert "faster-whisper" in by_name
+    for pkg in ("nvidia-cublas-cu12", "nvidia-cuda-nvrtc-cu12", "nvidia-cudnn-cu12"):
+        assert pkg in by_name, pkg
+        marker = by_name[pkg].split(";", 1)[1].replace(" ", "")
+        assert marker == 'sys_platform=="win32"', (pkg, marker)
+
+
+def test_every_requirement_is_pinned_in_the_windows_lock():
+    lines = _req_names((ROOT / "scripts" / "requirements-video-use.txt").read_text(encoding="utf-8"))
+    lock = {_norm(ln.split("==")[0]) for ln in _req_names(
+        (ROOT / "locks" / "video-use-windows.txt").read_text(encoding="utf-8"))}
+    for ln in lines:
+        assert _norm(ln.split(";")[0].strip()) in lock, ln
+
+
+def test_fallback_installs_from_the_requirements_file():
+    """Nhanh du phong khong CLI cai theo `-r requirements` (+ `-c lock` tren Windows) nhu CLI."""
+    ps = PS1.read_bytes().decode("utf-8-sig")
+    sh = SH.read_text(encoding="utf-8")
+    assert "requirements-video-use.txt" in ps and "video-use-windows.txt" in ps
+    assert "requirements-video-use.txt" in sh
+
+
+def _fake_faster_whisper(monkeypatch, err):
+    import types
+    mod = types.ModuleType("faster_whisper")
+    calls = []
+
+    class WhisperModel:
+        def __init__(self, name, device, compute_type):
+            calls.append(device)
+            if device == "cuda":
+                raise err
+
+    mod.WhisperModel = WhisperModel
+    monkeypatch.setitem(sys.modules, "faster_whisper", mod)
+    return calls
+
+
+@pytest.mark.parametrize("msg", [
+    "Library cublas64_12.dll is not found or cannot be loaded",
+    "Could not load library libcudnn_ops.so.9",
+    "nvrtc-builtins64_129.dll missing",
+])
+def test_cpu_fallback_on_cuda_library_error_warns(monkeypatch, capsys, msg):
+    from video_studio.edit import transcribe as tr
+    monkeypatch.setattr(tr, "_model", None)
+    monkeypatch.setattr(tr, "_add_cuda_dll_dirs", lambda: None)
+    calls = _fake_faster_whisper(monkeypatch, RuntimeError(msg))
+    tr.load_model("small")
+    err = capsys.readouterr().err
+    assert calls == ["cuda", "cpu"]
+    assert "thư viện CUDA" in err and msg in err and "nvidia-cublas-cu12" in err
+
+
+def test_cpu_fallback_without_gpu_keeps_the_plain_message(monkeypatch, capsys):
+    from video_studio.edit import transcribe as tr
+    monkeypatch.setattr(tr, "_model", None)
+    monkeypatch.setattr(tr, "_add_cuda_dll_dirs", lambda: None)
+    _fake_faster_whisper(monkeypatch, RuntimeError("CUDA driver version is insufficient"))
+    tr.load_model("small")
+    err = capsys.readouterr().err
+    assert "chạy CPU" in err and "thư viện CUDA" not in err
+
+
+# ── ctranslate2 nạp cuBLAS lười: lỗi nổ ở `transcribe`, không phải lúc dựng model ─────────
+
+class _Seg:
+    text = " hi"
+    words = []
+
+
+class _Info:
+    language = "en"
+
+
+def _fake_lazy_cuda_whisper(monkeypatch, err, lazy_iter=False):
+    import types
+    mod = types.ModuleType("faster_whisper")
+    built = []
+
+    class WhisperModel:
+        def __init__(self, name, device, compute_type):
+            self.model_size_or_path, self.device, self.compute_type = name, device, compute_type
+            self.runs = 0
+            built.append(device)
+
+        def transcribe(self, wav, **kw):
+            self.runs += 1
+            if self.device == "cuda":
+                if not lazy_iter:
+                    raise err
+
+                def gen():
+                    raise err
+                    yield
+                return gen(), _Info()
+            return [_Seg()], _Info()
+
+    mod.WhisperModel = WhisperModel
+    monkeypatch.setitem(sys.modules, "faster_whisper", mod)
+    return built
+
+
+def _prep_transcribe(monkeypatch, tmp_path):
+    from video_studio.edit import transcribe as tr
+    monkeypatch.setattr(tr, "_model", None)
+    monkeypatch.setattr(tr, "_model_name", None)
+    monkeypatch.setattr(tr, "_add_cuda_dll_dirs", lambda: None)
+    monkeypatch.setattr(tr.importlib.metadata, "version", lambda package: "test")
+
+    def extract_audio(_video, dest):
+        Path(dest).write_bytes(b"wav")
+        return dest
+
+    monkeypatch.setattr(tr, "extract_audio", extract_audio)
+    src = tmp_path / "clip.mp4"
+    src.write_bytes(b"src")
+    return tr, src
+
+
+@pytest.mark.parametrize("lazy_iter", [False, True])
+def test_lazy_cublas_error_at_transcribe_warns_and_retries_on_cpu(tmp_path, monkeypatch, capsys, lazy_iter):
+    tr, src = _prep_transcribe(monkeypatch, tmp_path)
+    built = _fake_lazy_cuda_whisper(
+        monkeypatch, RuntimeError("Library cublas64_12.dll is not found or cannot be loaded"), lazy_iter)
+    out = tr.transcribe_one(str(src), str(tmp_path / "work"), language="en")
+    err = capsys.readouterr().err
+    assert built == ["cuda", "cpu"]
+    assert "thư viện CUDA" in err and "nvidia-cudnn-cu12" in err
+    assert json.loads(Path(out).read_text(encoding="utf-8"))["text"] == "hi"
+    assert tr._model_device == "cpu"
+
+
+def test_other_transcribe_errors_are_not_swallowed(tmp_path, monkeypatch):
+    tr, src = _prep_transcribe(monkeypatch, tmp_path)
+    built = _fake_lazy_cuda_whisper(monkeypatch, RuntimeError("CUDA out of memory"))
+    with pytest.raises(RuntimeError, match="out of memory"):
+        tr.transcribe_one(str(src), str(tmp_path / "work"), language="en")
+    assert built == ["cuda"]
+
+
+def test_bare_dll_or_so_without_cuda_name_is_not_a_cuda_library_error():
+    from video_studio.edit import transcribe as tr
+    assert not tr._is_cuda_library_error(RuntimeError("some.dll failed"))
+    assert not tr._is_cuda_library_error(RuntimeError("CUDA driver version is insufficient"))
+    assert tr._is_cuda_library_error(RuntimeError("Library cublas64_12.dll is not found"))

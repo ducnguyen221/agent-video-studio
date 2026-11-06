@@ -83,11 +83,11 @@ function Install-FromCopy([string]$Dest, [string]$Venv) {
     try {
         New-Item -ItemType Directory -Force $tmp | Out-Null
         Get-ChildItem -LiteralPath $Dest -Force |
-            Where-Object { $_.Name -ne '.venv' } |
+            Where-Object { $_.Name -ne '.venv' -and $_.Name -ne '.git' } |
             ForEach-Object { Copy-Item -LiteralPath $_.FullName -Destination $tmp -Recurse -Force }
-        # .git IS kept (the opcos-runtime tool reads the commit from it for its spec hash and
-        # source_commit; this script itself never runs git). *.egg-info and __pycache__ are pruned so
-        # the copy has a clean `git status`; build/ is kept (it may be tracked source).
+        # .git is NOT copied: the need's package is "@source", which the opcos-runtime tool hashes
+        # by file tree (skipping .git) and never checks with git. *.egg-info and __pycache__ are
+        # pruned so stale build metadata cannot confuse pip; build/ is kept (it may be source).
         $junk = @(Get-ChildItem -LiteralPath $tmp -Recurse -Force -Directory -ErrorAction SilentlyContinue |
             Where-Object { $_.Name -eq '__pycache__' -or $_.Name -like '*.egg-info' })
         foreach ($j in $junk) {
@@ -112,7 +112,12 @@ function Install-FromCopy([string]$Dest, [string]$Venv) {
             }
             Write-Host '[pip] installing video-use (copy, not editable) and local ASR dependencies'
             Invoke-Native $venvPy @('-m', 'pip', 'install', '--quiet', '--upgrade', 'pip') | Out-Null
-            $rc = Invoke-Native $venvPy @('-m', 'pip', 'install', '--quiet', $tmp, 'faster-whisper')
+            $pipArgs = @('-m', 'pip', 'install', '--quiet', $tmp, '-r', (Join-Path $script:RepoRoot 'scripts/requirements-video-use.txt'))
+            if ($env:OS -eq 'Windows_NT') {
+                # Same pins as the opcos-runtime branch (constraints.windows in opcos-runtime.json).
+                $pipArgs += @('-c', (Join-Path $script:RepoRoot 'locks/video-use-windows.txt'))
+            }
+            $rc = Invoke-Native $venvPy $pipArgs
             if ($rc -ne 0) { throw 'pip install failed.' }
         }
     }
