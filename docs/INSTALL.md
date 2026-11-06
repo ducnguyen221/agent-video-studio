@@ -170,8 +170,12 @@ Máy có OpcOS: venv của video-use ở `$OPCOS_RUNTIME/venvs/agent-video-studi
 Không có OpcOS: venv ở trong trạm như trước (`<trạm>/video-use/.venv`). Mã nguồn `video-use` vẫn
 clone trong trạm tới khi chuyển sang `plugins/vendor-video-use`. Chỉ khi máy có OpcOS, venv
 cài từ bản sao nên không ghi gì vào clone; không có OpcOS thì cài `-e` như cũ, có ghi vào clone.
-`-VenvOnly` không clone và không gọi git (cần clone `<trạm>/video-use` có sẵn); `-PrintPlan` chỉ in kế hoạch (`station=`, `venv=`, `clone=`, `installer=`) rồi thoát, không cài gì.
-Thứ tự tìm nơi đặt venv: `OPCOS_RUNTIME` → `OPCOS_ROOT/runtime` → `~/OpcOS/runtime` (khi có
+Gói của nhu cầu này (`package: "."` trong `opcos-runtime.json`) luôn đến từ `--source-dir
+venvs/video-use=<bản sao>` do `install-video-use` truyền; gọi `ensure` trần, không `--source-dir`, là sai (sẽ
+cài chính repo agent-video-studio). Công cụ `opcos-runtime` được tìm ở `$OPCOS_ROOT/system/operations/runtime/`
+trước, rồi `<cha của $OPCOS_RUNTIME>/system/operations/runtime/`. `-VenvOnly` không clone và không gọi git (cần clone `<trạm>/video-use` có sẵn); `-PrintPlan` chỉ in kế hoạch (`station=`, `venv=`, `clone=`, `installer=`) rồi thoát, không cài gì.
+Máy có OpcOS: clone `video-use` có sửa đổi chưa commit hay tệp lạ chưa ignore thì `ensure` báo `RT_DIRTY_SOURCE` và không
+cài — commit hoặc dọn clone rồi chạy lại (bản sao chỉ được tỉa `*.egg-info` và `__pycache__`). Thứ tự tìm nơi đặt venv: `OPCOS_RUNTIME` → `OPCOS_ROOT/runtime` → `~/OpcOS/runtime` (khi có
 `~/OpcOS/paths.json`) → không có OpcOS.
 
 ## 6. macOS: những chỗ khác Windows

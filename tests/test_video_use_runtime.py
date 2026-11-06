@@ -86,8 +86,10 @@ def test_needs_file_schema():
     (need,) = doc["needs"]
     assert (need["scope"], need["category"], need["key"]) == ("own", "venvs", "video-use")
     assert need["paths"] == {"dir_rel": 95, "file_rel": 149}
-    assert "package" not in need                       # đến từ --source-dir lúc chạy
     inst = need["install"]
+    # L4: CLI chỉ dùng `--source-dir` khi `package` bắt đầu bằng `.` hoặc `repo:`; "." = bản sao do
+    # install-video-use truyền qua `--source-dir venvs/video-use=<bản sao>`.
+    assert inst["package"] == "."
     assert not any(r.startswith("-e") for r in inst["requirements"])
     for rel in inst["requirements"] + inst["constraints"]["windows"]:
         assert (ROOT / rel).is_file(), rel
@@ -207,6 +209,7 @@ def _install_py_shim(env, kind):
     if kind == "cmd":
         shim = base / "pyshim.cmd"
         lines = ["@echo off",
+                 'if "%~1"=="-m" if "%~2"=="venv" if "%PYSHIM_FAKE_VENV_OK%"=="1" exit /b 0',
                  'if "%~1"=="-m" if "%~2"=="venv" (echo called>"%PY_MARKER%"& exit /b 1)',
                  'if "%~1"=="-m" if "%~2"=="pip" (echo called>"%PY_MARKER%"& exit /b 1)',
                  f'"{real}" %*',
@@ -216,6 +219,7 @@ def _install_py_shim(env, kind):
     else:
         shim = base / "pyshim"
         lines = ["#!/bin/sh",
+                 '[ "${PYSHIM_FAKE_VENV_OK:-}" = 1 ] && [ "$1$2" = "-mvenv" ] && exit 0',
                  'case "$1$2" in "-mvenv"|"-mpip") echo called > "$PY_MARKER"; exit 1;; esac',
                  f'exec "{_posix(real)}" "$@"']
         shim.write_bytes(("\n".join(lines) + "\n").encode("ascii"))
@@ -234,6 +238,20 @@ def _run_ps(args, env, timeout=120):
     # cwd = thư mục tạm: PowerShell ghi cache module vào thư mục hiện hành khi LOCALAPPDATA trống.
     argv = [PS_EXE, "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass",
             "-File", str(PS1), *args]
+    env = _install_py_shim(dict(env), "cmd" if IS_WIN else "sh")
+    r = subprocess.run(argv, env=env, capture_output=True, text=True, timeout=timeout,
+                       stdin=subprocess.DEVNULL, cwd=env["HOME"])
+    _assert_nothing_installed(Path(env["HOME"]).parent)
+    return r
+
+
+def _run_ps_command(args, env, timeout=120):
+    """Chay script qua `-Command "& '<ps1>' ... 2>&1 | Out-String"`: o day Windows PowerShell 5.1 boc
+    stderr cua exe native thanh ErrorRecord, nen ban cu (khong `Invoke-Native`) thoat ma 1."""
+    # Chi gia tri duoc boc dau nhay; `-Station`/`-VenvOnly` phai de tran de PowerShell nhan la tham so.
+    quoted = " ".join(a if a.startswith("-") else "'" + a.replace("'", "''") + "'" for a in args)
+    cmd = "& '" + str(PS1).replace("'", "''") + "' " + quoted + " 2>&1 | Out-String"
+    argv = [PS_EXE, "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-Command", cmd]
     env = _install_py_shim(dict(env), "cmd" if IS_WIN else "sh")
     r = subprocess.run(argv, env=env, capture_output=True, text=True, timeout=timeout,
                        stdin=subprocess.DEVNULL, cwd=env["HOME"])
@@ -336,25 +354,36 @@ def _fake_git(tmp_path, marker):
     return bindir, {"GIT_MARKER": str(marker)}
 
 
-def _fake_cli_tree(tmp_path, exit_code=0):
-    """<cây>/runtime làm R; CLI giả ở R/../system/operations/runtime/. Ghi argv + liệt kê bản sao."""
-    tree = tmp_path / "opcos"
+def _fake_cli_tree(tmp_path, exit_code=0, noisy=0, name="opcos", runtime=True):
+    """<cay>/runtime lam R; CLI gia o <cay>/system/operations/runtime/. Ghi argv + liet ke ban sao.
+
+    `noisy` = so dong CLI in ra STDERR (uv/pip in log o stderr ca khi thanh cong)."""
+    tree = tmp_path / name
     cli_dir = tree / "system" / "operations" / "runtime"
     cli_dir.mkdir(parents=True)
-    (tree / "runtime").mkdir()
+    if runtime:
+        (tree / "runtime").mkdir()
     ps = cli_dir / "opcos-runtime.ps1"
     ps.write_text(
         "$log = $env:FAKE_CLI_LOG\n"
         "$args | Set-Content -Path $log -Encoding ASCII\n"
         "foreach ($a in $args) { if ($a -like 'venvs/video-use=*') {\n"
         "  $src = $a.Substring('venvs/video-use='.Length)\n"
-        "  Add-Content -Path $log -Value ('LISTING:' + ((Get-ChildItem -Force -Name $src) -join ',')) } }\n"
+        "  Add-Content -Path $log -Value ('LISTING:' + ((Get-ChildItem -Force -Name $src) -join ','))\n"
+        "  Add-Content -Path $log -Value ('TREE:' + ((Get-ChildItem -Recurse -Force -Name $src) -join ','))\n"
+        "  $h = Join-Path $src '.git/HEAD'\n"
+        "  if (Test-Path -LiteralPath $h) { Add-Content -Path $log -Value ('HEAD:' + (Get-Content -LiteralPath $h -Raw).Trim()) } } }\n"
+        f"for ($i = 0; $i -lt {noisy}; $i++) {{ [Console]::Error.WriteLine('noise ' + $i) }}\n"
         f"exit {exit_code}\n", encoding="ascii")
     sh = cli_dir / "opcos-runtime.sh"
     sh.write_text(
         '#!/bin/sh\nprintf "%s\\n" "$@" > "$FAKE_CLI_LOG"\n'
         'for a in "$@"; do case "$a" in venvs/video-use=*) src="${a#venvs/video-use=}";\n'
-        '  echo "LISTING:$(ls -A "$src" | tr "\\n" ",")" >> "$FAKE_CLI_LOG";; esac; done\n' + f"exit {exit_code}\n",
+        '  echo "LISTING:$(ls -A "$src" | tr "\\n" ",")" >> "$FAKE_CLI_LOG"\n'
+        '  echo "TREE:$(cd "$src" && find . | tr "\\n" ",")" >> "$FAKE_CLI_LOG"\n'
+        '  if [ -f "$src/.git/HEAD" ]; then echo "HEAD:$(cat "$src/.git/HEAD")" >> "$FAKE_CLI_LOG"; fi;; esac; done\n'
+        f'i=0; while [ "$i" -lt {noisy} ]; do echo "noise $i" >&2; i=$((i+1)); done\n'
+        f"exit {exit_code}\n",
         encoding="ascii")
     sh.chmod(sh.stat().st_mode | stat.S_IEXEC)
     return tree
@@ -366,14 +395,18 @@ CLI_RUNNERS = [pytest.param(_run_ps, ["-Station", "{st}", "-VenvOnly"], marks=ne
 
 @pytest.mark.parametrize("runner, args", CLI_RUNNERS)
 def test_venv_only_never_runs_git(tmp_path, runner, args):
-    """-VenvOnly: không git, không clone/pull; bản sao tạm không mang .git/.venv và bị xoá cuối."""
+    """-VenvOnly: không git, không clone/pull; bản sao tạm giữ .git nhưng bỏ .venv/egg-info/__pycache__/build."""
     st = tmp_path / "st"
     clone = st / "video-use"
     (clone / ".git").mkdir(parents=True)
     (clone / ".venv").mkdir()
     (clone / "pyproject.toml").write_text("[project]\nname='video-use'\n", encoding="utf-8")
+    (clone / ".git" / "HEAD").write_text("ref: refs/heads/main\n", encoding="utf-8")
     (clone / "src").mkdir()
     (clone / "src" / "mod.py").write_text("x = 1\n", encoding="utf-8")
+    (clone / "src" / "__pycache__").mkdir()
+    (clone / "video_use.egg-info").mkdir()
+    (clone / "build").mkdir()
     tree = _fake_cli_tree(tmp_path)
     marker, log = tmp_path / "git-called.txt", tmp_path / "cli.log"
     bindir, git_env = _fake_git(tmp_path, marker)
@@ -383,8 +416,9 @@ def test_venv_only_never_runs_git(tmp_path, runner, args):
     assert r.returncode == 0, r.stdout + r.stderr
     assert not marker.exists(), "git đã bị gọi trong -VenvOnly"
     lines = log.read_text(encoding="ascii").splitlines()
-    argv = [ln for ln in lines if not ln.startswith("LISTING:")]
+    argv = [ln for ln in lines if not ln.startswith(("LISTING:", "TREE:", "HEAD:"))]
     assert argv[0] == "ensure"
+    assert "--upgrade" in argv                         # hash bang nhau thi van RT_UP_TO_DATE, khac thi cai lai
     assert _same(argv[argv.index("--repo-dir") + 1], ROOT)
     assert argv[argv.index("--only") + 1] == "venvs/video-use"
     src_arg = argv[argv.index("--source-dir") + 1]
@@ -392,7 +426,13 @@ def test_venv_only_never_runs_git(tmp_path, runner, args):
     copy = src_arg.split("=", 1)[1]
     listing = next(ln for ln in lines if ln.startswith("LISTING:"))[len("LISTING:"):].strip(",").split(",")
     assert "pyproject.toml" in listing and "src" in listing
-    assert ".git" not in listing and ".venv" not in listing
+    assert ".git" in listing                           # giu .git: CLI doc commit de ghi spec_hash/source_commit
+    for junk in (".venv", "video_use.egg-info"):
+        assert junk not in listing, junk
+    assert "build" in listing                          # build/ co the la ma da theo doi: khong tia
+    tree_line = next(ln for ln in lines if ln.startswith("TREE:"))
+    assert "__pycache__" not in tree_line and "egg-info" not in tree_line
+    assert "HEAD:ref: refs/heads/main" in lines        # noi dung .git duoc chep nguyen
     assert not os.path.exists(copy), "bản sao tạm phải bị xoá"
     plan = _plan(r.stdout)                              # venv ở R ⇒ in python tuyệt đối + nhắc station.json
     assert os.path.isabs(plan["python"]) and "agent-video-studio" in plan["python"]
@@ -418,6 +458,120 @@ def test_venv_only_cli_failure_cleans_copy(tmp_path, runner, args):
     assert (clone / ".git").is_dir() and (clone / "pyproject.toml").is_file()
 
 
+def _clone_in(tmp_path):
+    st = tmp_path / "st"
+    clone = st / "video-use"
+    clone.mkdir(parents=True)
+    (clone / "pyproject.toml").write_text("[project]\nname='video-use'\n", encoding="utf-8")
+    return st, clone
+
+
+def _print_flag(plan):
+    return "-PrintPlan" if "-VenvOnly" in plan else "--print-plan"
+
+
+def _cli_name(plan):
+    return "opcos-runtime.ps1" if "-VenvOnly" in plan else "opcos-runtime.sh"
+
+
+@pytest.mark.parametrize("runner, args", CLI_RUNNERS)
+def test_cli_found_under_opcos_root_when_runtime_is_elsewhere(tmp_path, runner, args):
+    """L3: R ngoai cay OpcOS (OPCOS_RUNTIME o cho khac) thi van tim CLI duoi $OPCOS_ROOT/system/..."""
+    st, _ = _clone_in(tmp_path)
+    tree = _fake_cli_tree(tmp_path, runtime=False)
+    (tmp_path / "elsewhere" / "rt").mkdir(parents=True)
+    log = tmp_path / "cli.log"
+    env = _env_for(tmp_path, OPCOS_ROOT=str(tree), OPCOS_RUNTIME=str(tmp_path / "elsewhere" / "rt"),
+                   FAKE_CLI_LOG=str(log))
+    plan = [a.format(st=st) for a in args]
+    ps = runner(plan + [_print_flag(plan)], env)
+    assert ps.returncode == 0, ps.stderr
+    p = _plan(ps.stdout)
+    assert p["installer"] == "opcos-runtime"
+    assert _same(p["cli"], tree / "system" / "operations" / "runtime" / _cli_name(plan))
+    r = runner(plan, env)
+    assert r.returncode == 0, r.stdout + r.stderr
+    assert log.read_text(encoding="ascii").splitlines()[0] == "ensure"
+
+
+@pytest.mark.parametrize("runner, args", CLI_RUNNERS)
+def test_opcos_root_with_surrounding_spaces_is_trimmed(tmp_path, runner, args):
+    st, _ = _clone_in(tmp_path)
+    tree = _fake_cli_tree(tmp_path, runtime=False)
+    (tmp_path / "elsewhere").mkdir()
+    env = _env_for(tmp_path, OPCOS_ROOT="  " + str(tree) + "  ", OPCOS_RUNTIME=str(tmp_path / "elsewhere"))
+    plan = [a.format(st=st) for a in args]
+    r = runner(plan + [_print_flag(plan)], env)
+    assert r.returncode == 0, r.stderr
+    assert _plan(r.stdout)["installer"] == "opcos-runtime"
+
+
+@pytest.mark.parametrize("runner, args", CLI_RUNNERS)
+def test_cli_opcos_root_wins_over_runtime_parent(tmp_path, runner, args):
+    st, _ = _clone_in(tmp_path)
+    root_tree = _fake_cli_tree(tmp_path, name="root")
+    other = _fake_cli_tree(tmp_path, name="other")
+    env = _env_for(tmp_path, OPCOS_ROOT=str(root_tree), OPCOS_RUNTIME=str(other / "runtime"))
+    plan = [a.format(st=st) for a in args]
+    r = runner(plan + [_print_flag(plan)], env)
+    assert _same(_plan(r.stdout)["cli"], root_tree / "system" / "operations" / "runtime" / _cli_name(plan))
+
+
+@pytest.mark.parametrize("runner, args", CLI_RUNNERS)
+def test_noisy_stderr_with_exit_0_is_success(tmp_path, runner, args):
+    """L7: CLI in >= 20 dong ra stderr roi exit 0 thi script exit 0 va in thong bao thanh cong."""
+    st, _ = _clone_in(tmp_path)
+    tree = _fake_cli_tree(tmp_path, noisy=25)
+    env = _env_for(tmp_path, OPCOS_RUNTIME=str(tree / "runtime"), FAKE_CLI_LOG=str(tmp_path / "cli.log"))
+    r = runner([a.format(st=st) for a in args], env)
+    assert r.returncode == 0, r.stdout + r.stderr
+    assert "video-use installed at" in r.stdout
+
+
+@needs_ps
+def test_noisy_stderr_merged_by_command_redirect_is_still_success(tmp_path):
+    """RF2: bien the bat hoi quy L7 — stderr bi gop `2>&1` (NativeCommandError tren PS 5.1)."""
+    st, _ = _clone_in(tmp_path)
+    tree = _fake_cli_tree(tmp_path, noisy=25)
+    env = _env_for(tmp_path, OPCOS_RUNTIME=str(tree / "runtime"), FAKE_CLI_LOG=str(tmp_path / "cli.log"))
+    r = _run_ps_command(["-Station", str(st), "-VenvOnly"], env)
+    assert r.returncode == 0, r.stdout + r.stderr
+    assert "video-use installed at" in r.stdout
+
+
+@needs_ps
+def test_noisy_stderr_merged_with_exit_1_still_fails(tmp_path):
+    st, _ = _clone_in(tmp_path)
+    tree = _fake_cli_tree(tmp_path, noisy=25, exit_code=1)
+    env = _env_for(tmp_path, OPCOS_RUNTIME=str(tree / "runtime"), FAKE_CLI_LOG=str(tmp_path / "cli.log"))
+    r = _run_ps_command(["-Station", str(st), "-VenvOnly"], env)
+    assert "video-use installed at" not in r.stdout
+    assert "failed" in r.stdout + r.stderr
+
+
+@pytest.mark.parametrize("runner, args", CLI_RUNNERS)
+def test_missing_venv_python_is_not_a_success(tmp_path, runner, args):
+    """Khong CLI; `-m venv` 'thanh cong' nhung khong tao gi ⇒ pip khong chay duoc ⇒ phai that bai,
+    khong duoc doc $LASTEXITCODE cu (0) cua lenh truoc."""
+    st, _ = _clone_in(tmp_path)
+    rt = tmp_path / "rt"
+    rt.mkdir()
+    env = _env_for(tmp_path, OPCOS_RUNTIME=str(rt), PYSHIM_FAKE_VENV_OK="1")
+    r = runner([a.format(st=st) for a in args], env)
+    assert r.returncode != 0, r.stdout + r.stderr
+    assert "video-use installed at" not in r.stdout
+
+
+@pytest.mark.parametrize("runner, args", CLI_RUNNERS)
+def test_noisy_stderr_with_exit_1_is_failure(tmp_path, runner, args):
+    st, _ = _clone_in(tmp_path)
+    tree = _fake_cli_tree(tmp_path, noisy=25, exit_code=1)
+    env = _env_for(tmp_path, OPCOS_RUNTIME=str(tree / "runtime"), FAKE_CLI_LOG=str(tmp_path / "cli.log"))
+    r = runner([a.format(st=st) for a in args], env)
+    assert r.returncode != 0
+    assert "video-use installed at" not in r.stdout
+
+
 @pytest.mark.parametrize("runner, args", CLI_RUNNERS)
 def test_venv_only_without_clone_fails(tmp_path, runner, args):
     st = tmp_path / "st"
@@ -436,3 +590,9 @@ def test_scripts_stay_portable():
     assert all(ord(c) < 128 for c in text)
     assert "??" not in text and "&&" not in text
     assert "Resolve-VideoUseVenv" in text and "resolve_video_use_venv" in SH.read_text(encoding="utf-8")
+
+
+def test_install_doc_says_package_comes_from_source_dir():
+    text = (ROOT / "docs" / "INSTALL.md").read_text(encoding="utf-8")
+    assert "--source-dir" in text and "ensure" in text and "agent-video-studio" in text
+    assert "ensure` trần" in text

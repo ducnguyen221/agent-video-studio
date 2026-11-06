@@ -51,6 +51,23 @@ function Get-VenvPython([string]$Venv) {
     return (Join-Path $Venv 'bin/python')
 }
 
+# Run a native exe and judge it ONLY by its exit code. Tools such as uv/pip write their logs to
+# stderr even on success; under $ErrorActionPreference = 'Stop' Windows PowerShell 5.1 can turn
+# that into a terminating error, so Stop is relaxed around the call and restored after it.
+# Output goes to the console (not into the function's return value); returns the exit code.
+function Invoke-Native([string]$Exe, [string[]]$ArgList) {
+    $prev = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    try {
+        # A stale exit code from an earlier command must not make a missing exe look successful.
+        $global:LASTEXITCODE = $null
+        & $Exe @ArgList | Out-Host
+        if ($null -eq $LASTEXITCODE) { return 127 }
+        return $LASTEXITCODE
+    }
+    finally { $ErrorActionPreference = $prev }
+}
+
 # Where the venv lives. The rule (R = OPCOS_RUNTIME, else OPCOS_ROOT/runtime, else ~/OpcOS/runtime
 # when ~/OpcOS/paths.json exists, else none) is implemented ONCE, in video_studio/_env.py;
 # $RuntimeVenv is its answer, computed below from $HOME.
@@ -59,32 +76,44 @@ function Resolve-VideoUseVenv([string]$Station) {
     return (Join-Path (Join-Path $Station 'video-use') '.venv')
 }
 
-# Copy the clone (minus .git and .venv) to a temp folder and install FROM the copy, so the
+# Copy the clone to a temp folder and install FROM the copy, so the
 # clone is never written to. The copy is removed at the end, also on failure.
 function Install-FromCopy([string]$Dest, [string]$Venv) {
     $tmp = Join-Path ([IO.Path]::GetTempPath()) ('video-use-src-' + [guid]::NewGuid().ToString('N'))
     try {
         New-Item -ItemType Directory -Force $tmp | Out-Null
         Get-ChildItem -LiteralPath $Dest -Force |
-            Where-Object { $_.Name -ne '.git' -and $_.Name -ne '.venv' } |
+            Where-Object { $_.Name -ne '.venv' } |
             ForEach-Object { Copy-Item -LiteralPath $_.FullName -Destination $tmp -Recurse -Force }
+        # .git IS kept (the opcos-runtime tool reads the commit from it for its spec hash and
+        # source_commit; this script itself never runs git). *.egg-info and __pycache__ are pruned so
+        # the copy has a clean `git status`; build/ is kept (it may be tracked source).
+        $junk = @(Get-ChildItem -LiteralPath $tmp -Recurse -Force -Directory -ErrorAction SilentlyContinue |
+            Where-Object { $_.Name -eq '__pycache__' -or $_.Name -like '*.egg-info' })
+        foreach ($j in $junk) {
+            if ($j -and (Test-Path -LiteralPath $j.FullName)) { Remove-Item -LiteralPath $j.FullName -Recurse -Force -ErrorAction SilentlyContinue }
+        }
         if ($script:Cli) {
             Write-Host "[opcos-runtime] ensure venvs/video-use"
+            # The need's package is "." and comes ONLY from --source-dir (the copy made above).
+            # --upgrade: an unchanged spec hash stays RT_UP_TO_DATE, a changed one (new clone commit)
+            # reinstalls the venv.
             $hostExe = (Get-Process -Id $PID).Path
-            & $hostExe -NoProfile -File $script:Cli ensure --repo-dir $script:RepoRoot --only venvs/video-use --source-dir "venvs/video-use=$tmp"
-            if ($LASTEXITCODE -ne 0) { throw 'opcos-runtime ensure failed.' }
+            $rc = Invoke-Native $hostExe @('-NoProfile', '-File', $script:Cli, 'ensure', '--repo-dir', $script:RepoRoot,
+                '--only', 'venvs/video-use', '--source-dir', "venvs/video-use=$tmp", '--upgrade')
+            if ($rc -ne 0) { throw 'opcos-runtime ensure failed.' }
         }
         else {
             $venvPy = Get-VenvPython $Venv
             if (-not (Test-Path $venvPy)) {
                 Write-Host '[venv] creating'
-                & $script:py -m venv $Venv
-                if ($LASTEXITCODE -ne 0) { throw 'venv creation failed.' }
+                $rc = Invoke-Native $script:py @('-m', 'venv', $Venv)
+                if ($rc -ne 0) { throw 'venv creation failed.' }
             }
             Write-Host '[pip] installing video-use (copy, not editable) and local ASR dependencies'
-            & $venvPy -m pip install --quiet --upgrade pip
-            & $venvPy -m pip install --quiet $tmp faster-whisper
-            if ($LASTEXITCODE -ne 0) { throw 'pip install failed.' }
+            Invoke-Native $venvPy @('-m', 'pip', 'install', '--quiet', '--upgrade', 'pip') | Out-Null
+            $rc = Invoke-Native $venvPy @('-m', 'pip', 'install', '--quiet', $tmp, 'faster-whisper')
+            if ($rc -ne 0) { throw 'pip install failed.' }
         }
     }
     finally {
@@ -128,10 +157,18 @@ $rt = @(& $py -c $rcode $RepoRoot $HOME)
 if ($LASTEXITCODE -ne 0) { throw 'could not resolve the OpcOS runtime location.' }
 $RuntimeRoot = if ($rt.Count -gt 0) { [string]$rt[0] } else { '' }
 $RuntimeVenv = if ($rt.Count -gt 1) { [string]$rt[1] } else { '' }
+# The opcos-runtime tool: $OPCOS_ROOT/system/... first (R may live outside the OpcOS tree), then
+# <parent of R>/system/...; none found means this script builds the venv itself.
 $Cli = ''
+$cands = @()
+if ($env:OPCOS_ROOT -and $env:OPCOS_ROOT.Trim()) {
+    $cands += (Join-Path ($env:OPCOS_ROOT.Trim()) 'system/operations/runtime/opcos-runtime.ps1')
+}
 if ($RuntimeRoot) {
-    $cand = Join-Path (Split-Path -Parent $RuntimeRoot) 'system/operations/runtime/opcos-runtime.ps1'
-    if (Test-Path -LiteralPath $cand -PathType Leaf) { $Cli = $cand }
+    $cands += (Join-Path (Split-Path -Parent $RuntimeRoot) 'system/operations/runtime/opcos-runtime.ps1')
+}
+foreach ($cand in $cands) {
+    if (Test-Path -LiteralPath $cand -PathType Leaf) { $Cli = $cand; break }
 }
 $venv = Resolve-VideoUseVenv $Station
 
@@ -144,6 +181,7 @@ if ($PrintPlan) {
     Write-Output "installer=$installer"
     Write-Output ('editable=' + $(if ($RuntimeVenv) { 'no' } else { 'yes' }))
     Write-Output "runtime=$RuntimeRoot"
+    Write-Output "cli=$Cli"
     exit 0
 }
 
@@ -171,14 +209,14 @@ else {
     $venvPy = Get-VenvPython $venv
     if (-not (Test-Path $venvPy)) {
         Write-Host '[venv] creating'
-        & $py -m venv $venv
-        if ($LASTEXITCODE -ne 0) { throw 'venv creation failed.' }
+        $rc = Invoke-Native $py @('-m', 'venv', $venv)
+        if ($rc -ne 0) { throw 'venv creation failed.' }
     }
 
     Write-Host '[pip] installing video-use and local ASR dependencies'
-    & $venvPy -m pip install --quiet --upgrade pip
-    & $venvPy -m pip install --quiet -e $Dest faster-whisper
-    if ($LASTEXITCODE -ne 0) { throw 'pip install failed.' }
+    Invoke-Native $venvPy @('-m', 'pip', 'install', '--quiet', '--upgrade', 'pip') | Out-Null
+    $rc = Invoke-Native $venvPy @('-m', 'pip', 'install', '--quiet', '-e', $Dest, 'faster-whisper')
+    if ($rc -ne 0) { throw 'pip install failed.' }
 }
 
 Write-Host ''

@@ -13,7 +13,9 @@ kiểm).
   của clone, không `-e`, không clone/pull, không gọi git; có công cụ `opcos-runtime` thì nhờ nó theo
   `opcos-runtime.json`. Thêm `-PrintPlan` / `--print-plan` (chỉ in kế hoạch). `station.json` ghi `video_use.python`
   tuyệt đối khi venv runtime có thật, `doctor` nhận đường tuyệt đối. Máy không có OpcOS: hành vi cũ nguyên vẹn
-  (venv trong trạm, cài `-e`). Chưa kiểm bằng một lần cài thật: test chạy trên cây giả.
+  (venv trong trạm, cài `-e`). Công cụ `opcos-runtime` được tìm ở `$OPCOS_ROOT/system/operations/runtime/` trước,
+  rồi cạnh `R`; nhu cầu khai `package: "."` (gói luôn đến từ `--source-dir`); thành bại của lời gọi ngoài chỉ theo mã
+  thoát (log uv/pip ra stderr không làm hỏng). Chưa kiểm bằng một lần cài thật: test chạy trên cây giả.
 
 ## 0.6.0 — 2026-10-31
 

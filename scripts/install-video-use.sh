@@ -75,8 +75,13 @@ RCODE='import sys; sys.path.insert(0, sys.argv[1]); from video_studio import _en
 RT=$("$PY" -c "$RCODE" "$REPO_ROOT" "$HOME")
 RUNTIME_ROOT=$(printf '%s\n' "$RT" | sed -n 1p)
 RUNTIME_VENV=$(printf '%s\n' "$RT" | sed -n 2p)
+# The opcos-runtime tool: $OPCOS_ROOT/system/... first (R may live outside the OpcOS tree), then
+# <parent of R>/system/...; none found means this script builds the venv itself.
 CLI=""
-if [ -n "$RUNTIME_ROOT" ]; then
+OPCOS_ROOT_T=$(printf '%s' "${OPCOS_ROOT:-}" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+if [ -n "$OPCOS_ROOT_T" ] && [ -f "$OPCOS_ROOT_T/system/operations/runtime/opcos-runtime.sh" ]; then
+  CLI="$OPCOS_ROOT_T/system/operations/runtime/opcos-runtime.sh"
+elif [ -n "$RUNTIME_ROOT" ]; then
   cand="$(dirname "$RUNTIME_ROOT")/system/operations/runtime/opcos-runtime.sh"
   [ -f "$cand" ] && CLI="$cand"
 fi
@@ -99,10 +104,11 @@ if [ "$PRINT_PLAN" = 1 ]; then
   echo "installer=$INSTALLER"
   echo "editable=$EDITABLE"
   echo "runtime=$RUNTIME_ROOT"
+  echo "cli=$CLI"
   exit 0
 fi
 
-# Copy the clone (minus .git and .venv) to a temp folder and install FROM the copy, so the clone
+# Copy the clone to a temp folder and install FROM the copy, so the clone
 # is never written to. The copy is removed at the end, also on failure or interrupt.
 install_from_copy() {
   TMP_COPY=$(mktemp -d)
@@ -110,12 +116,19 @@ install_from_copy() {
   trap 'rm -rf "$TMP_COPY"; exit 130' INT TERM
   for item in "$DEST"/* "$DEST"/.[!.]*; do
     [ -e "$item" ] || continue
-    case "$(basename "$item")" in .git|.venv) continue ;; esac
+    case "$(basename "$item")" in .venv) continue ;; esac
     cp -R "$item" "$TMP_COPY/"
   done
+  # .git IS kept (the opcos-runtime tool reads the commit from it for its spec hash and source_commit;
+  # this script itself never runs git). *.egg-info and __pycache__ are pruned so the copy has a clean
+  # `git status`; build/ is kept (it may be tracked source).
+  find "$TMP_COPY" \( -name __pycache__ -o -name '*.egg-info' \) -type d -prune -exec rm -rf {} + 2>/dev/null || true
   if [ -n "$CLI" ]; then
     echo "[opcos-runtime] ensure venvs/video-use"
-    sh "$CLI" ensure --repo-dir "$REPO_ROOT" --only venvs/video-use --source-dir "venvs/video-use=$TMP_COPY"
+    # Success is judged only by the exit code (set -e): uv/pip log to stderr even when they succeed.
+    # The need's package is "." and comes ONLY from --source-dir (the copy made above).
+    # --upgrade: an unchanged spec hash stays RT_UP_TO_DATE, a changed one (new clone commit) reinstalls.
+    sh "$CLI" ensure --repo-dir "$REPO_ROOT" --only venvs/video-use --source-dir "venvs/video-use=$TMP_COPY" --upgrade
   else
     VENV_PY="$VENV/bin/python"
     [ -x "$VENV_PY" ] || { echo "[venv] creating"; "$PY" -m venv "$VENV"; }
