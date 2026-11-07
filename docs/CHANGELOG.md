@@ -5,8 +5,9 @@ chính nhưng chưa có tag; khi phát hành, mục đó đổi tên thành số
 `pyproject.toml`, `video_studio/__init__.py` cùng ba manifest plugin (`tests/test_version_sync.py`
 kiểm).
 
-## Chưa phát hành
+## 0.8.1 — 2026-11-08
 
+- **Link SKILL.md trong cây skills:** `skills/video-remix-brief/SKILL.md` không còn link `../../docs/…` ra ngoài cây `skills/` (adapter Antigravity của OpcOS từ chối, junction phẳng làm link chết); test cổng khoá link SKILL.md chỉ trỏ trong `skills/`.
 - **`CLAUDE.md` dời từ gốc sang `.claude/CLAUDE.md`** (một dòng `@../AGENTS.md`): `claude plugin validate --strict`
   đỏ khi plugin có `CLAUDE.md` gốc («not loaded as project context»); `@import` tính đường từ file chứa nó, nên luật
   `AGENTS.md` nay được nạp thật. `AGENTS.md`, `INSTALL.md`, `hosts/` nêu đường mới; test khoá vị trí và dòng import.
