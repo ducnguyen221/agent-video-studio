@@ -582,6 +582,68 @@ def test_audit_different_drive_is_a_contract_error(tmp_path, monkeypatch):
 
     def other_drive(*a, **k):
         raise ValueError("path is on mount 'D:', start on mount 'C:'")
-    monkeypatch.setattr(os.path, "relpath", other_drive)
+    monkeypatch.setattr(os.path, "commonpath", other_drive)
     with pytest.raises(ContractError, match="nằm trong project"):
         gate.audit_assets(proj)
+
+
+# ------------------------------------------------- vòng sửa 2: junction không có isjunction, liên kết cấp giữa
+
+@pytest.mark.skipif(os.name != "nt", reason="đường lùi reparse-point chỉ có nghĩa trên Windows")
+def test_audit_flags_junction_when_os_path_has_no_isjunction(tmp_path, monkeypatch):
+    """Python 3.10/3.11 trên Windows không có `os.path.isjunction`."""
+    monkeypatch.delattr(os.path, "isjunction", raising=False)
+    proj = _project(tmp_path)
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    (outside / "secret.png").write_bytes(b"s")
+    os.makedirs(os.path.join(proj, "assets"))
+    _make_dir_link(os.path.join(proj, "assets", "jump"), outside)
+    assert not os.path.islink(os.path.join(proj, "assets", "jump"))  # đúng là junction, không phải symlink
+    out = gate.audit_assets(proj)
+    assert {"path": "assets/jump", "problem": "liên kết mềm không được kiểm"} in out["findings"]
+    assert not any("secret.png" in f["path"] for f in out["findings"])
+
+
+def test_is_link_fallback_is_false_for_plain_dirs_and_missing_paths(tmp_path, monkeypatch):
+    monkeypatch.delattr(os.path, "isjunction", raising=False)
+    assert gate._is_link(str(tmp_path)) is False
+    assert gate._is_link(str(tmp_path / "không-có")) is False
+
+
+def test_audit_flags_assets_dir_reached_through_a_link_in_the_middle(tmp_path):
+    proj = _project(tmp_path)
+    real = os.path.join(proj, "real")
+    os.makedirs(os.path.join(real, "sub"))
+    _write(proj, "real/sub/a.png", b"a")
+    _make_dir_link(os.path.join(proj, "alias"), real)
+    out = gate.audit_assets(proj, os.path.join(proj, "alias", "sub"))
+    assert out["ok"] is False and out["checked"] == 0
+    assert out["findings"] == [{"path": "alias/sub", "problem": "liên kết mềm không được kiểm"}]
+
+
+def test_audit_refuses_assets_dir_reached_through_a_link_out_of_project(tmp_path):
+    proj = _project(tmp_path)
+    outside = tmp_path / "outside"
+    (outside / "assets").mkdir(parents=True)
+    (outside / "assets" / "a.png").write_bytes(b"a")
+    _make_dir_link(os.path.join(proj, "x"), outside)
+    with pytest.raises(ContractError, match="nằm trong project"):
+        gate.audit_assets(proj, os.path.join(proj, "x", "assets"))
+
+
+def test_audit_flags_link_assets_root_even_with_trailing_separator(tmp_path):
+    proj = _project(tmp_path)
+    real = os.path.join(proj, "real")
+    os.makedirs(real)
+    _make_dir_link(os.path.join(proj, "assets"), real)
+    out = gate.audit_assets(proj, os.path.join(proj, "assets") + os.sep)
+    assert out["findings"] == [{"path": "assets", "problem": "liên kết mềm không được kiểm"}]
+
+
+def test_audit_accepts_assets_dir_with_trailing_separator_and_dot_segments(tmp_path):
+    proj = _project(tmp_path)
+    _write(proj, "assets/a.png", b"a")
+    _declare(proj, _asset(path="assets/a.png"))
+    for variant in (os.path.join(proj, "assets") + os.sep, os.path.join(proj, ".", "assets"), os.path.join(proj, "x", "..", "assets")):
+        assert gate.audit_assets(proj, variant) == {"ok": True, "checked": 1, "findings": []}

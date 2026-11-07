@@ -28,6 +28,7 @@ import ipaddress
 import json
 import os
 import re
+import stat
 import tempfile
 from urllib.parse import urlsplit
 
@@ -295,7 +296,16 @@ LINK_PROBLEM = "liên kết mềm không được kiểm"
 
 def _is_link(path):
     """Liên kết mềm hoặc junction Windows (`islink` không thấy junction; `isjunction` có từ Python 3.12)."""
-    return os.path.islink(path) or getattr(os.path, "isjunction", lambda _: False)(path)
+    if os.path.islink(path):
+        return True
+    isjunction = getattr(os.path, "isjunction", None)
+    if isjunction is not None:
+        return isjunction(path)
+    try:  # đường lùi cho Python < 3.12: junction là reparse point loại MOUNT_POINT
+        tag = getattr(os.lstat(path), "st_reparse_tag", 0)
+    except OSError:
+        return False
+    return tag == getattr(stat, "IO_REPARSE_TAG_MOUNT_POINT", 0xA0000003)
 
 
 def _rel(path, base):
@@ -333,12 +343,18 @@ def _reference_hashes(project_dir):
     return found, findings
 
 
-def _outside_project(project_dir, assets_dir):
+def _is_inside(base, path):
     try:
-        rel = os.path.relpath(os.path.abspath(assets_dir), os.path.abspath(project_dir))
+        return os.path.commonpath([os.path.normcase(base), os.path.normcase(path)]) == os.path.normcase(base)
     except ValueError:  # khác ổ đĩa trên Windows
-        return True
-    return rel == ".." or rel.startswith(".." + os.sep)
+        return False
+
+
+def _reached_through_link(project_dir, assets_dir):
+    """True nếu đường tới `assets_dir` đi qua liên kết/junction ở cấp nào đó (so `realpath` với đường chuẩn hoá)."""
+    rel = os.path.relpath(assets_dir, os.path.abspath(project_dir))
+    expected = os.path.join(os.path.realpath(project_dir), rel)
+    return os.path.normcase(os.path.realpath(assets_dir)) != os.path.normcase(os.path.normpath(expected))
 
 
 def audit_assets(project_dir, assets_dir=None):
@@ -349,10 +365,16 @@ def audit_assets(project_dir, assets_dir=None):
     Không đọc spec/EDL.
     """
     prov = load_provenance(project_dir)
-    assets_dir = assets_dir or os.path.join(project_dir, "assets")
-    if _outside_project(project_dir, assets_dir):
-        raise ContractError(f"thư mục tài sản {assets_dir} phải nằm trong project {project_dir}")
+    assets_dir = os.path.abspath(assets_dir or os.path.join(project_dir, "assets"))  # bỏ `..`, `.`, dấu phân cách cuối
+    outside = ContractError(f"thư mục tài sản {assets_dir} phải nằm trong project {project_dir}")
+    if not _is_inside(os.path.abspath(project_dir), assets_dir):
+        raise outside
     if _is_link(assets_dir):
+        return {"ok": False, "checked": 0,
+                "findings": [{"path": _rel(assets_dir, project_dir), "problem": LINK_PROBLEM}]}
+    if not _is_inside(os.path.realpath(project_dir), os.path.realpath(assets_dir)):
+        raise outside
+    if _reached_through_link(project_dir, assets_dir):
         return {"ok": False, "checked": 0,
                 "findings": [{"path": _rel(assets_dir, project_dir), "problem": LINK_PROBLEM}]}
     if not os.path.isdir(assets_dir):
