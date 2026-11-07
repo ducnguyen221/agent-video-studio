@@ -24,6 +24,9 @@ Khi lập hoặc đổi các beat, sau khi chọn layout trong catalog đang dù
 để chọn cách chuyển động phù hợp với từng beat. Thư viện này bổ sung cách chuyển động, không
 thay catalog layout của trạm và không mang tier S/A. Lọc vai trò và fullscreen/panel trước,
 rồi xếp hạng theo `ratio_fit` của tỷ lệ đầu ra; với lớp phủ dùng `overlay_alternative.possible`.
+Đừng đọc thẳng `index.json` (≈1,8 MB): lọc bằng `python scripts/motion_find.py` ở gốc repo
+(vd. `--role explain --ratio 16:9 --coverage partial --individual --q "so do"`), mỗi entry một
+dòng có mã, ý chính, link nguồn và file.
 Không loại mọi mẫu ngang chỉ vì cần dựng dọc. Mở file theo mã `PM-<slug>` rồi đưa mã, tên và link nguồn vào đề xuất
 phân cảnh cho người dùng. Kích thước và thời lượng khuyến nghị là phân tích, tách khỏi dữ kiện
 nguồn; mọi bản chuyển thể vẫn cần dựng và kiểm hình ảnh.

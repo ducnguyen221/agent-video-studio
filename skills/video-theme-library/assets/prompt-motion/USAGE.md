@@ -13,6 +13,7 @@ Kho này là **tài liệu tham chiếu và đề xuất dựng**, không phải
 
 1. Chia kịch bản thành các nhịp: hook, giải thích, chứng minh, chuyển ý, nhấn mạnh, chốt, CTA. Mỗi cảnh cần một ý chính.
 2. Lọc theo `scene_roles`, `primary_recommended_ratio`, `ratio_fit`, `content_capacity`, `intensity` và `coverage` trong [index.json](index.json). Muốn lớp phủ, lọc thêm `overlay_alternative.possible`; đây là khả năng thiết kế alpha riêng, không phải source overlay có sẵn. Đọc [TAXONOMY.md](TAXONOMY.md) để hiểu các giá trị.
+   Không đọc thẳng `index.json` (≈1,8 MB): dùng `python scripts/motion_find.py` ở gốc repo — ví dụ `--role proof --ratio 16:9 --technique count-up` hoặc `--q "so do"` (không phân biệt dấu), thêm `--individual` để bỏ baseline dùng chung của nhóm, `--json` để lấy tóm tắt máy đọc. Lệnh luôn in UTF-8 và chỉ trả 10 dòng mặc định.
    `primary_recommended_ratio` dùng để xếp hạng, không phải điều kiện loại bỏ mọi mẫu khác khung cần giao. Sau khi lọc vai trò/vùng, đọc `ratio_fit` để cân nhắc các phương án `preferred`, `adaptable` hoặc `requires_redesign` và công sức bố trí lại.
 3. Đưa người dùng 2–3 phương án có khác biệt thực sự. Mỗi phương án ghi **ID · tên · link nguồn · vai trò cảnh · tỉ lệ đề xuất · vùng màn hình đề xuất**, kèm cách thích nghi khi đổi khung. Ví dụ cấu trúc: `PM-… | tên | nguồn | hook | 9:16 | phần giữa khung`. Những thông số đề xuất là quyết định thiết kế mới, không phải số đo video gốc.
 4. Chọn một motion chính cho mỗi nhịp. Ghép hiệu ứng khi chúng cùng dẫn mắt đến một thông điệp; tránh chất nhiều nhịp mạnh liên tiếp làm mất điểm nhấn.
@@ -20,7 +21,7 @@ Kho này là **tài liệu tham chiếu và đề xuất dựng**, không phải
 
 ## Đọc đúng hai lớp dữ kiện
 
-`source_facts` giữ dữ kiện Terra thu từ nguồn, URL và dấu vết kiểm chứng. `sol_analysis` là phân tích và khuyến nghị của Sol. Mọi `unknown` là thiếu bằng chứng; không tự suy nó thành một giá trị chính xác.
+`source_facts` giữ dữ kiện Terra thu từ nguồn, URL và dấu vết kiểm chứng. `sol_analysis` là phân tích và khuyến nghị của Sol. *Terra* và *Sol* là tên hai bước xử lý của kho (thu dữ kiện và phân tích), không phải tác giả hay người thật. Mọi `unknown` là thiếu bằng chứng; không tự suy nó thành một giá trị chính xác.
 
 - **Tỉ lệ/kích thước nguồn** khác **tỉ lệ dựng đề xuất**. Kích thước thẻ preview hay cửa sổ browser không chứng minh kích thước video gốc.
 - **Thời lượng nguồn** khác **thời lượng đề xuất**. Prompt có nói một số giây vẫn cần phân biệt với media được đo; không gọi đó là duration đo được.
