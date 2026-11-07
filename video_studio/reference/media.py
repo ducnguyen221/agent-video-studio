@@ -5,10 +5,10 @@ Recipe thẻ `T1` (`skills/video-routing/references/production-techniques.md`): 
 có PTS không nhỏ hơn mốc, `showinfo` cho PTS thực. Mỗi mốc một lệnh ffmpeg, giải mã từ đầu tới mốc
 (không `-ss`): chậm hơn nhưng đúng mốc; chỉ tối ưu sau khi đo.
 
-Mọi tham số được kiểm TRƯỚC lệnh ffmpeg đầu tiên. Lỗi: tham số/đích đã có = `ContractError`,
-không đọc được `pts_time` = `EngineError`, thiếu ffmpeg = `StationMissing`.
+Mọi tham số được kiểm TRƯỚC lệnh ffmpeg đầu tiên. Lỗi: tham số/đích đã có/nguồn không phải tệp
+cục bộ = `ContractError`, không đọc được `pts_time` = `EngineError`, thiếu ffmpeg = `StationMissing`.
+Nguồn chỉ là TỆP cục bộ: URL/giao thức/stdin phải đi qua `fetch` có cổng, không qua đây.
 """
-import glob
 import json
 import math
 import os
@@ -21,16 +21,19 @@ from ..edit import _ff
 MAX_FRAMES = 60
 MAX_TILE_CELLS = 400
 
-_PTS_RE = re.compile(r"pts_time:\s*(-?[0-9.]+(?:[eE][-+]?[0-9]+)?|nan|inf|-inf)", re.IGNORECASE)
+# Chỉ DÒNG showinfo: metadata/đường dẫn trong stderr là dữ liệu nguồn, không được lẫn vào PTS.
+_SHOWINFO_RE = re.compile(
+    r"^\[Parsed_showinfo_\d+ @ [^\]]+\] n:\s*\d+ pts:\s*-?\d+ pts_time:(\S+)", re.MULTILINE)
+_TILE_RE = re.compile(r"^tiles_\d{3}\.png$")
 # Chữ trên ảnh chỉ là biểu thức của ffmpeg (thời điểm trình chiếu), không có chữ của người dùng.
 _DRAWTEXT = ("drawtext=text='%{pts\\:hms}':x=4:y=4:fontsize=18:"
              "fontcolor=white:box=1:boxcolor=black@0.5")
 
 
 def parse_showinfo(stderr):
-    """Mọi `pts_time` hữu hạn trong stderr của `showinfo` (giá trị khác bị bỏ)."""
+    """`pts_time` hữu hạn của các dòng showinfo trong stderr (giá trị khác bị bỏ)."""
     out = []
-    for m in _PTS_RE.finditer(stderr or ""):
+    for m in _SHOWINFO_RE.finditer(stderr or ""):
         try:
             v = float(m.group(1))
         except ValueError:
@@ -50,12 +53,32 @@ def _finite(x, what):
     return v
 
 
+def _local_file(input_path):
+    if not isinstance(input_path, (str, os.PathLike)) or not os.path.isfile(input_path):
+        raise ContractError(f"nguồn phải là tệp cục bộ đang có, nhận {input_path!r}; "
+                            "URL chỉ tải qua `reference fetch`")
+    return os.path.abspath(input_path)
+
+
+def _finite_or_none(v):
+    return v if v is not None and math.isfinite(v) else None
+
+
 def _frame_name(mark):
     return f"frame_{int(round(mark * 1000)):06d}.png"
 
 
+def _old_tiles(out_dir):
+    try:
+        names = os.listdir(out_dir)
+    except OSError:
+        return []
+    return sorted(n for n in names if _TILE_RE.match(n))
+
+
 def extract_frames(input_path, out_dir, at, force=False):
     """Trích khung tại các mốc `at` (giây từ đầu stream video). Ghi `out_dir/frames.json`."""
+    src = _local_file(input_path)
     marks = [_finite(m, "mốc") for m in (at or [])]
     if not marks:
         raise ContractError("cần ít nhất một mốc thời gian")
@@ -67,16 +90,18 @@ def extract_frames(input_path, out_dir, at, force=False):
     if len(set(names)) != len(names):
         raise ContractError("có mốc trùng nhau (cùng tên tệp ảnh)")
 
-    info = _ff.probe(input_path)
-    if info.video_start_time is None:
+    info = _ff.probe(src)
+    start = _finite_or_none(info.video_start_time)
+    if start is None:
         raise ContractError("origin chưa xác định: stream video không khai start_time hữu hạn; "
                             "không giả định bằng 0")
-    if info.duration is None:
+    duration = _finite_or_none(info.duration)
+    if duration is None:
         log("cảnh báo: không rõ thời lượng, bỏ kiểm mốc so với thời lượng")
     else:
-        late = [m for m in marks if m > info.duration]
+        late = [m for m in marks if m > duration]
         if late:
-            raise ContractError(f"mốc {late[0]} vượt thời lượng {info.duration}s")
+            raise ContractError(f"mốc {late[0]} vượt thời lượng {duration}s")
 
     if not force:
         for n in names:
@@ -84,18 +109,18 @@ def extract_frames(input_path, out_dir, at, force=False):
                 raise ContractError(f"{n} đã có trong {out_dir}; dùng --force để ghi đè")
     os.makedirs(out_dir, exist_ok=True)
 
+    overwrite = "-y" if force else "-n"
     result = []
     for mark, name in zip(marks, names):
-        t_abs = info.video_start_time + mark
-        vf = f"select='gte(t,{t_abs:.6f})',trim=end_frame=1,showinfo"
-        stderr = _ff.run(["-y", "-copyts", "-i", str(input_path), "-vf", vf,
+        vf = f"select='gte(t,{start + mark:.6f})',trim=end_frame=1,showinfo"
+        stderr = _ff.run([overwrite, "-copyts", "-i", src, "-vf", vf,
                           "-frames:v", "1", "-fps_mode", "passthrough", "-update", "1",
                           os.path.join(out_dir, name)], quiet=False)
         pts = parse_showinfo(stderr)
         if not pts:
             raise EngineError(f"không đọc được pts_time từ ffmpeg cho mốc {mark}s")
         result.append({"requested": mark, "pts_abs": pts[0],
-                       "pts_time": round(pts[0] - info.video_start_time, 4), "file": name})
+                       "pts_time": round(pts[0] - start, 4), "file": name})
     _write_json(os.path.join(out_dir, "frames.json"), result)
     return result
 
@@ -103,6 +128,7 @@ def extract_frames(input_path, out_dir, at, force=False):
 def contact_sheets(input_path, out_dir, every, cols=4, rows=4, width=320, label=False,
                    force=False):
     """Lưới khung mỗi `every` giây. Ghi `out_dir/tiles.json`; thời điểm ô chỉ là gần đúng."""
+    src = _local_file(input_path)
     every = _finite(every, "every")
     if every <= 0:
         raise ContractError("every phải lớn hơn 0")
@@ -111,19 +137,19 @@ def contact_sheets(input_path, out_dir, every, cols=4, rows=4, width=320, label=
         if not isinstance(v, int) or isinstance(v, bool) or not lo <= v <= hi:
             raise ContractError(f"{what} phải là số nguyên từ {lo} đến {hi}, nhận {v!r}")
 
-    info = _ff.probe(input_path)
-    if info.duration is None:
+    info = _ff.probe(src)
+    duration = _finite_or_none(info.duration)
+    if duration is None:
         raise ContractError("không rõ thời lượng nên không tính được số ô của lưới")
-    cells = max(1, math.ceil(info.duration / every))
+    cells = max(1, math.ceil(duration / every))
     if cells > MAX_TILE_CELLS:
         raise ContractError(f"{cells} ô vượt trần {MAX_TILE_CELLS}: tăng --every")
     per_sheet = cols * rows
     n_sheets = math.ceil(cells / per_sheet)
 
-    existing = glob.glob(os.path.join(out_dir, "tiles_*.png"))
+    existing = _old_tiles(out_dir)
     if existing and not force:
-        raise ContractError(f"{os.path.basename(existing[0])} đã có trong {out_dir}; "
-                            "dùng --force để ghi đè")
+        raise ContractError(f"{existing[0]} đã có trong {out_dir}; dùng --force để ghi đè")
 
     use_label = False
     if label:
@@ -135,14 +161,14 @@ def contact_sheets(input_path, out_dir, every, cols=4, rows=4, width=320, label=
 
     os.makedirs(out_dir, exist_ok=True)
     for old in existing:  # chỉ tới đây khi force: tránh tờ cũ lẫn vào lượt mới
-        os.remove(old)
-    every_s = f"{every:g}"
-    parts = [f"fps=1/{every_s}", f"scale={width}:-2"]
+        os.remove(os.path.join(out_dir, old))
+    parts = [f"fps=1/{every:g}", f"scale={width}:-2"]
     if use_label:
         parts.append(_DRAWTEXT)
     parts.append(f"tile={cols}x{rows}")
-    _ff.run(["-y", "-i", str(input_path), "-vf", ",".join(parts),
-             os.path.join(out_dir, "tiles_%03d.png")], quiet=False)
+    # `%` trong thư mục đích là ký tự mẫu của image2 nên phải nhân đôi.
+    pattern = os.path.join(out_dir.replace("%", "%%"), "tiles_%03d.png")
+    _ff.run(["-y" if force else "-n", "-i", src, "-vf", ",".join(parts), pattern], quiet=False)
 
     sheets = []
     for s in range(n_sheets):

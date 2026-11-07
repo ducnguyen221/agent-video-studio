@@ -14,6 +14,17 @@ from video_studio.edit import _ff
 from video_studio.reference import media
 
 
+_SI = "[Parsed_showinfo_2 @ 0x1] n:   0 pts:  45045 pts_time:{} duration:1001"
+
+
+def _video(tmp_path):
+    d = tmp_path / "src"
+    d.mkdir(exist_ok=True)
+    p = d / "v.mp4"
+    p.write_bytes(b"x")
+    return p
+
+
 def _raw(start="10.0", duration="40.0"):
     v = {"codec_type": "video", "width": 640, "height": 360, "avg_frame_rate": "30/1"}
     if start is not None:
@@ -23,10 +34,10 @@ def _raw(start="10.0", duration="40.0"):
 
 
 @pytest.fixture
-def ff(monkeypatch):
+def ff(monkeypatch, tmp_path):
     """ffmpeg "có mặt"; ghi lại mọi lệnh. Dict trả về chỉnh được stderr, probe, bộ lọc."""
-    state = {"raw": _raw(), "stderr": "pts_time:11.0333", "filters": {"drawtext", "tile"},
-             "calls": []}
+    state = {"raw": _raw(), "stderr": _SI.format("11.0333"), "filters": {"drawtext", "tile"},
+             "calls": [], "video": str(_video(tmp_path))}
 
     def fake_run(args, quiet=True, timeout=None):
         state["calls"].append({"args": list(args), "quiet": quiet})
@@ -46,16 +57,21 @@ def _vf(call):
 
 
 def test_parse_showinfo_reads_pts_time():
-    line = "[Parsed_showinfo_2 @ 0x1] n:   0 pts:  45045 pts_time:1.5015 duration:1001"
-    assert media.parse_showinfo(line) == [1.5015]
+    assert media.parse_showinfo(_SI.format("1.5015")) == [1.5015]
     assert media.parse_showinfo("không có gì") == []
-    assert media.parse_showinfo("pts_time:nan") == []
-    assert media.parse_showinfo("pts_time:inf") == []
-    assert media.parse_showinfo("pts_time:1.0 x\npts_time:2.5") == [1.0, 2.5]
+    for bad in ("nan", "inf", "."):
+        assert media.parse_showinfo(_SI.format(bad)) == []
+    two = "\n".join([_SI.format("1.0"), _SI.format("2.5")])
+    assert media.parse_showinfo(two) == [1.0, 2.5]
+
+
+def test_parse_showinfo_ignores_metadata_lines():
+    err = "    title           : pts_time:0.04\nInput #0 pts_time:0.05\n" + _SI.format("3.0")
+    assert media.parse_showinfo(err) == [3.0]
 
 
 def test_frames_use_absolute_pts_from_stream_start(ff, tmp_path):
-    out = media.extract_frames("v.mp4", str(tmp_path), [1.0])
+    out = media.extract_frames(ff["video"], str(tmp_path), [1.0])
     assert out == [{"requested": 1.0, "pts_abs": 11.0333, "pts_time": 1.0333,
                     "file": "frame_001000.png"}]
     call = ff["calls"][0]
@@ -73,7 +89,7 @@ def test_frames_use_absolute_pts_from_stream_start(ff, tmp_path):
 def test_frames_refuse_unknown_origin(ff, tmp_path):
     ff["raw"] = _raw(start=None)
     with pytest.raises(ContractError, match="origin chưa xác định"):
-        media.extract_frames("v.mp4", str(tmp_path), [1.0])
+        media.extract_frames(ff["video"], str(tmp_path), [1.0])
     assert ff["calls"] == []
 
 
@@ -82,19 +98,19 @@ def test_frames_refuse_unknown_origin(ff, tmp_path):
 def test_frames_refuse_bad_or_too_many_marks(ff, tmp_path, at):
     ff["raw"] = _raw(duration="100.0")
     with pytest.raises(ContractError):
-        media.extract_frames("v.mp4", str(tmp_path), at)
+        media.extract_frames(ff["video"], str(tmp_path), at)
     assert ff["calls"] == []
 
 
 def test_frames_refuse_past_duration(ff, tmp_path):
     with pytest.raises(ContractError, match="thời lượng"):
-        media.extract_frames("v.mp4", str(tmp_path), [41.0])
+        media.extract_frames(ff["video"], str(tmp_path), [41.0])
     assert ff["calls"] == []
 
 
 def test_frames_unknown_duration_warns_and_continues(ff, tmp_path, capsys):
     ff["raw"] = _raw(duration=None)
-    out = media.extract_frames("v.mp4", str(tmp_path), [999.0])
+    out = media.extract_frames(ff["video"], str(tmp_path), [999.0])
     assert len(out) == 1
     assert "không rõ thời lượng" in capsys.readouterr().err
 
@@ -102,46 +118,47 @@ def test_frames_unknown_duration_warns_and_continues(ff, tmp_path, capsys):
 def test_tiles_unknown_duration_is_contract_error(ff, tmp_path):
     ff["raw"] = _raw(duration=None)
     with pytest.raises(ContractError, match="không rõ thời lượng"):
-        media.contact_sheets("v.mp4", str(tmp_path), 2)
+        media.contact_sheets(ff["video"], str(tmp_path), 2)
     assert ff["calls"] == []
 
 
 def test_frames_never_overwrite_without_force(ff, tmp_path):
     (tmp_path / "frame_001000.png").write_bytes(b"x")
     with pytest.raises(ContractError, match="đã có"):
-        media.extract_frames("v.mp4", str(tmp_path), [1.0])
+        media.extract_frames(ff["video"], str(tmp_path), [1.0])
     assert ff["calls"] == []
     assert (tmp_path / "frame_001000.png").read_bytes() == b"x"
-    assert media.extract_frames("v.mp4", str(tmp_path), [1.0], force=True)
+    assert media.extract_frames(ff["video"], str(tmp_path), [1.0], force=True)
     assert len(ff["calls"]) == 1
 
 
 def test_tiles_never_overwrite_without_force(ff, tmp_path):
     (tmp_path / "tiles_001.png").write_bytes(b"x")
     with pytest.raises(ContractError, match="đã có"):
-        media.contact_sheets("v.mp4", str(tmp_path), 2)
+        media.contact_sheets(ff["video"], str(tmp_path), 2)
     assert ff["calls"] == []
-    media.contact_sheets("v.mp4", str(tmp_path), 2, force=True)
+    media.contact_sheets(ff["video"], str(tmp_path), 2, force=True)
     assert len(ff["calls"]) == 1
 
 
 def test_frames_no_pts_is_engine_error(ff, tmp_path):
     ff["stderr"] = "ffmpeg không in gì hữu ích"
     with pytest.raises(EngineError, match="pts_time"):
-        media.extract_frames("v.mp4", str(tmp_path), [1.0])
+        media.extract_frames(ff["video"], str(tmp_path), [1.0])
     assert not (tmp_path / "frames.json").exists()
 
 
 def test_frames_missing_ffmpeg_is_station_missing(monkeypatch, tmp_path):
+    video = str(_video(tmp_path))
     monkeypatch.setattr(_ff, "_probe_raw", lambda p: _raw())
     monkeypatch.setattr(_ff, "probe_exe", lambda: "ffprobe")
     monkeypatch.setattr(_ff._env, "ffmpeg_exe", lambda: None)
     with pytest.raises(StationMissing):
-        media.extract_frames("v.mp4", str(tmp_path), [1.0])
+        media.extract_frames(video, str(tmp_path), [1.0])
 
 
 def test_tiles_index_matches_grid(ff, tmp_path):
-    res = media.contact_sheets("v.mp4", str(tmp_path), 2)
+    res = media.contact_sheets(ff["video"], str(tmp_path), 2)
     assert (res["every"], res["cols"], res["rows"], res["width"]) == (2, 4, 4, 320)
     assert res["labels"] is False and res["timing"] == "approximate"
     assert [len(s["cells"]) for s in res["sheets"]] == [16, 4]
@@ -161,27 +178,27 @@ def test_tiles_index_matches_grid(ff, tmp_path):
                                 {"every": 2, "width": 63}, {"every": 2, "width": 1921}])
 def test_tiles_refuse_bad_params(ff, tmp_path, kw):
     with pytest.raises(ContractError):
-        media.contact_sheets("v.mp4", str(tmp_path), **kw)
+        media.contact_sheets(ff["video"], str(tmp_path), **kw)
     assert ff["calls"] == []
 
 
 def test_tiles_refuse_too_dense(ff, tmp_path):
     ff["raw"] = _raw(duration="1000.0")
     with pytest.raises(ContractError, match="tăng --every"):
-        media.contact_sheets("v.mp4", str(tmp_path), 1)
+        media.contact_sheets(ff["video"], str(tmp_path), 1)
     assert ff["calls"] == []
 
 
 def test_tiles_label_without_drawtext_warns_and_continues(ff, tmp_path, capsys):
     ff["filters"] = {"tile"}
-    res = media.contact_sheets("v.mp4", str(tmp_path), 2, label=True)
+    res = media.contact_sheets(ff["video"], str(tmp_path), 2, label=True)
     assert res["labels"] is False
     assert "drawtext" in capsys.readouterr().err
     assert "drawtext" not in _vf(ff["calls"][0])
 
 
 def test_tiles_label_with_drawtext_inserts_before_tile(ff, tmp_path):
-    res = media.contact_sheets("v.mp4", str(tmp_path), 2, label=True)
+    res = media.contact_sheets(ff["video"], str(tmp_path), 2, label=True)
     assert res["labels"] is True
     assert _vf(ff["calls"][0]) == (
         "fps=1/2,scale=320:-2,drawtext=text='%{pts\\:hms}':x=4:y=4:fontsize=18:"
@@ -189,9 +206,75 @@ def test_tiles_label_with_drawtext_inserts_before_tile(ff, tmp_path):
 
 
 def test_ffmpeg_args_are_a_list(ff, tmp_path):
-    media.extract_frames("v.mp4", str(tmp_path), [1.0])
-    media.contact_sheets("v.mp4", str(tmp_path / "t"), 2)
+    media.extract_frames(ff["video"], str(tmp_path), [1.0])
+    media.contact_sheets(ff["video"], str(tmp_path / "t"), 2)
     for c in ff["calls"]:
         assert isinstance(c["args"], list)
         assert all(isinstance(a, str) for a in c["args"])
         assert "-i" in c["args"]
+
+
+def test_frames_ignore_metadata_pts(ff, tmp_path):
+    ff["stderr"] = "    title : pts_time:0.04\n" + _SI.format("13.0")
+    out = media.extract_frames(ff["video"], str(tmp_path), [3.0])
+    assert out[0]["pts_abs"] == 13.0
+
+
+def test_overwrite_flags_follow_force(ff, tmp_path):
+    media.extract_frames(ff["video"], str(tmp_path / "a"), [1.0])
+    media.contact_sheets(ff["video"], str(tmp_path / "a"), 2)
+    assert [c["args"][0] for c in ff["calls"]] == ["-n", "-n"]
+    media.extract_frames(ff["video"], str(tmp_path / "a"), [1.0], force=True)
+    media.contact_sheets(ff["video"], str(tmp_path / "a"), 2, force=True)
+    assert [c["args"][0] for c in ff["calls"][2:]] == ["-y", "-y"]
+
+
+def test_tiles_existing_check_survives_glob_chars(ff, tmp_path):
+    d = tmp_path / "a[1]"
+    d.mkdir()
+    (d / "tiles_001.png").write_bytes(b"x")
+    with pytest.raises(ContractError, match="đã có"):
+        media.contact_sheets(ff["video"], str(d), 2)
+    assert ff["calls"] == []
+
+
+def test_tiles_force_removes_only_numbered_sheets(ff, tmp_path):
+    (tmp_path / "tiles_001.png").write_bytes(b"x")
+    (tmp_path / "tiles_final.png").write_bytes(b"keep")
+    media.contact_sheets(ff["video"], str(tmp_path), 2, force=True)
+    assert not (tmp_path / "tiles_001.png").exists()
+    assert (tmp_path / "tiles_final.png").read_bytes() == b"keep"
+
+
+def test_tiles_percent_in_out_dir_is_escaped(ff, tmp_path):
+    d = tmp_path / "p%d"
+    media.contact_sheets(ff["video"], str(d), 2)
+    assert ff["calls"][0]["args"][-1] == os.path.join(str(tmp_path / "p%%d"), "tiles_%03d.png")
+
+
+@pytest.mark.parametrize("bad", ["http://x/v.mp4", "-", "khong-co-tep.mp4"])
+def test_sources_must_be_local_files(ff, tmp_path, bad):
+    with pytest.raises(ContractError, match="tệp cục bộ"):
+        media.extract_frames(bad, str(tmp_path), [1.0])
+    with pytest.raises(ContractError, match="tệp cục bộ"):
+        media.contact_sheets(bad, str(tmp_path), 2)
+    assert ff["calls"] == []
+
+
+def test_sources_are_passed_absolute(ff, tmp_path, monkeypatch):
+    monkeypatch.chdir(os.path.dirname(ff["video"]))
+    media.extract_frames("v.mp4", str(tmp_path), [1.0])
+    assert ff["calls"][0]["args"][ff["calls"][0]["args"].index("-i") + 1] == ff["video"]
+
+
+@pytest.mark.parametrize("raw", [_raw(start="nan"), _raw(start="inf")])
+def test_non_finite_start_is_unknown_origin(ff, tmp_path, raw):
+    ff["raw"] = raw
+    with pytest.raises(ContractError, match="origin chưa xác định"):
+        media.extract_frames(ff["video"], str(tmp_path), [1.0])
+
+
+def test_non_finite_duration_counts_as_unknown(ff, tmp_path):
+    ff["raw"] = _raw(duration="inf")
+    with pytest.raises(ContractError, match="không rõ thời lượng"):
+        media.contact_sheets(ff["video"], str(tmp_path), 2)
