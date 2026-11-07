@@ -75,6 +75,8 @@ def test_init_refuses_path_name(tmp_path, capsys, bad):
     rc, payload, _ = init(tmp_path, capsys, name=bad)
     assert rc == 2 and payload["code"] == 2
     assert not (tmp_path / "demo").exists()
+    ref = tmp_path / "ref"
+    assert not ref.exists() or not any(ref.iterdir())
 
 
 def test_init_never_overwrites(tmp_path, capsys):
@@ -261,3 +263,54 @@ def test_env_example_and_conftest_know_ytdlp_dir():
 
 def test_page_counts_thirteen_commands():
     assert 'data-to="13">13</b> lệnh' in (ROOT / "docs" / "index.html").read_text(encoding="utf-8")
+
+
+def test_frames_and_tiles_cli_pass_absolute_out(monkeypatch, tmp_path, capsys):
+    monkeypatch.chdir(tmp_path)
+    seen = []
+    monkeypatch.setattr(media, "extract_frames", lambda i, out, at, force=False: seen.append(out) or [])
+    monkeypatch.setattr(media, "contact_sheets", lambda i, out, every, **k: seen.append(out) or {})
+    _, p1, _ = run(["frames", "--input", "v.mp4", "--at", "1", "--out=-x", "--json"], capsys)
+    _, p2, _ = run(["tiles", "--input", "v.mp4", "--every", "2", "--out=-x", "--json"], capsys)
+    assert all(os.path.isabs(o) for o in seen) and len(seen) == 2
+    assert os.path.isabs(p1["out"]) and os.path.isabs(p2["out"])
+
+
+def test_init_race_on_existing_project_is_2(tmp_path, monkeypatch, capsys):
+    def racing(path, *a, **k):
+        raise FileExistsError(path)
+
+    monkeypatch.setattr(os, "mkdir", racing)
+    rc, payload, _ = init(tmp_path, capsys)
+    assert rc == 2 and payload["code"] == 2
+
+
+def test_init_leaves_nothing_when_a_template_is_missing(tmp_path, monkeypatch, capsys):
+    from video_studio import reference
+
+    def broken(template, project, today):
+        raise FileNotFoundError(template)
+
+    monkeypatch.setattr(reference, "_render", broken)
+    rc, _, _ = init(tmp_path, capsys)
+    assert rc == 1
+    assert not (tmp_path / "ref" / "demo").exists()
+
+
+def test_init_cleans_up_when_writing_fails_midway(tmp_path, monkeypatch, capsys):
+    def boom(project, prov):
+        raise OSError("đĩa đầy")
+
+    monkeypatch.setattr(gate, "save_provenance", boom)
+    rc, _, _ = init(tmp_path, capsys)
+    assert rc == 1
+    assert not (tmp_path / "ref" / "demo").exists()
+
+
+def test_audit_ctrl_c_is_code_2(tmp_path, monkeypatch, capsys):
+    def interrupt(*a, **k):
+        raise KeyboardInterrupt
+
+    monkeypatch.setattr(gate, "audit_assets", interrupt)
+    rc, payload, _ = run(["audit", "--project", str(tmp_path), "--json"], capsys)
+    assert rc == 2 and payload["ok"] is False

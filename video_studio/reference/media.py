@@ -64,6 +64,14 @@ def _finite_or_none(v):
     return v if v is not None and math.isfinite(v) else None
 
 
+def _make_dir(path):
+    """`makedirs` mà lỗi hệ tệp (tên không hợp lệ, vd `pipe:`) là gọi sai ⇒ mã 2, không phải mã 1."""
+    try:
+        os.makedirs(path, exist_ok=True)
+    except OSError as exc:
+        raise ContractError(f"không tạo được thư mục đầu ra {path}: {exc}") from None
+
+
 def _frame_name(mark):
     return f"frame_{int(round(mark * 1000)):06d}.png"
 
@@ -79,6 +87,7 @@ def _old_tiles(out_dir):
 def extract_frames(input_path, out_dir, at, force=False):
     """Trích khung tại các mốc `at` (giây từ đầu stream video). Ghi `out_dir/frames.json`."""
     src = _local_file(input_path)
+    out_dir = os.path.abspath(out_dir)
     marks = [_finite(m, "mốc") for m in (at or [])]
     if not marks:
         raise ContractError("cần ít nhất một mốc thời gian")
@@ -107,7 +116,7 @@ def extract_frames(input_path, out_dir, at, force=False):
         for n in names:
             if os.path.exists(os.path.join(out_dir, n)):
                 raise ContractError(f"{n} đã có trong {out_dir}; dùng --force để ghi đè")
-    os.makedirs(out_dir, exist_ok=True)
+    _make_dir(out_dir)
 
     overwrite = "-y" if force else "-n"
     result = []
@@ -129,6 +138,7 @@ def contact_sheets(input_path, out_dir, every, cols=4, rows=4, width=320, label=
                    force=False):
     """Lưới khung mỗi `every` giây. Ghi `out_dir/tiles.json`; thời điểm ô chỉ là gần đúng."""
     src = _local_file(input_path)
+    out_dir = os.path.abspath(out_dir)
     every = _finite(every, "every")
     if every <= 0:
         raise ContractError("every phải lớn hơn 0")
@@ -159,7 +169,7 @@ def contact_sheets(input_path, out_dir, every, cols=4, rows=4, width=320, label=
         else:
             log("cảnh báo: ffmpeg không có bộ lọc drawtext, tạo lưới không nhãn")
 
-    os.makedirs(out_dir, exist_ok=True)
+    _make_dir(out_dir)
     for old in existing:  # chỉ tới đây khi force: tránh tờ cũ lẫn vào lượt mới
         os.remove(os.path.join(out_dir, old))
     parts = [f"fps=1/{every:g}", f"scale={width}:-2"]

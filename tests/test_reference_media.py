@@ -278,3 +278,26 @@ def test_non_finite_duration_counts_as_unknown(ff, tmp_path):
     ff["raw"] = _raw(duration="inf")
     with pytest.raises(ContractError, match="không rõ thời lượng"):
         media.contact_sheets(ff["video"], str(tmp_path), 2)
+
+
+def test_out_dir_is_made_absolute_before_reaching_ffmpeg(ff, tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    media.extract_frames(ff["video"], "-x", [1.0])
+    last = ff["calls"][-1]["args"][-1]
+    assert os.path.isabs(last) and last.startswith(str(tmp_path))
+    media.contact_sheets(ff["video"], "-y", 5.0)
+    last = ff["calls"][-1]["args"][-1]
+    assert os.path.isabs(last) and last.startswith(str(tmp_path))
+
+
+def test_unmakeable_out_dir_is_contract_error(ff, monkeypatch, tmp_path):
+    from video_studio.contract import ContractError
+
+    def boom(*a, **k):
+        raise OSError(123, "tên thư mục không hợp lệ")
+
+    monkeypatch.setattr(media.os, "makedirs", boom)
+    with pytest.raises(ContractError):
+        media.extract_frames(ff["video"], "pipe:", [1.0])
+    with pytest.raises(ContractError):
+        media.contact_sheets(ff["video"], "tcp://198.51.100.7:9", 5.0)

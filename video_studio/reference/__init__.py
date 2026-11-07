@@ -13,6 +13,7 @@
 import argparse
 import datetime
 import os
+import shutil
 
 from .. import _env, _paths, contract
 from ..contract import ContractError
@@ -115,13 +116,22 @@ def _init(args):
     today = datetime.date.today().isoformat()
     prov = gate.new_provenance(name, args.url, local, digest, today)   # check_url ném trước khi ghi gì
 
-    os.makedirs(project)
-    for d in PROJECT_DIRS:
-        os.makedirs(os.path.join(project, d))
-    for t in TEMPLATE_FILES:
-        with open(os.path.join(project, t), "w", encoding="utf-8", newline="\n") as f:
-            f.write(_render(t, name, today))
-    gate.save_provenance(project, prov)
+    rendered = [(t, _render(t, name, today)) for t in TEMPLATE_FILES]    # thiếu mẫu ⇒ lỗi trước khi tạo gì
+    try:
+        os.makedirs(root, exist_ok=True)
+        os.mkdir(project)
+    except FileExistsError:
+        raise ContractError(f"project {project} đã có; chọn tên khác (init không ghi đè)") from None
+    try:
+        for d in PROJECT_DIRS:
+            os.makedirs(os.path.join(project, d))
+        for t, text in rendered:
+            with open(os.path.join(project, t), "w", encoding="utf-8", newline="\n") as f:
+                f.write(text)
+        gate.save_provenance(project, prov)
+    except BaseException:
+        shutil.rmtree(project, ignore_errors=True)       # không để project nửa vời
+        raise
     return {"project": project,
             "files": [gate.PROVENANCE_FILE, *TEMPLATE_FILES],
             "rights_status": prov["rights_status"],
@@ -136,12 +146,14 @@ def do_reference(args):
     if action == "init":
         return _init(args)
     if action == "frames":
-        frames = media.extract_frames(args.input, args.out, _marks(args.at), force=args.force)
-        return {"out": args.out, "frames": frames}
+        out = os.path.abspath(args.out)
+        frames = media.extract_frames(args.input, out, _marks(args.at), force=args.force)
+        return {"out": out, "frames": frames}
     if action == "tiles":
-        sheets = media.contact_sheets(args.input, args.out, args.every, cols=args.cols, rows=args.rows,
+        out = os.path.abspath(args.out)
+        sheets = media.contact_sheets(args.input, out, args.every, cols=args.cols, rows=args.rows,
                                       width=args.width, label=args.label, force=args.force)
-        return {"out": args.out, **sheets}
+        return {"out": out, **sheets}
     if action == "transcribe":
         return subs.transcribe(args.input, args.project, subs=args.subs, language=args.language,
                                force=args.force)
@@ -162,7 +174,7 @@ def _audit_main(args):
     """`audit`: phát hiện ⇒ mã 2, mỗi phát hiện một dòng stderr, JSON lỗi mang thêm `findings`."""
     try:
         result = do_reference(args)
-    except Exception as exc:     # noqa: BLE001 - lỗi hồ sơ / tham số: để contract.run đổi thành mã
+    except (Exception, KeyboardInterrupt) as exc:   # noqa: BLE001 - để contract.run đổi thành mã
         def fail(_args):
             raise exc
         return contract.run(fail, args, args.json)
