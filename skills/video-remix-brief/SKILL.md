@@ -91,6 +91,11 @@ Bảng khoá `provenance.json`, điều kiện `approved`, lời cho phép, và 
   `treatment.md` câu xác nhận «không có tư liệu của mẫu». `audit` chỉ bắt trùng byte; tư liệu đã
   chuyển mã thì lọt, nên mắt người là lớp cuối.
 - Project tham chiếu không đặt trên cây đồng bộ đám mây: băm tệp sẽ kéo tệp về.
+- Tệp mẫu đưa bằng `reference init --file` nằm ngoài project, không được chép vào `assets/` dưới
+  mọi dạng (giống `source/`).
+- Trên Windows, `edit --step render` với `grade: auto` (mặc định) hiện thoát mã 1 — đặt
+  `"grade": "none"` trong EDL; xem mục Giới hạn của
+  [`docs/reference-to-remix.md`](../../docs/reference-to-remix.md).
 
 ## Biến thể
 

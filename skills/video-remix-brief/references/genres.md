@@ -23,6 +23,9 @@ trúc và nhịp; phần **đổi** luôn gồm giọng, hình, lời, nhạc, t
 Các khuôn dùng `edit` chạy theo ba bước: `edit --step transcribe`, `--step pack`, rồi
 `edit --step render --edl <edl.json>` khi đã có EDL. Footage đặt trong thư mục `--footage`, tài sản
 khác đặt trong `assets/` của project tham chiếu và khai trong `assets[]` của `provenance.json`.
+Trên Windows, `edit --step render` với `grade: auto` (mặc định) hiện thoát mã 1 — đặt
+`"grade": "none"` trong EDL; xem mục Giới hạn của
+[`docs/reference-to-remix.md`](../../../docs/reference-to-remix.md).
 
 ## 1. Kể chuyện có lời dẫn
 
