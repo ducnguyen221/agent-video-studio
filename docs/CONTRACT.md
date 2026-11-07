@@ -141,6 +141,31 @@ phải chẵn). Input không bị sửa. Apply tạo `<output>.cleanup.json` ch�
 offset, geometry và color metadata từ hai file hiện tại. `technical_checks` PASS không đồng
 nghĩa `visual_review` PASS; trạng thái hình/tiếng vẫn `NOT_CHECKED` tới khi có người xem clip.
 
+### Video mẫu (`reference`)
+
+`reference` đọc một video mẫu để lấy cấu trúc và nhịp, giữ hồ sơ quyền và kiểm tài sản của bản
+dựng; nó không dựng video. Quy trình đầy đủ: [`reference-to-remix.md`](reference-to-remix.md).
+Project tham chiếu mặc định ở `<trạm>/reference/<tên>/` (đổi bằng `--dir`), không đặt trên cây
+đồng bộ đám mây. Thông tin video lấy bằng `cleanup inspect`, không có lệnh `reference` riêng.
+
+| Hành động | Việc | 0 | 1 | 2 | 3 |
+|---|---|---|---|---|---|
+| `init` | tạo project + `provenance.json` (`--url` chỉ ghi, không tải) | xong | — | tên/URL sai, đích đã có, lỗi tạo thư mục (kể cả quyền) | chưa có trạm khi không truyền `--dir` |
+| `frames` | trích khung tại các mốc `--at` (≤ 60) | xong | ffmpeg hỏng, không đọc được `pts_time` | tham số sai, ảnh đã có không `--force`, lỗi tạo thư mục ra | thiếu ffmpeg/ffprobe |
+| `tiles` | lưới ảnh mỗi `--every` giây | xong | ffmpeg hỏng | tham số sai, lưới đã có không `--force` | thiếu ffmpeg/ffprobe |
+| `transcribe` | phụ đề (tệp, cạnh tệp, nhúng) hoặc ASR → `transcripts/` | xong | công cụ chạy hỏng | tham số sai, transcript đã có không `--force`, `--language` sai | thiếu ffmpeg, hoặc ASR cần mà thiếu `faster-whisper` |
+| `fetch` | không `--go`: in kế hoạch; `--go`: tải vào `source/` | xong (kể cả chỉ in kế hoạch) | yt-dlp chạy hỏng, quá giờ | cổng chặn (URL, thiếu phép, hồ sơ, đích đã có) | thiếu yt-dlp |
+| `audit` | so tài sản với hồ sơ và tư liệu mẫu | không có phát hiện | — | có phát hiện, hồ sơ hỏng | — |
+
+- `--out` của `frames` và `tiles` bắt buộc, được đổi thành đường tuyệt đối; `--input` phải là
+  tệp cục bộ.
+- `audit` có phát hiện ⇒ mã 2 và dòng JSON cuối
+  `{"ok": false, "code": 2, "error": "<n> phát hiện", "findings": [...]}`. Nó chỉ bắt trùng byte với
+  `source/` và `evidence/**`, không đọc spec/EDL.
+- `fetch` kiểm bảy cổng theo thứ tự (URL, `--allow-url`, hồ sơ, quyền + chứng từ, phép đích
+  danh, yt-dlp, đích) trước mọi tiến trình con; chi tiết và giới hạn ở `reference-to-remix.md`.
+- `init` không để lại project nửa vời khi lỗi.
+
 ### 3.1 Đầu ra KHÔNG giống nhau giữa các hệ điều hành — và phép chứng minh tương đương chỉ đúng trên Windows
 
 Engine này **không** hứa cùng một spec cho ra cùng một byte trên mọi máy. Hai giới hạn phải

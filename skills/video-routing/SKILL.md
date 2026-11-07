@@ -1,6 +1,6 @@
 ---
 name: video-routing
-description: Use when an agent must choose a video product approach, clarify a brief, or set up, check or drive a HyperFrames video station through the video-studio CLI. Covers training, explainers, data news and character stories across engines and styles; not for writing a composition's HTML/CSS/animation or cutting footage by hand.
+description: Use when an agent must choose a video product approach, clarify a brief, or set up, check or drive a HyperFrames video station through the video-studio CLI. Covers training, explainers, data news and character stories across engines and styles, or adapt a reference or viral video into an original one (routes to video-reference-analysis then video-remix-brief); not for writing a composition's HTML/CSS/animation or cutting footage by hand.
 ---
 
 # Định tuyến việc dựng video qua `video-studio`
@@ -72,6 +72,7 @@ Trạm là nơi chứa project, seed, skill cho agent, nháp, cache — **không
 | Xem trước project | `video-studio preview [--project <tên\|thư mục>]` | có |
 | Chỉnh footage quay thật | `video-studio edit --footage <dir> --out <dir> [--edl edl.json]` | có |
 | Chỉnh một vùng trong video local | `video-studio cleanup inspect|preview|apply|verify` | có; đọc skill `video-cleanup` |
+| Đọc video mẫu, lập hồ sơ nguồn, kiểm tài sản | `video-studio reference init|frames|tiles|transcribe|fetch|audit` | có; đọc skill `video-reference-analysis` rồi `video-remix-brief`; `fetch` chỉ in kế hoạch, tải cần `--go` và phép đích danh |
 | Zip cả trạm | `video-studio backup --out <file>.zip` | có |
 | Chuyển trạm ra ngoài repo | `video-studio migrate --to separate [--station DIR]` (thiếu `--station` thì hỏi nơi dời; agent không có terminal phải hỏi người dùng rồi truyền `--station`) | có |
 | Cập nhật bản clone | `video-studio update` | có |
@@ -89,6 +90,7 @@ Lệnh "chưa có" trả mã `2` kèm lời báo — đừng thử lại, báo n
   chốt → dựng, không phải một nút bấm.
 - **Cần xử lý một vùng hoặc logo nhìn thấy trong video đã có**: đọc skill `video-cleanup`; chọn
   ROI, thời gian và method rõ ràng, xem preview, rồi apply ra file mới và verify manifest.
+- **"Làm video giống video này" (link hoặc tệp mẫu)**: đọc `video-reference-analysis` → `video-remix-brief` → `render`/`edit`; quy trình ở `docs/reference-to-remix.md`. Chỉ tải khi người dùng nói đúng URL; ý tưởng, hook, lịch đăng thì sang `agent-marketing-team`; nhân bản người trong mẫu thì từ chối.
 - **Sắp chế một layout mới**: đọc skill `video-theme-library` + `docs/THEME-LIBRARY.md` TRƯỚC —
   chọn từ thư viện rồi mới sáng tác.
 - **Người dùng hỏi "đồ của tôi nằm đâu / xoá được không"**: `docs/WORKSPACE.md`.
