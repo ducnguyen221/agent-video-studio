@@ -763,3 +763,78 @@ def test_bare_dll_or_so_without_cuda_name_is_not_a_cuda_library_error():
     assert not tr._is_cuda_library_error(RuntimeError("some.dll failed"))
     assert not tr._is_cuda_library_error(RuntimeError("CUDA driver version is insufficient"))
     assert tr._is_cuda_library_error(RuntimeError("Library cublas64_12.dll is not found"))
+
+
+# ── L9: ctranslate2 tìm cublas64_12.dll theo PATH; add_dll_directory không đủ ─────────────
+
+def _nvidia_tree(tmp_path, pkgs=("cublas", "cudnn", "cuda_nvrtc")):
+    site = tmp_path / "site"
+    dirs = []
+    for pkg in pkgs:
+        d = site / "nvidia" / pkg / "bin"
+        d.mkdir(parents=True)
+        dirs.append(str(d))
+    return site, dirs
+
+
+def _cuda_env(monkeypatch, site, path="ORIG_PATH", name="nt"):
+    from video_studio.edit import transcribe as tr
+    monkeypatch.setattr(sys, "path", [str(site)])      # chỉ cây giả: máy dev có nvidia/ thật trong site-packages
+    monkeypatch.setattr(os, "name", name)
+    monkeypatch.setenv("PATH", path)
+    monkeypatch.delattr(os, "add_dll_directory", raising=False)
+    return tr
+
+
+def test_cuda_bin_dirs_are_prepended_to_path_in_order(tmp_path, monkeypatch):
+    site, dirs = _nvidia_tree(tmp_path)
+    tr = _cuda_env(monkeypatch, site)
+    tr._add_cuda_dll_dirs()
+    assert os.environ["PATH"] == os.pathsep.join(dirs + ["ORIG_PATH"])
+
+
+def test_cuda_bin_dirs_not_duplicated_on_second_call_or_case_variant(tmp_path, monkeypatch):
+    site, dirs = _nvidia_tree(tmp_path)
+    tr = _cuda_env(monkeypatch, site)
+    tr._add_cuda_dll_dirs()
+    once = os.environ["PATH"]
+    tr._add_cuda_dll_dirs()
+    assert os.environ["PATH"] == once
+    monkeypatch.setenv("PATH", os.pathsep.join(["ORIG_PATH", dirs[0].upper()]))   # đã có, khác hoa/thường
+    tr._add_cuda_dll_dirs()
+    assert os.environ["PATH"].split(os.pathsep).count(dirs[0]) == 0
+    assert os.environ["PATH"].split(os.pathsep)[:2] == dirs[1:]
+
+
+def test_cuda_path_untouched_when_not_windows_or_no_dirs(tmp_path, monkeypatch):
+    site, _ = _nvidia_tree(tmp_path)
+    tr = _cuda_env(monkeypatch, site, name="posix")
+    tr._add_cuda_dll_dirs()
+    assert os.environ["PATH"] == "ORIG_PATH"
+    empty = tmp_path / "empty"
+    empty.mkdir()
+    tr = _cuda_env(monkeypatch, empty)
+    tr._add_cuda_dll_dirs()
+    assert os.environ["PATH"] == "ORIG_PATH"
+
+
+def test_cuda_dirs_are_added_before_faster_whisper_is_imported(tmp_path, monkeypatch):
+    import importlib.abc
+    from video_studio.edit import transcribe as tr
+    from video_studio.contract import StationMissing
+    events = []
+
+    class Finder(importlib.abc.MetaPathFinder):
+        def find_spec(self, name, path=None, target=None):
+            if name == "faster_whisper":
+                events.append("import")
+                raise ImportError("chặn trong test: không nạp faster-whisper thật")
+            return None
+
+    monkeypatch.setattr(tr, "_model", None)
+    monkeypatch.setattr(tr, "_add_cuda_dll_dirs", lambda: events.append("dirs"))
+    monkeypatch.delitem(sys.modules, "faster_whisper", raising=False)
+    monkeypatch.setattr(sys, "meta_path", [Finder()] + sys.meta_path)
+    with pytest.raises(StationMissing):
+        tr.load_model("small")
+    assert events == ["dirs", "import"]

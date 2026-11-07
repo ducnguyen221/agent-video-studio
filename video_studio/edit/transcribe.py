@@ -68,23 +68,44 @@ def available():
     return importlib.util.find_spec("faster_whisper") is not None
 
 
-def _add_cuda_dll_dirs():
-    """Windows: wheel `nvidia-*-cu12` để DLL trong site-packages/nvidia/*/bin, ngoài PATH.
-
-    Không thêm thì ctranslate2 không thấy cublas/cudnn và ta lặng lẽ chạy CPU (chậm 10 lần)
-    trên một máy có GPU.
-    """
+def _cuda_bin_dirs():
+    """Các thư mục `nvidia/<pkg>/bin` (cublas, cudnn, cuda_nvrtc) có thật trong sys.path, không trùng."""
     import sys
-    if not hasattr(os, "add_dll_directory"):
-        return
+    found = []
     for base in sys.path:
         for pkg in ("cublas", "cudnn", "cuda_nvrtc"):
             d = os.path.join(base, "nvidia", pkg, "bin")
-            if os.path.isdir(d):
-                try:
-                    os.add_dll_directory(d)
-                except OSError:
-                    pass
+            if os.path.isdir(d) and d not in found:
+                found.append(d)
+    return found
+
+
+def _add_cuda_dll_dirs():
+    """Windows: wheel `nvidia-*-cu12` để DLL trong site-packages/nvidia/*/bin, ngoài PATH.
+
+    ctranslate2 tìm `cublas64_12.dll` theo PATH — `os.add_dll_directory` một mình KHÔNG đủ (đo thật:
+    bóc lời rơi CPU 39,8 s thay vì GPU 1,7 s). Nên làm cả hai, và phải gọi TRƯỚC khi import
+    faster_whisper/ctranslate2. PATH chỉ được thêm ở Windows, không trùng (không phân biệt hoa thường),
+    gọi nhiều lần không làm nó phình.
+    """
+    dirs = _cuda_bin_dirs()
+    if hasattr(os, "add_dll_directory"):
+        for d in dirs:
+            try:
+                os.add_dll_directory(d)
+            except OSError:
+                pass
+    if os.name != "nt" or not dirs:
+        return
+
+    def key(p):
+        return os.path.normpath(p).lower()
+
+    parts = [p for p in os.environ.get("PATH", "").split(os.pathsep) if p]
+    have = {key(p) for p in parts}
+    new = [d for d in dirs if key(d) not in have]
+    if new:
+        os.environ["PATH"] = os.pathsep.join(new + parts)
 
 
 _CUDA_LIB_NAMES = ("cublas", "cudnn", "nvrtc", "libcu", "cuda")
@@ -131,11 +152,11 @@ def load_model(name=None, prefer_gpu=True):
     name = name or os.environ.get("VIDEO_WHISPER_MODEL") or DEFAULT_MODEL
     if _model is not None and _model_name == name:
         return _model
+    _add_cuda_dll_dirs()      # TRƯỚC import: ctranslate2 dò DLL CUDA theo PATH lúc nạp
     try:
         from faster_whisper import WhisperModel
     except ImportError as e:
         raise StationMissing("bước bóc lời cần `faster-whisper` — " + INSTALL_HINT) from e
-    _add_cuda_dll_dirs()
     if prefer_gpu:
         try:
             _model = WhisperModel(name, device="cuda", compute_type="float16")
