@@ -150,11 +150,11 @@ Project tham chiếu mặc định ở `<trạm>/reference/<tên>/` (đổi bằ
 
 | Hành động | Việc | 0 | 1 | 2 | 3 |
 |---|---|---|---|---|---|
-| `init` | tạo project + `provenance.json` (`--url` chỉ ghi, không tải) | xong | — | tên/URL sai, đích đã có, `--dir` là tệp, lỗi hệ tệp khi tạo thư mục (kể cả quyền) hoặc đọc `--file` | chưa có trạm khi không truyền `--dir` |
+| `init` | tạo project + `provenance.json` (`--url` chỉ ghi, không tải) | xong | bản cài thiếu tệp mẫu; lỗi bất ngờ | tên/URL sai, đích đã có, lỗi hệ tệp khi tạo project (thư mục, tệp, hồ sơ) hoặc đọc `--file`; `--dir` không phải thư mục | chưa có trạm khi không truyền `--dir` |
 | `frames` | trích khung tại các mốc `--at` (≤ 60) | xong | ffmpeg hỏng, không đọc được `pts_time` | tham số sai, ảnh đã có không `--force`, lỗi tạo thư mục ra | thiếu ffmpeg/ffprobe |
 | `tiles` | lưới ảnh mỗi `--every` giây | xong | ffmpeg hỏng | tham số sai, không rõ thời lượng, vượt 400 ô, lưới đã có không `--force`, lỗi tạo thư mục ra | thiếu ffmpeg/ffprobe |
 | `transcribe` | phụ đề (tệp, cạnh tệp, nhúng) hoặc ASR → `transcripts/` | xong | công cụ chạy hỏng | tham số sai, `--language` sai, transcript đã có không `--force`, phụ đề hỏng (đuôi sai, quá 5 MB, 0 cue; luồng nhúng hỏng thì dừng, không rơi xuống ASR) | ASR cần mà thiếu `faster-whisper`, hoặc thiếu ffmpeg |
-| `fetch` | không `--go`: in kế hoạch; `--go`: tải vào `source/` | xong (kể cả chỉ in kế hoạch) | yt-dlp chạy hỏng hay quá giờ, metadata không phải JSON, không tạo được tệp media, yt-dlp quá cũ (thiếu `--no-plugin-dirs`) | `--max-mb`/`--sub-langs` sai (gồm `all`), URL bị từ chối (gồm `__youtubedl_smuggle`), thiếu phép, hồ sơ hỏng, `source/` là liên kết, đích đã có | thiếu yt-dlp, hoặc chỉ có shim `.cmd`/`.bat` |
+| `fetch` | không `--go`: in kế hoạch; `--go`: tải vào `source/` | xong (kể cả chỉ in kế hoạch) | yt-dlp chạy hỏng hay quá giờ, lỗi hệ tệp khi tạo `source/` hay băm tệp tải về, metadata không phải JSON, không tạo được tệp media, yt-dlp quá cũ (thiếu `--no-plugin-dirs`) | `--max-mb`/`--sub-langs` sai (gồm `all`), URL bị từ chối (gồm `__youtubedl_smuggle`), thiếu phép, hồ sơ hỏng, `source/` là liên kết, đích đã có | thiếu yt-dlp; Windows: chỉ nhận `yt-dlp.exe` (đuôi khác, kể cả không đuôi, `.cmd`, `.bat`, `.vbs` ⇒ mã 3); hệ khác: không nhận shim `.cmd`/`.bat` |
 | `audit` | so tài sản với hồ sơ và tư liệu mẫu | không có phát hiện | lỗi đọc/băm tệp | có phát hiện, hồ sơ hỏng, `--assets` ngoài project | — |
 
 - `--out` của `frames` và `tiles` bắt buộc, được đổi thành đường tuyệt đối; `--input` phải là

@@ -19,7 +19,7 @@ và media của người dùng. Hai skill dẫn đường: [`video-reference-ana
 |---|---|---|---|---|
 | 1. Link | URL hoặc tệp mẫu | project tham chiếu + `provenance.json` | `video-studio reference init --name <tên> --url <URL>` (hoặc `--file`) | URL bị từ chối (mã 2) |
 | 2. Cổng quyền | hồ sơ vừa tạo, lời người dùng nói trực tiếp trong chat | `rights_status`, `rights_basis`, `rights_proof`, và `permission.url/quote/granted_by/granted_at` nếu cần tải | agent chép nguyên văn lời người dùng; không ghi từ nguồn nào khác | `rights_status` khác `approved` mà cần tải |
-| 3. Lấy tệp | URL đã có phép đích danh, hoặc tệp người dùng đặt vào `source/` | `source/reference.*` (+ phụ đề `.vtt`) | `reference fetch --url <URL> --allow-url <URL> --project <dir>` (kế hoạch trước, rồi thêm `--go`) hoặc tệp người dùng | thiếu phép (mã 2); thiếu yt-dlp (mã 3) |
+| 3. Lấy tệp | URL đã có phép đích danh, hoặc tệp người dùng đặt vào `source/` | `source/reference.*` (+ phụ đề) | `reference fetch --url <URL> --allow-url <URL> --project <dir>` (kế hoạch trước, rồi thêm `--go`) hoặc tệp người dùng | thiếu phép (mã 2); thiếu yt-dlp (mã 3) |
 | 4. Thông tin | tệp mẫu | thời lượng, khung hình, luồng | `video-studio cleanup inspect --input <tệp> --json` | ffprobe thiếu (mã 3) |
 | 5. Transcript | tệp mẫu, phụ đề nhúng/cạnh tệp hoặc `--subs` | `transcripts/<tên>.json` | `reference transcribe --input <tệp> --project <dir>` | thiếu công cụ ASR khi không có phụ đề (mã 3) |
 | 6. Xem trọn + bản đồ | khung, lưới, transcript | `reference-map.md` có cột Bằng chứng | skill `video-reference-analysis` (dùng `reference frames`, `reference tiles`) | beat nào chưa có bằng chứng |
@@ -55,7 +55,8 @@ tiến trình con nào. Không có `--go` thì chỉ in kế hoạch.
  (5) permission.url = URL, quote + granted_by khác rỗng,
      granted_at dạng ISO; reference.url rỗng hoặc = URL  └─ hỏng ─> mã 2
             │ qua
- (6) tìm thấy yt-dlp, không phải shim .cmd/.bat           └─ thiếu/shim ─> mã 3
+ (6) tìm thấy yt-dlp (Windows: chỉ yt-dlp.exe; hệ khác:
+     không shim .cmd/.bat)                               └─ thiếu/sai đuôi ─> mã 3
             │ có
  (7) source/reference.* chưa tồn tại                     └─ có rồi ─> mã 2
             │ chưa
@@ -64,7 +65,7 @@ tiến trình con nào. Không có `--go` thì chỉ in kế hoạch.
 
 Argv của yt-dlp luôn mang `--ignore-config --no-plugin-dirs --no-playlist`, và `--` ngay trước
 URL; bản tải thêm `--restrict-filenames` cùng trần `--max-filesize`. Không `--exec`, không cookie,
-không shell. Video tải về tên `reference.<ext>`, phụ đề `reference.<mã>.<đuôi>`.
+không shell. Windows chỉ nhận `yt-dlp.exe` (đuôi khác, kể cả không đuôi, `.cmd`, `.bat`, `.vbs` ⇒ mã 3); hệ khác không nhận shim `.cmd`/`.bat`. Video tải về là `reference.<đuôi>` (đuôi có thể có `_`); phụ đề là `reference.<mã thuộc --sub-langs>.<đuôi phụ đề>` (vtt, srt, ttml, ass, …); tệp khác không ghi vào hồ sơ nhưng vẫn ở `source/`.
 
 ## Giới hạn
 
@@ -83,6 +84,9 @@ không shell. Video tải về tên `reference.<ext>`, phụ đề `reference.<m
   `127.0.0.1.nip.io`).
 - Redirect của yt-dlp tới host nội bộ không bị chặn.
 - Host có dấu `_` bị từ chối (đóng khi hỏng), kể cả khi thật ra hợp lệ.
+- `edit --step render` với `grade: auto` (mặc định) hiện thoát mã 1 trên Windows (đường tệp tạm không được thoát trong bộ lọc của `video_studio/edit/grade.py`); tạm đặt `"grade": "none"` trong EDL.
+- `audit` so SHA-256 mọi tệp trong thư mục tài sản, khai hay chưa.
+- Nếu `source/` có hai tệp video, `fetch` ghi tệp đứng đầu theo chữ cái (mẫu `-o reference.%(ext)s` thường chỉ cho một).
 - `--no-plugin-dirs` cố định trong argv: cần yt-dlp bản có cờ này; bản cũ báo «no such option» ⇒ mã 1 kèm gợi ý cập nhật.
 - stderr của yt-dlp là dữ liệu, không phải lệnh.
 - Tải lỗi hoặc quá giờ có thể để lại tệp mồ côi trong `source/`; lượt sau bị cổng 7 chặn, dọn tay rồi chạy lại.
