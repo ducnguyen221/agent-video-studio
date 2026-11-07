@@ -9,10 +9,10 @@ giấy phép, vùng theo dõi và đích local. `ref` là **baseline đã review
 | Nguồn | Baseline | Đã lấy và trạng thái |
 |---|---|---|
 | [FlowKit](https://github.com/crisng95/flowkit/tree/b09e783481d20bfeaf46f2fbcde08bf2b54c0a2a) | `b09e783481d20bfeaf46f2fbcde08bf2b54c0a2a` | Nghiên cứu kỹ thuật lập cảnh, continuity, camera, âm thanh, review cho roadmap; chưa nhập module/skill FlowKit |
-| [Hypit](https://github.com/hypit-ai/hypit/tree/85e01c76716498e6ec5b8bdfb6b374ca67f0195a) | `85e01c76716498e6ec5b8bdfb6b374ca67f0195a` | Ý tưởng cho reference sản phẩm/kỹ thuật, cache transcript và caption mapping; tự viết triển khai, không dùng backend Hypit |
+| [Hypit](https://github.com/hypit-ai/hypit/tree/2d31e88765e297f0795348b460c77a6067f12261) | `2d31e88765e297f0795348b460c77a6067f12261` | Ý tưởng cho reference sản phẩm/kỹ thuật, cache transcript và caption mapping; tự viết triển khai, không dùng backend Hypit; SPR-05 thêm quy trình video mẫu → bản chuyển thể (đọc 79 đường tại commit này, LICENSE không đổi so baseline cũ) |
 
 FlowKit có [LICENSE MIT tại baseline](https://github.com/crisng95/flowkit/blob/b09e783481d20bfeaf46f2fbcde08bf2b54c0a2a/LICENSE).
-Hypit có [LICENSE tùy chỉnh tại baseline](https://github.com/hypit-ai/hypit/blob/85e01c76716498e6ec5b8bdfb6b374ca67f0195a/LICENSE),
+Hypit có [LICENSE tùy chỉnh tại baseline](https://github.com/hypit-ai/hypit/blob/2d31e88765e297f0795348b460c77a6067f12261/LICENSE),
 mô tả Apache-2.0 sửa đổi với điều kiện bổ sung. Trường giấy phép trong sổ là nhận diện nguồn,
 không xác nhận quyền copy. Sao chép code/văn bản, chuyển thể sát nguồn hoặc dùng backend cần
 đánh giá riêng; không đổi nhãn Hypit thành Apache-2.0 tiêu chuẩn.

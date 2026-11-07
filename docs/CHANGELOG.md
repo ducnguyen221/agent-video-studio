@@ -5,6 +5,10 @@ chính nhưng chưa có tag; khi phát hành, mục đó đổi tên thành số
 `pyproject.toml`, `video_studio/__init__.py` cùng ba manifest plugin (`tests/test_version_sync.py`
 kiểm).
 
+## Chưa phát hành
+
+- **Video mẫu → bản chuyển thể:** thêm `video-studio reference` (init, frames, tiles, transcribe, fetch có cổng, audit) và hai skill `video-reference-analysis`, `video-remix-brief`: đọc video mẫu thành bản đồ có bằng chứng, chuyển thể sang nội dung và media của mình, giữ hồ sơ quyền. Ý tưởng tham khảo Hypit (idea_reference), không chép mã hay chữ; tải video luôn cần phép đích danh.
+
 ## 0.7.0 — 2026-11-07
 
 - **Thư viện motion để lập phân cảnh:** thêm 240 tài liệu tham chiếu Prompt Motion, mã tra cứu,
