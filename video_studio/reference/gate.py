@@ -44,6 +44,7 @@ MAX_URL_LEN = 2048
 _LAST_LABEL_NUMERIC = re.compile(r"0x[0-9a-f]*|[0-9]+")
 _CGNAT = ipaddress.ip_network("100.64.0.0/10")
 _LDH_HOST = re.compile(r"[a-z0-9-]+(\.[a-z0-9-]+)*\.?")
+_HEX64 = re.compile(r"[0-9a-fA-F]{64}")
 _INTENTS = ("public", "private")
 
 
@@ -326,10 +327,11 @@ def _walk_files(root):
             yield os.path.join(dirpath, name)
 
 
-def _reference_hashes(project_dir):
+def _reference_hashes(project_dir, prov):
     """(sha256 → đường tương đối, phát hiện) của tư liệu mẫu: tệp thường trong `source/` và `evidence/**`.
 
-    Gốc `source/` hay `evidence/` là liên kết ⇒ phát hiện, không băm vào trong.
+    Gốc `source/` hay `evidence/` là liên kết ⇒ phát hiện, không băm vào trong. Thêm các băm đã ghi trong hồ sơ
+    (`reference.sha256`, `fetch.sha256`; chuỗi hex 64 ký tự, giá trị lạ bỏ qua) — không đọc lại tệp ngoài project.
     """
     found, findings = {}, []
     for sub in ("source", "evidence"):
@@ -341,6 +343,10 @@ def _reference_hashes(project_dir):
             if _is_link(path) or not os.path.isfile(path):
                 continue
             found.setdefault(sha256_file(path), _rel(path, project_dir))
+    for section, label in (("reference", "(reference.local_file)"), ("fetch", "(fetch.file)")):
+        recorded = (prov.get(section) or {}).get("sha256") if isinstance(prov.get(section), dict) else None
+        if isinstance(recorded, str) and _HEX64.fullmatch(recorded.strip()):
+            found.setdefault(recorded.strip().lower(), label)
     return found, findings
 
 
@@ -384,7 +390,7 @@ def audit_assets(project_dir, assets_dir=None):
     declared = {}
     for a in prov.get("assets", []):
         declared.setdefault(os.path.normpath(a["path"].replace("\\", "/")).replace(os.sep, "/"), []).append(a)
-    ref_hashes, findings = _reference_hashes(project_dir)
+    ref_hashes, findings = _reference_hashes(project_dir, prov)
     seen, checked = set(), 0
 
     def add(rel, problem):

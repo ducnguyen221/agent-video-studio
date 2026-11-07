@@ -671,3 +671,42 @@ def test_audit_undeclared_unique_file_gets_only_the_undeclared_finding(tmp_path)
     _write(proj, "assets/own.png", b"khac")
     out = gate.audit_assets(proj)
     assert [f["problem"] for f in out["findings"]] == ["chưa khai trong assets"]
+
+
+# ------------------------------------------------- vòng sửa 4: băm đã ghi trong hồ sơ
+
+def _record_hash(proj, section, key, value):
+    prov = gate.load_provenance(proj)
+    prov[section] = dict(prov.get(section) or {}, **{key: value})
+    gate.save_provenance(proj, prov)
+
+
+@pytest.mark.parametrize("section, label", [("reference", "reference.local_file"), ("fetch", "fetch.file")])
+def test_audit_matches_hash_recorded_in_provenance(tmp_path, section, label):
+    proj = _project(tmp_path)
+    payload = b"tep mau dua bang --file"
+    _record_hash(proj, section, "sha256", hashlib.sha256(payload).hexdigest().upper())  # chữ hoa vẫn khớp
+    _write(proj, "assets/copy.mp4", payload)
+    _declare(proj, _asset(path="assets/copy.mp4", origin="user"))
+    out = gate.audit_assets(proj)
+    assert out["ok"] is False
+    assert [f["problem"] for f in out["findings"]] == [f"trùng byte với tệp mẫu ({label})"]
+
+
+@pytest.mark.parametrize("bad", [None, "", "xyz", "ab" * 31, "g" * 64, 123, ["a"]])
+def test_audit_ignores_malformed_recorded_hash(tmp_path, bad):
+    proj = _project(tmp_path)
+    _write(proj, "assets/a.mp4", b"a")
+    _declare(proj, _asset(path="assets/a.mp4"))
+    _record_hash(proj, "reference", "sha256", bad)
+    assert gate.audit_assets(proj) == {"ok": True, "checked": 1, "findings": []}
+
+
+def test_audit_prefers_real_file_name_over_recorded_label(tmp_path):
+    proj = _project(tmp_path)
+    payload = b"tep"
+    _write(proj, "source/reference.mp4", payload)
+    _record_hash(proj, "reference", "sha256", hashlib.sha256(payload).hexdigest())
+    _write(proj, "assets/copy.mp4", payload)
+    _declare(proj, _asset(path="assets/copy.mp4"))
+    assert [f["problem"] for f in gate.audit_assets(proj)["findings"]] == ["trùng byte với tệp mẫu source/reference.mp4"]
