@@ -31,6 +31,7 @@ work, you just cannot add narration. There is no required install order and no b
 | `video-studio preview` | Opens the HyperFrames preview studio for a project — with the *pinned* build, so what you inspect is what will render. |
 | `video-studio edit` | Cuts real footage: transcribe locally, pack the transcript into phrase-level markdown, then render an EDL with grade, overlays, subtitles and loudness normalisation. Transcript reuse checks a temporary source snapshot and ASR settings; each invocation copies the source to temp storage, including cache hits, so reuse adds disk I/O. Snapshotting stops with a clear error if the source is larger than half the free temp-volume space. Custom model paths are treated as unknown and bypass cache; a batch with colliding transcript names is rejected before outputs change. Legacy transcripts without cache metadata are transcribed again. Helpers distilled from `video-use` (MIT); can also drive a vendored upstream copy. |
 | `video-studio cleanup` | Inspects a local MP4, previews and applies a time-bounded ROI edit (`delogo`, blur, solid cover or full-frame crop), then verifies hashes, frame timing, audio payloads and geometry from a sidecar manifest. Runs on FFmpeg without HyperFrames or a station. |
+| `video-studio reference` | A reference video → frames with true PTS, contact sheets, a transcript from the original subtitles or local speech recognition, a rights record (`provenance.json`) and an asset audit; downloading is gated (by default it only prints the plan). |
 | `video-studio export` / `import` | Zip a station and unpack it on another machine. `--personal` takes only project assets (`projects/*/assets`) plus the top-level folders you name with `--include`; scratch, cache, virtualenvs and git trees never enter the pack. `import` never overwrites unless you ask, and has `--dry-run`. |
 | `video-studio backup` / `migrate` / `update` | Zip the station; move an `embedded` station out of the repo; fast-forward the clone (never cleans). |
 | `video-studio uninstall` | Removes only what the installer put in place — the repo → station link, skills an older version copied (if unmodified), an unfilled `.env`, its own pre-commit hook — and moves them into the station journal instead of deleting. The station and every project stay. `--dry-run` shows the plan. |
@@ -101,8 +102,9 @@ always an exact version (never `latest`).
 
 ## Agent skills
 
-`skills/` holds **25 skills**: four written for this repo (`video-routing`, `video-edit`,
-`video-cleanup`, `video-theme-library`) and **21 distilled from the current HyperFrames skill set**
+`skills/` holds **27 skills**: six written for this repo (`video-routing`, `video-edit`,
+`video-cleanup`, `video-theme-library`, `video-reference-analysis`,
+`video-remix-brief`) and **21 distilled from the current HyperFrames skill set**
 (`skills/hyperframes/`). Those 21 are translated into Vietnamese, condensed and edited from the
 upstream `skills/<name>/SKILL.md` at one pinned tag; the frontmatter stays in English because
 that is what a harness reads to route. No upstream binary (font, audio, image) and no upstream
@@ -112,7 +114,7 @@ that is what a harness reads to route. No upstream binary (font, audio, image) a
 Skills are **not** copied into the station. The repo root carries one small adapter per skill in
 `.claude/skills/` (Claude Code) and `.agents/skills/` (Codex, Antigravity): it holds only the
 skill's `name` and `description` and points the agent at the original under `skills/`. Open the
-repository folder in your host and it sees all 25; `git pull` is enough to get new skill content.
+repository folder in your host and it sees all 27; `git pull` is enough to get new skill content.
 After adding, removing or re-describing a skill, run `python scripts/build_host_adapters.py`;
 `tests/test_host_adapters.py` fails when an adapter drifts from its source. A station set up by
 an older version still holds copies plus `skills-lock.json`: `init --station DIR --migrate`

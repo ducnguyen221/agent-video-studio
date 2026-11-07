@@ -5,6 +5,13 @@ chính nhưng chưa có tag; khi phát hành, mục đó đổi tên thành số
 `pyproject.toml`, `video_studio/__init__.py` cùng ba manifest plugin (`tests/test_version_sync.py`
 kiểm).
 
+## Chưa phát hành
+
+- **Video mẫu → bản chuyển thể:** thêm `video-studio reference` (init, frames, tiles, transcribe, fetch có cổng, audit) và hai skill `video-reference-analysis`, `video-remix-brief`: đọc video mẫu thành bản đồ có bằng chứng, chuyển thể sang nội dung và media của mình, giữ hồ sơ quyền. Ý tưởng tham khảo Hypit (idea_reference), không chép mã hay chữ; tải video luôn cần phép đích danh.
+- **Tải video mẫu: lời phép phải chứa đúng URL, và `granted_at` phải có cả giờ.** `reference fetch` từ chối lời phép không nêu URL (hỏi người dùng nói lại kèm URL, đừng tự chèn) và ngày trần không giờ; không có `--go` thì chỉ in kế hoạch, không tải gì.
+- **Windows: yt-dlp phải là `yt-dlp.exe`** (shim `.cmd`, `.bat`, `.vbs` hay tệp không đuôi bị từ chối, mã 3); đặt `YTDLP_DIR` trỏ thư mục chứa nó nếu không nằm trên PATH. `video-studio doctor` nay cảnh báo khi thiếu yt-dlp hay faster-whisper (chỉ cần cho `reference fetch` và `transcribe` bằng ASR).
+- **Biết trước khi dùng:** `edit --step render` với `grade: auto` (mặc định) hiện lỗi trên Windows; tạm đặt `"grade": "none"` trong EDL.
+
 ## 0.7.0 — 2026-11-07
 
 - **Thư viện motion để lập phân cảnh:** thêm 240 tài liệu tham chiếu Prompt Motion, mã tra cứu,

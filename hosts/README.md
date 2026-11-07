@@ -13,7 +13,7 @@ nhất: dán prompt trong [INSTALL.md](../INSTALL.md#prompt-copy-dán) vào ứn
 
 ## Host thấy skill bằng cách nào
 
-Nguồn duy nhất của 24 skill là [`skills/`](../skills/) trong repo; **không** có bản chép nào trong
+Nguồn duy nhất của 27 skill là [`skills/`](../skills/) trong repo; **không** có bản chép nào trong
 trạm. Có ba đường, mức kiểm khác nhau — nói thẳng để bạn không tưởng một đường chưa ai thử là đã
 chạy:
 

@@ -21,6 +21,9 @@ COMMANDS = {
                 "render thử một trang tí hon (≤ 30 s) — môi trường render kẹt thì báo ngay"),
     "edit":    ("video_studio.edit", "chỉnh footage thật theo transcript"),
     "cleanup": ("video_studio.cleanup", "sửa một vùng video local (inspect/preview/apply/verify)"),
+    "reference": ("video_studio.reference",
+                  "video mẫu → khung, lưới, transcript, hồ sơ quyền, kiểm tài sản "
+                  "(init|frames|tiles|transcribe|fetch|audit)"),
     "preview": ("video_studio.preview", "xem trước một project HyperFrames"),
     "narrate": ("video_studio.narrate", "video câm + lời dẫn → MP4 có giọng (qua voice-studio)"),
     "export":  ("video_studio.station:export_main",

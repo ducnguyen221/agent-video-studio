@@ -41,6 +41,7 @@ video-studio render …               # spec JSON → video theo template
 video-studio narrate …              # video câm + lời dẫn → video có giọng
 video-studio preview --project …    # soi trên trình duyệt (chạy tới khi Ctrl+C)
 video-studio edit …                 # cắt footage quay thật
+video-studio reference …            # video mẫu → khung, lưới, transcript, hồ sơ quyền (docs/reference-to-remix.md)
 ```
 
 ## C. Dựng video từ dữ liệu: `render`

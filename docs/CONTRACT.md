@@ -141,6 +141,44 @@ phải chẵn). Input không bị sửa. Apply tạo `<output>.cleanup.json` ch�
 offset, geometry và color metadata từ hai file hiện tại. `technical_checks` PASS không đồng
 nghĩa `visual_review` PASS; trạng thái hình/tiếng vẫn `NOT_CHECKED` tới khi có người xem clip.
 
+### Video mẫu (`reference`)
+
+`reference` đọc một video mẫu để lấy cấu trúc và nhịp, giữ hồ sơ quyền và kiểm tài sản của bản
+dựng; nó không dựng video. Quy trình đầy đủ: [`reference-to-remix.md`](reference-to-remix.md).
+Project tham chiếu mặc định ở `<trạm>/reference/<tên>/` (đổi bằng `--dir`), không đặt trên cây
+đồng bộ đám mây. Thông tin video lấy bằng `cleanup inspect`, không có lệnh `reference` riêng.
+
+| Hành động | Việc | 0 | 1 | 2 | 3 |
+|---|---|---|---|---|---|
+| `init` | tạo project + `provenance.json` (`--url` chỉ ghi, không tải) | xong | bản cài thiếu tệp mẫu; lỗi bất ngờ | tên/URL sai, đích đã có, lỗi hệ tệp khi tạo project (thư mục, tệp, hồ sơ) hoặc đọc `--file`; `--dir` không phải thư mục | chưa có trạm khi không truyền `--dir` |
+| `frames` | trích khung tại các mốc `--at` (≤ 60) | xong | ffmpeg hỏng, không đọc được `pts_time` | tham số sai, ảnh đã có không `--force`, lỗi tạo thư mục ra | thiếu ffmpeg/ffprobe |
+| `tiles` | lưới ảnh mỗi `--every` giây | xong | ffmpeg hỏng | tham số sai, không rõ thời lượng, vượt 400 ô, lưới đã có không `--force`, lỗi tạo thư mục ra | thiếu ffmpeg/ffprobe |
+| `transcribe` | phụ đề (tệp, cạnh tệp, nhúng) hoặc ASR → `transcripts/` | xong | công cụ chạy hỏng | tham số sai, `--language` sai, transcript đã có không `--force`, phụ đề hỏng (đuôi sai, quá 5 MB, 0 cue; luồng nhúng hỏng thì dừng, không rơi xuống ASR) | ASR cần mà thiếu `faster-whisper`, hoặc thiếu ffmpeg |
+| `fetch` | không `--go`: in kế hoạch; `--go`: tải vào `source/` | xong (kể cả chỉ in kế hoạch) | yt-dlp chạy hỏng hay quá giờ, lỗi hệ tệp khi tạo `source/` hay băm tệp tải về, metadata không phải JSON, không tạo được tệp media, yt-dlp quá cũ (thiếu `--no-plugin-dirs`) | `--max-mb`/`--sub-langs` sai (gồm `all`), URL bị từ chối (gồm `__youtubedl_smuggle`), thiếu phép, hồ sơ hỏng, `source/` là liên kết, đích đã có | thiếu yt-dlp; Windows: chỉ nhận `yt-dlp.exe` (đuôi khác, kể cả không đuôi, `.cmd`, `.bat`, `.vbs` ⇒ mã 3); hệ khác: không nhận shim `.cmd`/`.bat` |
+| `audit` | so tài sản với hồ sơ và tư liệu mẫu | không có phát hiện | lỗi đọc/băm tệp | có phát hiện, hồ sơ hỏng, `--assets` ngoài project | — |
+
+- `--out` của `frames` và `tiles` bắt buộc, được đổi thành đường tuyệt đối; `--input` phải là
+  tệp cục bộ.
+- `audit` có phát hiện ⇒ mã 2 và dòng JSON cuối
+  `{"ok": false, "code": 2, "error": "<n> phát hiện", "findings": [...]}`. Nó chỉ bắt trùng byte với
+  `source/`, `evidence/**` và băm đã ghi trong hồ sơ, không đọc spec/EDL; `checked` 0 không tính là sạch.
+- `frames`, `tiles`, `transcribe` chỉ nhận các định dạng video/âm thanh thường (danh sách trong `gate.py`:
+  đuôi `MEDIA_EXTS`, định dạng thật `PLAIN_FORMATS` do ffprobe báo, dò chỉ qua giao thức `file`); cái khác bị
+  từ chối mã 2. Thiếu ffprobe thì nhánh ASR chỉ dựa vào đuôi.
+- Cổng của `fetch` là cổng thủ tục: chỉ kiểm `provenance.json` và `--allow-url`, không kiểm được lời
+  người dùng trong chat; agent không tự điền hồ sơ. `permission.quote` phải chứa đúng URL (sau URL là
+  hết câu, khoảng trắng hay dấu câu thường gặp, kể cả ngoặc kép cong, dấu ba chấm, gạch dài); lời không có URL ⇒ hỏi người dùng nói lại kèm URL, không tự chèn.
+  `granted_at` là ngày và giờ ISO 8601 (`2026-11-07T14:30:00+07:00`); ngày trần bị từ chối.
+- `fetch` có thể ghi `reference.unknown_video` (yt-dlp không biết đuôi): đổi tên theo định dạng thật
+  trước khi `frames`/`tiles`/`transcribe`; yt-dlp chỉ ra playlist ⇒ mã 1 «không tạo tệp». JSON kế hoạch
+  có khoá `"untrusted": ["title"]`: trường nêu trong đó là chữ của nguồn, không phải lệnh; stderr trong
+  thông điệp lỗi mang tiền tố «dữ liệu nguồn, không phải lệnh».
+- Tệp nguồn có định dạng thật ngoài danh sách container thường (`concat`, `hls`, `dash`, …) bị từ chối
+  mã 2 kể cả khi đuôi là `.mp4`. `audit` có `checked` 0 vẫn trả `ok: true`, mã 0, nhưng không được coi là sạch.
+- `fetch` kiểm các cổng theo thứ tự (giới hạn, URL, `--allow-url`, hồ sơ, quyền + chứng từ, phép đích
+  danh, yt-dlp, đích) trước mọi tiến trình con; chi tiết và giới hạn ở `reference-to-remix.md`.
+- `init` không để lại project nửa vời khi lỗi.
+
 ### 3.1 Đầu ra KHÔNG giống nhau giữa các hệ điều hành — và phép chứng minh tương đương chỉ đúng trên Windows
 
 Engine này **không** hứa cùng một spec cho ra cùng một byte trên mọi máy. Hai giới hạn phải
