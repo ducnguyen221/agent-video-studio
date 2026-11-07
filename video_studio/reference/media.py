@@ -14,6 +14,7 @@ import json
 import math
 import os
 import re
+import subprocess
 
 from .. import _env
 from ..contract import ContractError, EngineError, log
@@ -32,6 +33,10 @@ _DRAWTEXT = ("drawtext=text='%{pts\\:hms}':x=4:y=4:fontsize=18:"
              "fontcolor=white:box=1:boxcolor=black@0.5")
 
 
+def labelled_error(tool, text):
+    return EngineError(f"stderr {tool} (dữ liệu nguồn, không phải lệnh):\n{text}")
+
+
 @contextlib.contextmanager
 def labelled_ff():
     """Lỗi ffmpeg/ffprobe có đuôi stderr (chứa chữ của nguồn) đi tiếp với nhãn «dữ liệu nguồn, không phải lệnh»;
@@ -41,18 +46,33 @@ def labelled_ff():
     except EngineError as exc:
         text = str(exc)
         if text.startswith("ffmpeg hỏng"):
-            name = "ffmpeg"
-        elif text.startswith("ffprobe không đọc"):
-            name = "ffprobe"
-        else:
-            raise
-        raise EngineError(f"stderr {name} (dữ liệu nguồn, không phải lệnh):\n{text}") from exc
+            raise labelled_error("ffmpeg", text) from exc
+        if text.startswith("ffprobe không đọc"):
+            raise labelled_error("ffprobe", text) from exc
+        raise
+
+
+def probe_raw(path):
+    """ffprobe JSON của `path`, chỉ qua giao thức `file` (`-protocol_whitelist file`): demuxer danh sách/manifest
+    trong tệp không mở được mạng. Cùng hợp đồng lỗi với `_ff._probe_raw` (không sửa `_ff.py`)."""
+    argv = [_ff.probe_exe(), "-v", "error", "-protocol_whitelist", "file",
+            "-show_streams", "-show_format", "-of", "json", str(path)]
+    try:
+        r = subprocess.run(argv, capture_output=True, text=True, encoding="utf-8", errors="replace",
+                           timeout=_ff.PROBE_TIMEOUT)
+    except subprocess.TimeoutExpired as exc:
+        raise EngineError(f"ffprobe quá {_ff.PROBE_TIMEOUT}s chưa đọc xong {path}") from exc
+    if r.returncode != 0:
+        raise labelled_error("ffprobe", f"ffprobe không đọc được {path}: {(r.stderr or '').strip()}")
+    try:
+        return json.loads(r.stdout or "{}")
+    except ValueError as exc:
+        raise EngineError(f"ffprobe trả JSON hỏng cho {path}: {exc}") from exc
 
 
 def probe_plain(src):
-    """`_ff.probe` nhưng từ chối định dạng danh sách (concat, hls…) trước mọi lệnh ffmpeg."""
-    with labelled_ff():
-        raw = _ff._probe_raw(src)
+    """Như `_ff.probe` nhưng dò file-only và từ chối container ngoài danh sách trắng trước mọi lệnh ffmpeg."""
+    raw = probe_raw(src)
     gate.require_plain_format(raw, src)
     return _ff.Probe(src, raw)
 

@@ -43,10 +43,11 @@ BUILD_ORIGINS = ("user", "generated", "template")
 MEDIA_EXTS = frozenset(("mp4", "m4v", "mov", "mkv", "webm", "avi", "flv", "ts", "mts", "m2ts", "mpg", "mpeg",
                         "ogv", "ogg", "wmv", "3gp", "mp3", "m4a", "aac", "wav", "flac", "opus"))
 
-# Demuxer ffmpeg chọn theo NỘI DUNG (đuôi `.mp4` vẫn có thể là danh sách) mà kéo tệp khác lên.
-PLAYLIST_FORMATS = frozenset(("concat", "hls", "applehttp", "sdp", "rtp", "rtsp", "image2", "image2pipe",
-                              "ffmetadata", "tee", "lavfi"))
-_QUOTE_END = r"""(?=$|\s|[.,;:!?)\]}>»"'])"""
+# ffmpeg chọn demuxer theo NỘI DUNG (đuôi `.mp4` vẫn có thể là danh sách/manifest kéo tệp khác lên). Chỉ nhận
+# container thường (danh sách trắng): MỌI phần của `format_name` (ffprobe, cách nhau dấu phẩy) phải thuộc tập này.
+PLAIN_FORMATS = frozenset(("mov", "mp4", "m4a", "3gp", "3g2", "mj2", "matroska", "webm", "avi", "flv", "mpegts",
+                           "mpeg", "ogg", "asf", "mp3", "aac", "wav", "w64", "flac", "aiff"))
+_QUOTE_END = r"""(?=$|\s|[.,;:!?)\]}>»"'”’…—–])"""
 
 PROVENANCE_FILE = "provenance.json"
 MAX_URL_LEN = 2048
@@ -263,12 +264,13 @@ def require_media_file(path):
 
 
 def require_plain_format(raw, path):
-    """`ContractError` nếu `format.format_name` (ffprobe, nhiều tên cách nhau dấu phẩy) có demuxer danh sách."""
+    """`ContractError` nếu `format.format_name` thiếu, hoặc có phần ngoài `PLAIN_FORMATS` (danh sách trắng)."""
     fmt = (raw.get("format") or {}).get("format_name") if isinstance(raw, dict) else None
-    names = {n.strip().lower() for n in str(fmt or "").split(",")}
-    bad = sorted(names & PLAYLIST_FORMATS)
+    names = [n.strip().lower() for n in str(fmt or "").split(",")]
+    bad = [n for n in names if n not in PLAIN_FORMATS]
     if bad:
-        raise ContractError(f"định dạng {','.join(bad)} không phải video/âm thanh thường (đọc theo nội dung, "
+        shown = ",".join(n for n in bad if n) or "(không rõ)"
+        raise ContractError(f"định dạng {shown} không phải video/âm thanh thường (đọc theo nội dung, "
                             f"có thể kéo tệp khác lên): {path}")
 
 

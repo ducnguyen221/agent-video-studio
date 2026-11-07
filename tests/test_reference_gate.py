@@ -759,7 +759,7 @@ def test_fetch_gate_quote_url_must_end_at_a_boundary(quote):
         gate.require_fetch_allowed(prov, URL, URL)
 
 
-@pytest.mark.parametrize("tail", ["", " nhé", ".", ",", ";", ":", "!", "?", ")", "]", "}", ">", "»", '"', "'", "\n"])
+@pytest.mark.parametrize("tail", ["", " nhé", ".", ",", ";", ":", "!", "?", ")", "]", "}", ">", "»", '"', "'", "\n", "”", "’", "…", "—", "–", "\u00a0", "\u3000"])
 def test_fetch_gate_quote_url_boundary_accepts_end_space_or_punctuation(tail):
     prov = _ok_prov()
     prov["permission"]["quote"] = f"tải {URL}{tail}"
@@ -770,3 +770,10 @@ def test_fetch_gate_quote_second_occurrence_may_satisfy_boundary():
     prov = _ok_prov()
     prov["permission"]["quote"] = f"{URL}abc rồi {URL}."
     assert gate.require_fetch_allowed(prov, URL, URL) is None
+
+
+def test_fetch_gate_quote_with_curly_quotes_and_dashes_around_url():
+    for quote in (f"tải “{URL}”", f"tải {URL}…", f"{URL}—ok", f"{URL}–ok", f"‘{URL}’"):
+        prov = _ok_prov()
+        prov["permission"]["quote"] = quote
+        assert gate.require_fetch_allowed(prov, URL, URL) is None, quote

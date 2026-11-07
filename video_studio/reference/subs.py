@@ -16,7 +16,7 @@ import tempfile
 from .. import _env
 from ..contract import ContractError, EngineError, StationMissing, log
 from ..edit import _ff
-from . import gate
+from . import gate, media
 from .media import labelled_ff
 
 MAX_SUBS_BYTES = 5 * 1024 * 1024
@@ -166,8 +166,7 @@ def _extract_embedded(video, dest_dir, language=None):
     if not _env.ffprobe_exe():
         return None
     video = os.path.abspath(video)
-    with labelled_ff():
-        raw = _ff._probe_raw(video)
+    raw = media.probe_raw(video)
     gate.require_plain_format(raw, video)
     picked = _pick_text_stream(raw, language)
     if picked is None:
