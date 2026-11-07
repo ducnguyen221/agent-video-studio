@@ -28,7 +28,7 @@ Command Line Tools), không đủ.
 (`~/.cache/hyperframes/fonts/`) — máy đã render bằng HyperFrames một lần thì thường có sẵn,
 không phải cài lại.
 
-Không nằm trên PATH thì đặt `NODE_DIR` / `FFMPEG_DIR` trỏ thư mục chứa chúng; font khác thì đặt
+Không nằm trên PATH thì đặt `NODE_DIR` / `FFMPEG_DIR` (và `YTDLP_DIR` cho yt-dlp, chỉ `reference fetch` cần) trỏ thư mục chứa chúng; font khác thì đặt
 `VIDEO_FONT`.
 
 Chromium headless của HyperFrames **tự tải về cache người dùng** ở lần chạy đầu
