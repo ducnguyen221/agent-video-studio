@@ -33,8 +33,9 @@ MAX_MB_RANGE = (1, 4096)
 STDERR_TAIL = 15
 REFERENCE_STEM = "reference."
 _SUB_LANGS = re.compile(r"[A-Za-z0-9-]+(,[A-Za-z0-9-]+){0,4}")
-_MEDIA = re.compile(r"reference\.[A-Za-z0-9]+")           # `-o reference.%(ext)s`: đúng một dấu chấm
-_SUBTITLE = re.compile(r"reference\.[^.]+\.[A-Za-z0-9]+")    # reference.<mã>.<đuôi phụ đề>
+_MEDIA = re.compile(r"reference\.[A-Za-z0-9_]+")           # `-o reference.%(ext)s`: đúng một dấu chấm
+_SUBTITLE = re.compile(r"reference\.([A-Za-z0-9-]+)\.([A-Za-z0-9]+)")   # reference.<mã>.<đuôi phụ đề>
+_SUBTITLE_EXTS = frozenset(("vtt", "srt", "ttml", "ass", "ssa", "json3", "srv1", "srv2", "srv3", "lrc", "sbv"))
 _PARTIAL = (".part", ".ytdl", ".tmp", ".temp")
 _BATCH_SHIMS = (".bat", ".cmd")
 
@@ -88,15 +89,27 @@ def _source_dir(project_dir):
     return os.path.join(project_dir, "source")
 
 
+def exe_refused(exe, nt=None):
+    """Lý do từ chối `exe` (chuỗi) hoặc `None`. Xét đuôi trên đường đã chuẩn hoá (`abspath` bỏ khoảng trắng và
+    dấu chấm cuối mà Windows cũng bỏ). Windows chỉ nhận `.exe`; nơi khác chỉ chặn shim `.cmd`/`.bat`."""
+    nt = os.name == "nt" if nt is None else nt
+    suffix = os.path.splitext(os.path.abspath(exe))[1].lower()
+    if nt and suffix != ".exe":
+        return "chỉ nhận yt-dlp dạng .exe (không nhận .cmd/.bat/.vbs… qua cmd.exe, URL có `& | ^ %` thành lệnh)"
+    if suffix in _BATCH_SHIMS:
+        return "chỉ nhận yt-dlp dạng .exe hoặc tệp chạy thẳng, không nhận shim .cmd/.bat"
+    return None
+
+
 def _preflight(project_dir):
     """Cổng 6 (có yt-dlp, mã 3) và cổng 7 (chưa có `source/reference.*`, mã 2). Trả `(exe, source_dir)`."""
     exe = _env.ytdlp_exe()
     if exe is None:
         raise StationMissing("không tìm thấy yt-dlp: cài yt-dlp rồi chạy `video-studio doctor`, "
                              "hoặc đặt YTDLP_DIR (agent không tự cài)")
-    if os.path.splitext(exe)[1].lower() in _BATCH_SHIMS:   # .cmd/.bat chạy qua cmd.exe: `& | ^ %` trong URL thành lệnh
-        raise StationMissing("chỉ nhận yt-dlp dạng .exe hoặc tệp chạy thẳng, không nhận shim .cmd/.bat "
-                             f"({exe}); đặt YTDLP_DIR tới bản yt-dlp.exe")
+    why = exe_refused(exe)
+    if why:
+        raise StationMissing(f"{why} ({exe}); đặt YTDLP_DIR tới bản yt-dlp.exe")
     src = _source_dir(project_dir)
     if gate._is_link(src):
         raise ContractError(f"{src} là liên kết — từ chối ghi qua liên kết")
@@ -136,7 +149,7 @@ def _mb(value):
 def plan_fetch(url, project_dir, run=None):
     """Hỏi metadata (không tải) và trả kế hoạch; không ghi gì vào project."""
     run = run or subprocess.run
-    url, _ = authorize(url, url, project_dir)      # hàm công khai tự chạy cổng 1–5, không tin bên gọi
+    url, _ = authorize(url, url, project_dir)      # hàm công khai tự chạy cổng 1, 3–5 (cổng 2 chỉ ở CLI)
     exe, src = _preflight(project_dir)
     argv = ytdlp_argv(exe, url, src, plan=True, max_mb=MAX_MB_RANGE[0], sub_langs="en")
     done = _run(run, argv, PLAN_TIMEOUT, "kế hoạch")
@@ -164,15 +177,20 @@ def _tool_version(run, exe):
     return (done.stdout or "").strip() or None
 
 
-def _outputs(src):
-    """(media, [phụ đề]) là tệp yt-dlp vừa tạo theo mẫu `reference.%(ext)s`; tệp dở dang không tính."""
+def _outputs(src, sub_langs):
+    """(media, [phụ đề]) là tệp yt-dlp vừa tạo theo mẫu `reference.%(ext)s`; tệp dở dang không tính.
+
+    Phụ đề = `reference.<mã thuộc --sub-langs>.<đuôi phụ đề>`; tệp trung gian (`reference.f140.m4a`) không tính.
+    """
+    wanted = {code.lower() for code in sub_langs.split(",")}
     media, subs = [], []
     for name in sorted(os.listdir(src)):
         if not os.path.isfile(os.path.join(src, name)) or name.lower().endswith(_PARTIAL):
             continue
+        m = _SUBTITLE.fullmatch(name)
         if _MEDIA.fullmatch(name):
             media.append(name)
-        elif _SUBTITLE.fullmatch(name):
+        elif m and m.group(1).lower() in wanted and m.group(2).lower() in _SUBTITLE_EXTS:
             subs.append(name)
     return media, subs
 
@@ -181,12 +199,12 @@ def do_fetch(url, project_dir, max_mb, sub_langs, run=None):
     """Tải thật vào `<project>/source/reference.*` và ghi khoá `fetch` của `provenance.json`."""
     run = run or subprocess.run
     check_limits(max_mb, sub_langs)
-    url, _ = authorize(url, url, project_dir)      # hàm công khai tự chạy cổng 1–5, không tin bên gọi
+    url, _ = authorize(url, url, project_dir)      # hàm công khai tự chạy cổng 1, 3–5 (cổng 2 chỉ ở CLI)
     exe, src = _preflight(project_dir)
     os.makedirs(src, exist_ok=True)
     _run(run, ytdlp_argv(exe, url, src, plan=False, max_mb=max_mb, sub_langs=sub_langs),
          DOWNLOAD_TIMEOUT, "tải")
-    media, subs = _outputs(src)
+    media, subs = _outputs(src, sub_langs)
     if not media:
         raise EngineError("yt-dlp không tạo tệp video trong source/ (quá --max-mb?)")
     path = os.path.join(src, media[0])

@@ -47,7 +47,7 @@ def project(tmp_path):
 
 @pytest.fixture
 def has_ytdlp(monkeypatch):
-    monkeypatch.setattr(_env, "ytdlp_exe", lambda: "yt-dlp")
+    monkeypatch.setattr(_env, "ytdlp_exe", lambda: "yt-dlp.exe")
 
 
 @pytest.fixture
@@ -268,7 +268,7 @@ def test_title_with_instructions_is_stored_as_data(project, has_ytdlp):
     assert plan["plan"]["title"] == evil
     go_run = FakeRun()
     fetch.do_fetch(URL, str(project), 500, "vi,en", run=go_run)
-    assert go_run.download_calls() == [fetch.ytdlp_argv("yt-dlp", URL, str(project / "source"),
+    assert go_run.download_calls() == [fetch.ytdlp_argv("yt-dlp.exe", URL, str(project / "source"),
                                                         plan=False, max_mb=500, sub_langs="vi,en")]
     assert all("--exec" not in c for c in plan_run.calls + go_run.calls)
 
@@ -443,3 +443,47 @@ def test_relative_project_becomes_absolute(project, capsys, has_ytdlp, monkeypat
     monkeypatch.setattr(subprocess, "run", FakeRun())
     rc, payload, _ = cmd(["fetch", "--url", URL, "--allow-url", URL, "--project", "demo", "--json"], capsys)
     assert rc == 0 and payload["plan"]["dest_dir"] == str(project / "source")
+
+
+# ---------------------------------------------------------------- vòng sửa 2
+
+@pytest.mark.parametrize("exe", ["C:\\tools\\yt-dlp.cmd ", "C:\\tools\\yt-dlp.cmd.", "C:\\tools\\yt-dlp.vbs",
+                                 "C:\\tools\\yt-dlp.CMD", "C:\\tools\\yt-dlp", "C:\\tools\\yt-dlp.exe.bat"])
+def test_windows_accepts_only_exe(exe):
+    assert fetch.exe_refused(exe, nt=True)
+
+
+@pytest.mark.parametrize("exe", ["C:\\tools\\yt-dlp.EXE", "C:\\tools\\yt-dlp.exe"])
+def test_windows_exe_passes(exe):
+    assert not fetch.exe_refused(exe, nt=True)
+
+
+@pytest.mark.parametrize("exe,refused", [("/usr/bin/yt-dlp", False), ("/usr/bin/yt-dlp.cmd", True),
+                                         ("/x/yt-dlp.BAT", True), ("/x/yt-dlp.py", False)])
+def test_posix_refuses_only_batch_shims(exe, refused):
+    assert bool(fetch.exe_refused(exe, nt=False)) is refused
+
+
+def test_odd_suffix_exe_is_code_3_through_cli(project, capsys, no_subprocess, monkeypatch):
+    monkeypatch.setattr(_env, "ytdlp_exe", lambda: "C:\\tools\\yt-dlp.cmd ")
+    rc, payload, _ = cmd(["fetch", "--url", URL, "--allow-url", URL, "--project", str(project), "--json"], capsys)
+    assert rc == 3 and ".exe" in payload["error"]
+
+
+def test_intermediate_files_are_not_subtitles(project, has_ytdlp):
+    files = ("reference.mp4", "reference.f140.m4a", "reference.temp.mp4")
+    fetch.do_fetch(URL, str(project), 500, "vi", run=FakeRun(files=files))
+    f = gate.load_provenance(str(project))["fetch"]
+    assert f["file"] == "source/reference.mp4" and f["subtitles"] == []
+
+
+def test_subtitles_need_requested_code_and_subtitle_suffix(project, has_ytdlp):
+    files = ("reference.mp4", "reference.vi.srt", "reference.EN.vtt", "reference.fr.vtt", "reference.vi.mp4")
+    fetch.do_fetch(URL, str(project), 500, "vi,en", run=FakeRun(files=files))
+    f = gate.load_provenance(str(project))["fetch"]
+    assert f["subtitles"] == ["source/reference.EN.vtt", "source/reference.vi.srt"]
+
+
+def test_media_suffix_may_have_underscore(project, has_ytdlp):
+    fetch.do_fetch(URL, str(project), 500, "vi", run=FakeRun(files=("reference.unknown_video",)))
+    assert gate.load_provenance(str(project))["fetch"]["file"] == "source/reference.unknown_video"
