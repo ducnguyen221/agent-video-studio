@@ -168,6 +168,31 @@ def test_skill_frontmatter_is_english_body_is_vietnamese():
         assert len(viet.findall(body)) > 50, f"{sk}: thân bài phải là tiếng Việt"
 
 
+def test_skill_links_stay_inside_the_skills_tree():
+    """Link tương đối trong SKILL.md chỉ trỏ vào cây `skills/` (chính skill hoặc skill anh em).
+    Harness chỉ nhận thư mục skill (adapter Antigravity của OpcOS từ chối «Unprojected SKILL.md link»; junction phẳng
+    `~/.gemini/*/skills/<tên>` làm `../../docs` trỏ ra ngoài), nên link ra gốc repo là link chết."""
+    link = re.compile(r"\]\((?P<url>[^)\s]+)\)")
+    bad = []
+    home = (ROOT / "skills").resolve()
+    for sk in (ROOT / "skills").rglob("SKILL.md"):
+        fence = False
+        for n, line in enumerate(sk.read_text(encoding="utf-8").splitlines(), 1):
+            if re.match(r"^\s*(```|~~~)", line):
+                fence = not fence
+                continue
+            if fence:
+                continue
+            for m in link.finditer(line):
+                url = m.group("url")
+                if re.match(r"^(?:[A-Za-z][A-Za-z0-9+.-]*:|#|/|<)", url):
+                    continue
+                target = (sk.parent / url.split("#", 1)[0]).resolve()
+                if home not in target.parents:
+                    bad.append(f"{sk.relative_to(ROOT)}:{n}: {url}")
+    assert not bad, "link ra ngoài cây skills/:\n" + "\n".join(bad)
+
+
 def test_station_contract_version_is_semver():
     assert re.fullmatch(r"\d+\.\d+\.\d+", API_VERSION)
 
