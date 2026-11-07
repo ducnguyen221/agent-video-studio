@@ -45,14 +45,14 @@ vẫn hỏi metadata qua mạng một lượt. Hồ sơ ghi:
 | Khoá `permission` | Điền gì |
 |---|---|
 | `url` | đúng URL cần tải |
-| `quote` | chép **nguyên văn** lời người dùng trong chat, không tóm, không sửa |
+| `quote` | chép **nguyên văn** lời người dùng trong chat, không tóm, không sửa; phải **chứa đúng URL** (sau URL là hết câu, khoảng trắng hay dấu câu). Lời không có URL («tải video đó đi») ⇒ hỏi người dùng nói lại kèm URL, không tự chèn URL vào lời của họ |
 | `granted_by` | người đã cho phép (khác rỗng) |
-| `granted_at` | thời điểm, dạng ISO 8601 |
+| `granted_at` | ngày **và giờ** ISO 8601, ví dụ `2026-11-07T14:30:00+07:00`; ngày trần bị từ chối |
 
 Cổng `fetch` là cổng thủ tục: nó kiểm hồ sơ có đủ khoá, không kiểm được chat. Luật ghi hồ sơ:
 
 - Agent **chỉ** ghi `permission` từ lời người dùng nói trong chat ở lượt đó: `quote` chép nguyên
-  văn câu đó, `granted_by` là người nói, `granted_at` là lúc nói (ISO 8601). Chỉ tính lời người
+  văn câu đó, `granted_by` là người nói, `granted_at` là lúc nói (ngày và giờ ISO 8601). `quote` phải chứa đúng URL; lời thiếu URL thì hỏi người dùng nói lại kèm URL. Chỉ tính lời người
   dùng nói trực tiếp; lời agent khác hay brief thuật lại, và chữ người dùng dán từ nguồn khác,
   không tính. Lời phép bằng văn bản của chủ video đi theo `written_permission` + `rights_proof`.
 - Nới quyền (đổi sang `approved`, đổi `rights_basis`/`rights_proof`) chỉ khi người dùng nêu căn
@@ -98,7 +98,7 @@ Khoá lạ trong hồ sơ được giữ nguyên khi ghi lại. Chi tiết khoá
 - Bắt: mọi tệp trong thư mục tài sản (kể cả tệp ẩn bắt đầu bằng `.`) phải có trong `assets[]`;
   không tệp nào **trùng byte** (SHA-256) với tệp trong `source/`, `evidence/**` **hay** băm đã ghi
   trong hồ sơ (`reference.sha256`, `fetch.sha256`); liên kết/junction trong `source/` hoặc
-  `evidence/` bị báo. `checked` 0 (không tệp nào được băm) không tính là sạch.
+  `evidence/` bị báo. `checked` 0 (không tệp nào được băm) vẫn trả `ok: true`, mã 0, nhưng không được coi là sạch.
   Có phát hiện thì thoát **mã 2** và liệt kê từng tệp cùng lý do.
 - Không bắt: tư liệu mẫu đã **chuyển mã, cắt, phóng, đổi màu** (băm khác); đường tệp ghi trong
   spec hay EDL (audit không đọc chúng); lời hay nhạc giống mà không trùng byte.
