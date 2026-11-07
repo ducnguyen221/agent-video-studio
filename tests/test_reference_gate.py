@@ -440,3 +440,148 @@ def test_audit_custom_assets_dir(tmp_path):
 def test_audit_requires_provenance(tmp_path):
     with pytest.raises(ContractError, match="reference init"):
         gate.audit_assets(str(tmp_path))
+
+
+# ------------------------------------------------- vòng sửa 1: lệch bộ phân tích URL
+
+BACKSLASH = chr(92)
+
+
+@pytest.mark.parametrize("raw", [
+    "http://169.254.169.%32%35%34/latest", "http://127.0.0.%31/", "http://loc%61lhost/",
+    "http://10.0.0.%35/x", "http://127.0.0.1%2e/", "http://localhost%2e/",
+    "http://%31%32%37.0.0.1/", "http://my_host.example.com/", "http://exa$mple.com/",
+])
+def test_check_url_refuses_percent_encoded_or_non_ldh_host(raw):
+    with pytest.raises(ContractError, match="URL không hợp lệ"):
+        gate.check_url(raw)
+
+
+@pytest.mark.parametrize("raw", [
+    "http://127.0.0.1" + BACKSLASH + ".example.com/watch",
+    "http://169.254.169.254" + BACKSLASH + ".example.com/latest",
+    "http://127.0.0.1" + BACKSLASH + "/",
+    "https://example.com/a" + BACKSLASH + "b",
+    "https://example.com/?q=" + BACKSLASH,
+])
+def test_check_url_refuses_backslash_anywhere(raw):
+    with pytest.raises(ContractError, match="URL không hợp lệ"):
+        gate.check_url(raw)
+
+
+@pytest.mark.parametrize("raw", [
+    "http://[fe80::1%25eth0]/", "http://192.0.0.8/", "http://198.18.0.1/", "http://[64:ff9b::7f00:1]/",
+    "http://[2001:db8::1]/", "http://[::ffff:100.64.0.1]/",
+])
+def test_check_url_refuses_non_global_ip_literals(raw):
+    with pytest.raises(ContractError):
+        gate.check_url(raw)
+
+
+@pytest.mark.parametrize("raw", [
+    "https://8.8.8.8/", "https://[::ffff:8.8.8.8]/", "https://[2606:4700:4700::1111]/x",
+    "https://xn--bcher-kva.example/", "https://a-b.example.com./x",
+])
+def test_check_url_still_accepts_public_ip_literals_and_ldh_hosts(raw):
+    assert gate.check_url(raw) == raw
+
+
+@pytest.mark.parametrize("stamp", ["2026-11-07T10:00:00Z", "2026-11-07T10:00:00z", "2026-11-07T10:00:00+07:00", "2026-11-07"])
+def test_fetch_gate_accepts_iso_granted_at_incl_z_suffix(stamp):
+    prov = _ok_prov()
+    prov["permission"]["granted_at"] = stamp
+    assert gate.require_fetch_allowed(prov, URL, URL) is None
+
+
+@pytest.mark.parametrize("stamp", ["", "Z", "2026-13-45T00:00:00Z", 20261107])
+def test_fetch_gate_refuses_bad_granted_at(stamp):
+    prov = _ok_prov()
+    prov["permission"]["granted_at"] = stamp
+    with pytest.raises(ContractError, match="permission.granted_at"):
+        gate.require_fetch_allowed(prov, URL, URL)
+
+
+# ------------------------------------------------- vòng sửa 1: liên kết, khai trùng, ngoài project
+
+def _make_dir_link(link, target):
+    """Liên kết thư mục: junction trên Windows (không cần admin), symlink nơi khác; skip nếu không tạo được."""
+    try:
+        if os.name == "nt":
+            import _winapi
+            _winapi.CreateJunction(str(target), str(link))
+        else:
+            os.symlink(str(target), str(link), target_is_directory=True)
+    except (OSError, NotImplementedError, ImportError, AttributeError) as exc:
+        pytest.skip(f"không tạo được liên kết thư mục: {exc}")
+
+
+def test_audit_flags_directory_link_inside_assets(tmp_path):
+    proj = _project(tmp_path)
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    (outside / "secret.png").write_bytes(b"s")
+    os.makedirs(os.path.join(proj, "assets"))
+    _make_dir_link(os.path.join(proj, "assets", "jump"), outside)
+    out = gate.audit_assets(proj)
+    assert out["ok"] is False
+    assert {"path": "assets/jump", "problem": "liên kết mềm không được kiểm"} in out["findings"]
+    assert not any("secret.png" in f["path"] for f in out["findings"])  # không đi vào
+
+
+def test_audit_flags_assets_root_that_is_a_link(tmp_path):
+    proj = _project(tmp_path)
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    (outside / "a.png").write_bytes(b"a")
+    _make_dir_link(os.path.join(proj, "assets"), outside)
+    out = gate.audit_assets(proj)
+    assert out["ok"] is False
+    assert out["findings"] == [{"path": "assets", "problem": "liên kết mềm không được kiểm"}]
+
+
+@pytest.mark.parametrize("root", ["source", "evidence"])
+def test_audit_flags_reference_root_that_is_a_link_without_hashing_inside(tmp_path, root):
+    proj = _project(tmp_path)
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    payload = b"mau nam ngoai"
+    (outside / "big.mp4").write_bytes(payload)
+    _make_dir_link(os.path.join(proj, root), outside)
+    _write(proj, "assets/copy.mp4", payload)
+    _declare(proj, _asset(path="assets/copy.mp4"))
+    out = gate.audit_assets(proj)
+    assert out["ok"] is False
+    assert {"path": root, "problem": "liên kết mềm không được kiểm"} in out["findings"]
+    assert not any("trùng byte" in f["problem"] for f in out["findings"])  # không băm vào trong
+
+
+def test_audit_flags_contradicting_duplicate_declarations(tmp_path):
+    proj = _project(tmp_path)
+    _write(proj, "assets/a.png", b"a")
+    _declare(proj, _asset(path="assets/a.png", origin="user"), _asset(path="assets/a.png", origin="reference"))
+    problems = [f["problem"] for f in gate.audit_assets(proj)["findings"]]
+    assert "khai trùng mâu thuẫn" in problems
+    assert "origin reference không được dùng để dựng" in problems  # mục sau không bị che
+    _declare(proj, _asset(path="assets/a.png", owner="me"), _asset(path="assets/./a.png", owner="other"))
+    assert "khai trùng mâu thuẫn" in [f["problem"] for f in gate.audit_assets(proj)["findings"]]
+
+
+def test_audit_refuses_assets_dir_outside_project(tmp_path):
+    proj = _project(tmp_path)
+    outside = tmp_path / "elsewhere"
+    outside.mkdir()
+    with pytest.raises(ContractError, match="nằm trong project"):
+        gate.audit_assets(proj, str(outside))
+    with pytest.raises(ContractError, match="nằm trong project"):
+        gate.audit_assets(proj, os.path.join(proj, "..", "elsewhere"))
+
+
+def test_audit_different_drive_is_a_contract_error(tmp_path, monkeypatch):
+    proj = _project(tmp_path)
+    os.makedirs(os.path.join(proj, "assets"))
+
+    def other_drive(*a, **k):
+        raise ValueError("path is on mount 'D:', start on mount 'C:'")
+    monkeypatch.setattr(os.path, "relpath", other_drive)
+    with pytest.raises(ContractError, match="nằm trong project"):
+        gate.audit_assets(proj)

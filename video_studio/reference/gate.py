@@ -42,6 +42,7 @@ PROVENANCE_FILE = "provenance.json"
 MAX_URL_LEN = 2048
 _LAST_LABEL_NUMERIC = re.compile(r"0x[0-9a-f]*|[0-9]+")
 _CGNAT = ipaddress.ip_network("100.64.0.0/10")
+_LDH_HOST = re.compile(r"[a-z0-9-]+(\.[a-z0-9-]+)*\.?")
 _INTENTS = ("public", "private")
 
 
@@ -59,7 +60,7 @@ def _ip_is_internal(ip):
     if isinstance(ip, ipaddress.IPv6Address) and ip.ipv4_mapped is not None:
         ip = ip.ipv4_mapped
     return (ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved
-            or ip.is_multicast or ip.is_unspecified
+            or ip.is_multicast or ip.is_unspecified or not ip.is_global
             or (isinstance(ip, ipaddress.IPv4Address) and ip in _CGNAT))
 
 
@@ -77,6 +78,8 @@ def check_url(url):
         raise _invalid(f"dài hơn {MAX_URL_LEN} ký tự")
     if any(ch.isspace() or ord(ch) < 32 or ord(ch) == 127 for ch in url):
         raise _invalid("có khoảng trắng hoặc ký tự điều khiển")
+    if "\\" in url:  # bộ phân tích WHATWG coi `\` như `/`: cổng và bên tải sẽ thấy host khác nhau
+        raise _invalid("có dấu gạch ngược")
     try:
         parts = urlsplit(url)
         host = parts.hostname
@@ -104,6 +107,8 @@ def check_url(url):
     except UnicodeError:
         raise _invalid("host không chuẩn hoá được (IDNA)") from None
     host = host.lower()
+    if not _LDH_HOST.fullmatch(host):  # chặn `%xx`, `_`, ký tự lạ mà bộ phân tích khác giải mã khác
+        raise _invalid("host chứa ký tự ngoài chữ, số, gạch nối, dấu chấm")
     if host.endswith("."):
         host = host[:-1]
     if not host:
@@ -270,8 +275,11 @@ def require_fetch_allowed(prov, url, allow_url):
     for key in ("quote", "granted_by"):
         if _blank(perm.get(key)):
             raise ContractError(f"permission.{key} trống")
+    stamp = perm.get("granted_at")
+    if isinstance(stamp, str) and stamp[-1:] in ("Z", "z"):  # Python 3.10 chưa nhận hậu tố Z
+        stamp = stamp[:-1] + "+00:00"
     try:
-        datetime.datetime.fromisoformat(perm.get("granted_at"))
+        datetime.datetime.fromisoformat(stamp)
     except (TypeError, ValueError):
         raise ContractError("permission.granted_at phải là ngày giờ ISO 8601") from None
 
@@ -282,68 +290,110 @@ def require_fetch_allowed(prov, url, allow_url):
 
 # ------------------------------------------------------------ audit
 
+LINK_PROBLEM = "liên kết mềm không được kiểm"
+
+
+def _is_link(path):
+    """Liên kết mềm hoặc junction Windows (`islink` không thấy junction; `isjunction` có từ Python 3.12)."""
+    return os.path.islink(path) or getattr(os.path, "isjunction", lambda _: False)(path)
+
+
 def _rel(path, base):
     return os.path.relpath(path, base).replace(os.sep, "/")
 
 
 def _walk_files(root):
-    """Mọi mục không phải thư mục dưới `root` (liên kết mềm tới thư mục tính là một mục, không đi theo)."""
+    """Mọi mục không phải thư mục dưới `root`; liên kết/junction tới thư mục tính là một mục và không được đi vào.
+
+    Gốc `root` do bên gọi kiểm trước (`_is_link`).
+    """
     for dirpath, dirnames, filenames in os.walk(root, followlinks=False):
         dirnames.sort()
-        for name in sorted(filenames) + [d for d in dirnames if os.path.islink(os.path.join(dirpath, d))]:
+        links = [d for d in dirnames if _is_link(os.path.join(dirpath, d))]
+        dirnames[:] = [d for d in dirnames if d not in links]
+        for name in sorted(filenames + links):
             yield os.path.join(dirpath, name)
 
 
 def _reference_hashes(project_dir):
-    """sha256 → đường tương đối của tư liệu mẫu: mọi tệp thường trong `source/` và `evidence/**`."""
-    found = {}
+    """(sha256 → đường tương đối, phát hiện) của tư liệu mẫu: tệp thường trong `source/` và `evidence/**`.
+
+    Gốc `source/` hay `evidence/` là liên kết ⇒ phát hiện, không băm vào trong.
+    """
+    found, findings = {}, []
     for sub in ("source", "evidence"):
-        for path in _walk_files(os.path.join(project_dir, sub)):
-            if os.path.islink(path) or not os.path.isfile(path):
+        root = os.path.join(project_dir, sub)
+        if _is_link(root):
+            findings.append({"path": sub, "problem": LINK_PROBLEM})
+            continue
+        for path in _walk_files(root):
+            if _is_link(path) or not os.path.isfile(path):
                 continue
             found.setdefault(sha256_file(path), _rel(path, project_dir))
-    return found
+    return found, findings
+
+
+def _outside_project(project_dir, assets_dir):
+    try:
+        rel = os.path.relpath(os.path.abspath(assets_dir), os.path.abspath(project_dir))
+    except ValueError:  # khác ổ đĩa trên Windows
+        return True
+    return rel == ".." or rel.startswith(".." + os.sep)
 
 
 def audit_assets(project_dir, assets_dir=None):
     """Kiểm thư mục tài sản với hồ sơ: `{"ok", "checked", "findings": [{"path", "problem"}]}`.
 
-    `checked` = số mục có thật trong thư mục tài sản. Thư mục không tồn tại ⇒ ok, 0.
+    `checked` = số mục có thật trong thư mục tài sản. Thư mục không tồn tại ⇒ ok, 0. Gốc thư mục tài sản
+    là liên kết/junction ⇒ phát hiện, không đi vào. `assets_dir` ngoài project ⇒ `ContractError`.
     Không đọc spec/EDL.
     """
     prov = load_provenance(project_dir)
     assets_dir = assets_dir or os.path.join(project_dir, "assets")
+    if _outside_project(project_dir, assets_dir):
+        raise ContractError(f"thư mục tài sản {assets_dir} phải nằm trong project {project_dir}")
+    if _is_link(assets_dir):
+        return {"ok": False, "checked": 0,
+                "findings": [{"path": _rel(assets_dir, project_dir), "problem": LINK_PROBLEM}]}
     if not os.path.isdir(assets_dir):
         return {"ok": True, "checked": 0, "findings": []}
 
     declared = {}
     for a in prov.get("assets", []):
-        declared.setdefault(os.path.normpath(a["path"].replace("\\", "/")).replace(os.sep, "/"), a)
-    ref_hashes = _reference_hashes(project_dir)
-    findings, seen, checked = [], set(), 0
+        declared.setdefault(os.path.normpath(a["path"].replace("\\", "/")).replace(os.sep, "/"), []).append(a)
+    ref_hashes, findings = _reference_hashes(project_dir)
+    seen, checked = set(), 0
+
+    def add(rel, problem):
+        item = {"path": rel, "problem": problem}
+        if item not in findings:
+            findings.append(item)
 
     for path in _walk_files(assets_dir):
         rel = _rel(path, project_dir)
         checked += 1
         seen.add(rel)
-        entry = declared.get(rel)
-        if os.path.islink(path):
-            findings.append({"path": rel, "problem": "liên kết mềm không được kiểm"})
+        entries = declared.get(rel)
+        if _is_link(path):
+            add(rel, LINK_PROBLEM)
             continue
-        if entry is None:
+        if entries is None:
             hidden = os.path.basename(path).startswith(".")
-            findings.append({"path": rel, "problem": "tệp ẩn chưa khai" if hidden else "chưa khai trong assets"})
+            add(rel, "tệp ẩn chưa khai" if hidden else "chưa khai trong assets")
             continue
-        if entry["origin"] not in BUILD_ORIGINS:
-            findings.append({"path": rel, "problem": "origin reference không được dùng để dựng"})
-        if _blank(entry.get("owner")):
-            findings.append({"path": rel, "problem": "owner trống"})
+        if len({(e["origin"], e.get("owner")) for e in entries}) > 1:
+            add(rel, "khai trùng mâu thuẫn")
+        for entry in entries:
+            if entry["origin"] not in BUILD_ORIGINS:
+                add(rel, "origin reference không được dùng để dựng")
+            if _blank(entry.get("owner")):
+                add(rel, "owner trống")
         same = ref_hashes.get(sha256_file(path))
         if same:
-            findings.append({"path": rel, "problem": f"trùng byte với tệp mẫu {same}"})
+            add(rel, f"trùng byte với tệp mẫu {same}")
 
     for rel in declared:
         if rel not in seen:
-            findings.append({"path": rel, "problem": "khai nhưng không có tệp"})
+            add(rel, "khai nhưng không có tệp")
 
     return {"ok": not findings, "checked": checked, "findings": findings}
