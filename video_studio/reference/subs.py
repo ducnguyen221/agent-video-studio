@@ -14,8 +14,10 @@ import re
 import tempfile
 
 from .. import _env
-from ..contract import ContractError, StationMissing, log
+from ..contract import ContractError, EngineError, StationMissing, log
 from ..edit import _ff
+from . import gate
+from .media import labelled_ff
 
 MAX_SUBS_BYTES = 5 * 1024 * 1024
 
@@ -160,19 +162,26 @@ def _pick_text_stream(raw, language):
 def _extract_embedded(video, dest_dir, language=None):
     if not os.path.isfile(video):
         raise ContractError(f"không phải tệp cục bộ: {video}")
+    gate.require_media_file(video)
     if not _env.ffprobe_exe():
         return None
     video = os.path.abspath(video)
-    picked = _pick_text_stream(_ff._probe_raw(video), language)
+    with labelled_ff():
+        picked = _pick_text_stream(_ff._probe_raw(video), language)
     if picked is None:
         return None
     k, index = picked
     dest = os.path.join(dest_dir, "embedded.srt")
     if os.path.exists(dest):
         raise ContractError(f"đã có {dest}; không ghi đè")
-    _ff.run(["-n", "-i", video, "-map", f"0:s:{k}", "-c:s", "srt", dest])
+    try:
+        with labelled_ff():
+            _ff.run(["-n", "-i", video, "-map", f"0:s:{k}", "-c:s", "srt", dest])
+    except EngineError as exc:
+        raise EngineError(f"không chuyển được luồng phụ đề nhúng #{index}: {exc}") from exc
     if not os.path.isfile(dest):
-        return None
+        raise EngineError(f"ffmpeg thoát mã 0 nhưng không ghi ra luồng phụ đề nhúng #{index}; "
+                          "đưa phụ đề bằng --subs hoặc sửa nguồn (không tự rơi xuống ASR)")
     return dest, index
 
 
@@ -235,6 +244,7 @@ def transcribe(input_path, project_dir, subs=None, language="vi", force=False):
     if side:
         return _from_cues(_read_cues(side), language, "subtitles:sidecar", out)
 
+    gate.require_media_file(input_path)   # trước ffprobe/ffmpeg/ASR: playlist không được mở
     with tempfile.TemporaryDirectory() as tmp:
         got = _extract_embedded(input_path, tmp, language)
         if got:

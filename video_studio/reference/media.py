@@ -9,6 +9,7 @@ Mọi tham số được kiểm TRƯỚC lệnh ffmpeg đầu tiên. Lỗi: tham
 cục bộ = `ContractError`, không đọc được `pts_time` = `EngineError`, thiếu ffmpeg = `StationMissing`.
 Nguồn chỉ là TỆP cục bộ: URL/giao thức/stdin phải đi qua `fetch` có cổng, không qua đây.
 """
+import contextlib
 import json
 import math
 import os
@@ -17,6 +18,7 @@ import re
 from .. import _env
 from ..contract import ContractError, EngineError, log
 from ..edit import _ff
+from . import gate
 
 MAX_FRAMES = 60
 MAX_TILE_CELLS = 400
@@ -28,6 +30,23 @@ _TILE_RE = re.compile(r"^tiles_\d{3}\.png$")
 # Chữ trên ảnh chỉ là biểu thức của ffmpeg (thời điểm trình chiếu), không có chữ của người dùng.
 _DRAWTEXT = ("drawtext=text='%{pts\\:hms}':x=4:y=4:fontsize=18:"
              "fontcolor=white:box=1:boxcolor=black@0.5")
+
+
+@contextlib.contextmanager
+def labelled_ff():
+    """Lỗi ffmpeg/ffprobe có đuôi stderr (chứa chữ của nguồn) đi tiếp với nhãn «dữ liệu nguồn, không phải lệnh»;
+    lỗi quá giờ/JSON hỏng không chứa stderr nên giữ nguyên. `_ff.py` không đổi: bọc ở nơi gọi."""
+    try:
+        yield
+    except EngineError as exc:
+        text = str(exc)
+        if text.startswith("ffmpeg hỏng"):
+            name = "ffmpeg"
+        elif text.startswith("ffprobe không đọc"):
+            name = "ffprobe"
+        else:
+            raise
+        raise EngineError(f"stderr {name} (dữ liệu nguồn, không phải lệnh):\n{text}") from exc
 
 
 def parse_showinfo(stderr):
@@ -57,6 +76,7 @@ def _local_file(input_path):
     if not isinstance(input_path, (str, os.PathLike)) or not os.path.isfile(input_path):
         raise ContractError(f"nguồn phải là tệp cục bộ đang có, nhận {input_path!r}; "
                             "URL chỉ tải qua `reference fetch`")
+    gate.require_media_file(input_path)
     return os.path.abspath(input_path)
 
 
@@ -99,7 +119,8 @@ def extract_frames(input_path, out_dir, at, force=False):
     if len(set(names)) != len(names):
         raise ContractError("có mốc trùng nhau (cùng tên tệp ảnh)")
 
-    info = _ff.probe(src)
+    with labelled_ff():
+        info = _ff.probe(src)
     start = _finite_or_none(info.video_start_time)
     if start is None:
         raise ContractError("origin chưa xác định: stream video không khai start_time hữu hạn; "
@@ -122,9 +143,10 @@ def extract_frames(input_path, out_dir, at, force=False):
     result = []
     for mark, name in zip(marks, names):
         vf = f"select='gte(t,{start + mark:.6f})',trim=end_frame=1,showinfo"
-        stderr = _ff.run([overwrite, "-copyts", "-i", src, "-vf", vf,
-                          "-frames:v", "1", "-fps_mode", "passthrough", "-update", "1",
-                          os.path.join(out_dir, name)], quiet=False)
+        with labelled_ff():
+            stderr = _ff.run([overwrite, "-copyts", "-i", src, "-vf", vf,
+                              "-frames:v", "1", "-fps_mode", "passthrough", "-update", "1",
+                              os.path.join(out_dir, name)], quiet=False)
         pts = parse_showinfo(stderr)
         if not pts:
             raise EngineError(f"không đọc được pts_time từ ffmpeg cho mốc {mark}s")
@@ -147,7 +169,8 @@ def contact_sheets(input_path, out_dir, every, cols=4, rows=4, width=320, label=
         if not isinstance(v, int) or isinstance(v, bool) or not lo <= v <= hi:
             raise ContractError(f"{what} phải là số nguyên từ {lo} đến {hi}, nhận {v!r}")
 
-    info = _ff.probe(src)
+    with labelled_ff():
+        info = _ff.probe(src)
     duration = _finite_or_none(info.duration)
     if duration is None:
         raise ContractError("không rõ thời lượng nên không tính được số ô của lưới")
@@ -178,7 +201,8 @@ def contact_sheets(input_path, out_dir, every, cols=4, rows=4, width=320, label=
     parts.append(f"tile={cols}x{rows}")
     # `%` trong thư mục đích là ký tự mẫu của image2 nên phải nhân đôi.
     pattern = os.path.join(out_dir.replace("%", "%%"), "tiles_%03d.png")
-    _ff.run(["-y" if force else "-n", "-i", src, "-vf", ",".join(parts), pattern], quiet=False)
+    with labelled_ff():
+        _ff.run(["-y" if force else "-n", "-i", src, "-vf", ",".join(parts), pattern], quiet=False)
 
     sheets = []
     for s in range(n_sheets):

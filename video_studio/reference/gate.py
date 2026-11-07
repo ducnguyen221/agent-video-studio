@@ -39,6 +39,10 @@ BASES = ("own_content", "written_permission", "license")
 ORIGINS = ("user", "generated", "template", "reference")
 BUILD_ORIGINS = ("user", "generated", "template")
 
+# Đuôi tệp video/âm thanh mà ffmpeg được mở: danh sách playlist (m3u8, ffconcat, sdp…) có thể kéo tệp khác lên.
+MEDIA_EXTS = frozenset(("mp4", "m4v", "mov", "mkv", "webm", "avi", "flv", "ts", "mts", "m2ts", "mpg", "mpeg",
+                        "ogv", "ogg", "wmv", "3gp", "mp3", "m4a", "aac", "wav", "flac", "opus"))
+
 PROVENANCE_FILE = "provenance.json"
 MAX_URL_LEN = 2048
 _LAST_LABEL_NUMERIC = re.compile(r"0x[0-9a-f]*|[0-9]+")
@@ -240,6 +244,19 @@ def save_provenance(project_dir, prov):
 
 # ----------------------------------------------------------- fetch gate
 
+def is_media_name(path):
+    """True nếu đuôi (không phân biệt hoa thường) là container video/âm thanh trong `MEDIA_EXTS`."""
+    return os.path.splitext(str(path))[1][1:].lower() in MEDIA_EXTS
+
+
+def require_media_file(path):
+    """`ContractError` nếu `path` không có đuôi video/âm thanh (playlist, danh sách, văn bản… không được mở)."""
+    if not is_media_name(path):
+        ext = os.path.splitext(str(path))[1] or "không có đuôi"
+        raise ContractError(f"chỉ nhận tệp video/âm thanh ({', '.join(sorted(MEDIA_EXTS))}); đuôi {ext} "
+                            f"không được nhận: {path}")
+
+
 def _blank(value):
     return not isinstance(value, str) or not value.strip()
 
@@ -278,13 +295,19 @@ def require_fetch_allowed(prov, url, allow_url):
     for key in ("quote", "granted_by"):
         if _blank(perm.get(key)):
             raise ContractError(f"permission.{key} trống")
+    quote = perm["quote"].strip()
+    if target not in quote and url.strip() not in quote:
+        raise ContractError("permission.quote phải chứa đúng URL cần tải (lời người dùng nói đích danh URL)")
     stamp = perm.get("granted_at")
     if isinstance(stamp, str) and stamp[-1:] in ("Z", "z"):  # Python 3.10 chưa nhận hậu tố Z
         stamp = stamp[:-1] + "+00:00"
     try:
         datetime.datetime.fromisoformat(stamp)
+        has_time = re.search(r"\d[T ]\d{1,2}:\d{2}", stamp) is not None
     except (TypeError, ValueError):
-        raise ContractError("permission.granted_at phải là ngày giờ ISO 8601") from None
+        has_time = False
+    if not has_time:
+        raise ContractError("permission.granted_at phải là ngày giờ ISO 8601, có cả phần giờ")
 
     ref_url = (prov.get("reference") or {}).get("url")
     if ref_url is not None and _norm(ref_url) != target:
@@ -330,7 +353,7 @@ def _walk_files(root):
 def _reference_hashes(project_dir, prov):
     """(sha256 → đường tương đối, phát hiện) của tư liệu mẫu: tệp thường trong `source/` và `evidence/**`.
 
-    Gốc `source/` hay `evidence/` là liên kết ⇒ phát hiện, không băm vào trong. Thêm các băm đã ghi trong hồ sơ
+    Gốc `source/` hay `evidence/`, hoặc mục lồng bên trong, là liên kết ⇒ phát hiện, không băm vào trong. Thêm các băm đã ghi trong hồ sơ
     (`reference.sha256`, `fetch.sha256`; chuỗi hex 64 ký tự, giá trị lạ bỏ qua) — không đọc lại tệp ngoài project.
     """
     found, findings = {}, []
@@ -340,7 +363,10 @@ def _reference_hashes(project_dir, prov):
             findings.append({"path": sub, "problem": LINK_PROBLEM})
             continue
         for path in _walk_files(root):
-            if _is_link(path) or not os.path.isfile(path):
+            if _is_link(path):
+                findings.append({"path": _rel(path, project_dir), "problem": LINK_PROBLEM})
+                continue
+            if not os.path.isfile(path):
                 continue
             found.setdefault(sha256_file(path), _rel(path, project_dir))
     for section, label in (("reference", "(reference.local_file)"), ("fetch", "(fetch.file)")):

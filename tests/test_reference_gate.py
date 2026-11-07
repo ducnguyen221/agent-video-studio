@@ -215,7 +215,7 @@ def _ok_prov(url=URL, **over):
     prov = gate.new_provenance("demo", None, None, None, "2026-11-07")
     prov.update(
         rights_status="approved", rights_basis="written_permission", rights_proof="thư cấp phép ngày 2026-11-01",
-        permission={"url": url, "quote": "được dùng cho bản chuyển thể", "granted_by": "chủ kênh", "granted_at": "2026-11-01"},
+        permission={"url": url, "quote": f"được dùng {url} cho bản chuyển thể", "granted_by": "chủ kênh", "granted_at": "2026-11-01T09:00:00+07:00"},
     )
     prov.update(over)
     return prov
@@ -486,19 +486,37 @@ def test_check_url_still_accepts_public_ip_literals_and_ldh_hosts(raw):
     assert gate.check_url(raw) == raw
 
 
-@pytest.mark.parametrize("stamp", ["2026-11-07T10:00:00Z", "2026-11-07T10:00:00z", "2026-11-07T10:00:00+07:00", "2026-11-07"])
+@pytest.mark.parametrize("stamp", ["2026-11-07T10:00:00Z", "2026-11-07T10:00:00z", "2026-11-07T10:00:00+07:00", "2026-11-07 10:00", "2099-01-01T00:00:00"])
 def test_fetch_gate_accepts_iso_granted_at_incl_z_suffix(stamp):
     prov = _ok_prov()
     prov["permission"]["granted_at"] = stamp
     assert gate.require_fetch_allowed(prov, URL, URL) is None
 
 
-@pytest.mark.parametrize("stamp", ["", "Z", "2026-13-45T00:00:00Z", 20261107])
+@pytest.mark.parametrize("stamp", ["", "Z", "2026-13-45T00:00:00Z", 20261107, "2026-11-07"])
 def test_fetch_gate_refuses_bad_granted_at(stamp):
     prov = _ok_prov()
     prov["permission"]["granted_at"] = stamp
     with pytest.raises(ContractError, match="permission.granted_at"):
         gate.require_fetch_allowed(prov, URL, URL)
+
+
+def test_fetch_gate_quote_must_name_the_url():
+    for quote in ("ok", "được dùng cho bản chuyển thể", "https://www.example.com/other"):
+        prov = _ok_prov()
+        prov["permission"]["quote"] = quote
+        with pytest.raises(ContractError) as err:
+            gate.require_fetch_allowed(prov, URL, URL)
+        assert "permission.quote" in str(err.value) and "URL" in str(err.value)
+
+
+def test_fetch_gate_quote_with_original_or_normalized_url_passes():
+    padded = f"  {URL}  "
+    prov = _ok_prov(url=padded)
+    prov["permission"]["quote"] = f"đồng ý: {URL}"
+    assert gate.require_fetch_allowed(prov, padded, URL) is None
+    prov["permission"]["quote"] = f"đồng ý:{padded}"
+    assert gate.require_fetch_allowed(prov, padded, URL) is None
 
 
 # ------------------------------------------------- vòng sửa 1: liên kết, khai trùng, ngoài project
@@ -710,3 +728,22 @@ def test_audit_prefers_real_file_name_over_recorded_label(tmp_path):
     _write(proj, "assets/copy.mp4", payload)
     _declare(proj, _asset(path="assets/copy.mp4"))
     assert [f["problem"] for f in gate.audit_assets(proj)["findings"]] == ["trùng byte với tệp mẫu source/reference.mp4"]
+
+
+# ------------------------------------------------- TK12 sửa 1: liên kết lồng trong source/, evidence/
+
+@pytest.mark.parametrize("rel", ["source/clips", "evidence/frames/jump", "evidence/jump"])
+def test_audit_flags_nested_link_inside_reference_dirs(tmp_path, rel):
+    proj = _project(tmp_path)
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    payload = b"mau nam ngoai"
+    (outside / "ref.bin").write_bytes(payload)
+    link = os.path.join(proj, *rel.split("/"))
+    os.makedirs(os.path.dirname(link), exist_ok=True)
+    _make_dir_link(link, outside)
+    _write(proj, "assets/mine.bin", payload)
+    _declare(proj, _asset(path="assets/mine.bin"))
+    out = gate.audit_assets(proj)
+    assert out["ok"] is False
+    assert {"path": rel, "problem": "liên kết mềm không được kiểm"} in out["findings"]
