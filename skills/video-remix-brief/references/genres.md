@@ -21,8 +21,12 @@ trúc và nhịp; phần **đổi** luôn gồm giọng, hình, lời, nhạc, t
 | 7. Phim ngắn | **chưa hỗ trợ** |
 
 Các khuôn dùng `edit` chạy theo ba bước: `edit --step transcribe`, `--step pack`, rồi
-`edit --step render --edl <edl.json>` khi đã có EDL. Footage đặt trong thư mục `--footage`, tài sản
-khác đặt trong `assets/` của project tham chiếu và khai trong `assets[]` của `provenance.json`.
+`edit --step render --edl <edl.json>` khi đã có EDL. Footage cho bản dựng **phải** nằm trong
+`<project>/assets/` (ví dụ `--footage <project>/assets/footage`) và khai trong `assets[]` của
+`provenance.json`. `--work` (mặc định `<footage>/edit`, tức nằm trong `assets/`) và `--out` đặt
+**ngoài** `assets/` (ví dụ `--work <project>/work`, `--out <project>/out`); nếu không, `audit` báo
+tệp làm việc «chưa khai». Footage để ngoài `assets/` thì `audit` sạch giả (`checked` 0). `audit` có
+`checked` 0 không tính là sạch.
 Trên Windows, `edit --step render` với `grade: auto` (mặc định) hiện thoát mã 1 — đặt
 `"grade": "none"` trong EDL; xem mục Giới hạn của
 [`docs/reference-to-remix.md`](../../../docs/reference-to-remix.md).

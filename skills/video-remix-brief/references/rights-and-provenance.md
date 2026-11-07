@@ -96,7 +96,9 @@ Khoá lạ trong hồ sơ được giữ nguyên khi ghi lại. Chi tiết khoá
 ## `reference audit` bắt được gì, không bắt được gì
 
 - Bắt: mọi tệp trong thư mục tài sản (kể cả tệp ẩn bắt đầu bằng `.`) phải có trong `assets[]`;
-  không tệp nào **trùng byte** với tệp trong `source/` hay `evidence/` (khung, lưới cắt từ mẫu).
+  không tệp nào **trùng byte** (SHA-256) với tệp trong `source/`, `evidence/**` **hay** băm đã ghi
+  trong hồ sơ (`reference.sha256`, `fetch.sha256`); liên kết/junction trong `source/` hoặc
+  `evidence/` bị báo. `checked` 0 (không tệp nào được băm) không tính là sạch.
   Có phát hiện thì thoát **mã 2** và liệt kê từng tệp cùng lý do.
 - Không bắt: tư liệu mẫu đã **chuyển mã, cắt, phóng, đổi màu** (băm khác); đường tệp ghi trong
   spec hay EDL (audit không đọc chúng); lời hay nhạc giống mà không trùng byte.

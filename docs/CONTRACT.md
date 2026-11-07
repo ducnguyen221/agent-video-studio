@@ -161,7 +161,11 @@ Project tham chiếu mặc định ở `<trạm>/reference/<tên>/` (đổi bằ
   tệp cục bộ.
 - `audit` có phát hiện ⇒ mã 2 và dòng JSON cuối
   `{"ok": false, "code": 2, "error": "<n> phát hiện", "findings": [...]}`. Nó chỉ bắt trùng byte với
-  `source/` và `evidence/**`, không đọc spec/EDL.
+  `source/`, `evidence/**` và băm đã ghi trong hồ sơ, không đọc spec/EDL; `checked` 0 không tính là sạch.
+- `frames`, `tiles`, `transcribe` chỉ nhận tệp video/âm thanh theo đuôi; playlist `.m3u8`, `.ffconcat`,
+  `.txt` bị từ chối mã 2.
+- Cổng của `fetch` là cổng thủ tục: chỉ kiểm `provenance.json` và `--allow-url`, không kiểm được lời
+  người dùng trong chat; agent không tự điền hồ sơ.
 - `fetch` kiểm các cổng theo thứ tự (giới hạn, URL, `--allow-url`, hồ sơ, quyền + chứng từ, phép đích
   danh, yt-dlp, đích) trước mọi tiến trình con; chi tiết và giới hạn ở `reference-to-remix.md`.
 - `init` không để lại project nửa vời khi lỗi.
