@@ -160,11 +160,10 @@ def do_reference(args):
     if action == "audit":
         return gate.audit_assets(args.project, args.assets)
     if action == "fetch":
-        from . import fetch                      # TK6; nhập lười để lõi không cần yt-dlp
-        prov = gate.load_provenance(args.project)
-        url = gate.check_url(args.url)
-        gate.require_fetch_allowed(prov, url, args.allow_url)
-        if args.go:
+        from . import fetch                      # nhập lười để lõi không cần yt-dlp
+        fetch.check_limits(args.max_mb, args.sub_langs)
+        url, _prov = fetch.authorize(args.url, args.allow_url, args.project)   # cổng 1→5, đúng thứ tự
+        if args.go:                              # cổng 6–7 nằm trong plan_fetch / do_fetch
             return fetch.do_fetch(url, args.project, args.max_mb, args.sub_langs)
         return fetch.plan_fetch(url, args.project)
     raise ContractError(f"hành động lạ: {action}")
