@@ -24,7 +24,7 @@ agent đọc file này và làm lần lượt từ mục 0 đến mục 10. Ngư
 
 | Bạn đang chạy trong | Ghi chú |
 |---|---|
-| Claude Code (terminal, IDE hoặc tab Code của ứng dụng Claude) | Đọc `CLAUDE.md` → `AGENTS.md` |
+| Claude Code (terminal, IDE hoặc tab Code của ứng dụng Claude) | Đọc `.claude/CLAUDE.md` → `AGENTS.md` |
 | Codex (CLI hoặc ứng dụng desktop) | Đọc `AGENTS.md` |
 | Google Antigravity | Đọc `GEMINI.md` → `AGENTS.md` |
 | Claude Desktop, tab chat | **Không chạy được lệnh** — xem đoạn dưới |

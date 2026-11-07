@@ -6,7 +6,7 @@ nhất: dán prompt trong [INSTALL.md](../INSTALL.md#prompt-copy-dán) vào ứn
 
 | Bạn dùng | Chạy được `video-studio` | Đọc hướng dẫn từ | Hướng dẫn |
 |---|---|---|---|
-| Claude Code (terminal, IDE, tab Code của ứng dụng Claude) | Có | `CLAUDE.md` → `AGENTS.md` | [Claude Code](claude/README.md) |
+| Claude Code (terminal, IDE, tab Code của ứng dụng Claude) | Có | `.claude/CLAUDE.md` → `AGENTS.md` | [Claude Code](claude/README.md) |
 | Codex (CLI và desktop) | Có | `AGENTS.md` | [Codex](codex/README.md) |
 | Google Antigravity | Có | `GEMINI.md` → `AGENTS.md` | [Antigravity](antigravity/README.md) |
 | Claude Desktop, tab chat | **Không** | — | [Claude Desktop](claude-desktop/README.md) |

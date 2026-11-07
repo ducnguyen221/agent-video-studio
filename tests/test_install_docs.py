@@ -171,7 +171,7 @@ def test_doctor_labels_in_install_md_are_the_real_labels():
 
 # ── liên kết ───────────────────────────────────────────────────────────────────────────
 
-@pytest.mark.parametrize("rel", USER_DOCS + ["CLAUDE.md", "GEMINI.md"])
+@pytest.mark.parametrize("rel", USER_DOCS + [".claude/CLAUDE.md", "GEMINI.md"])
 def test_relative_links_exist(rel):
     doc = ROOT / rel
     missing = []
@@ -189,11 +189,17 @@ def test_entry_docs_point_to_install_md(rel):
     assert "INSTALL.md" in read(rel), f"{rel} chưa trỏ tới INSTALL.md"
 
 
-@pytest.mark.parametrize("rel", ["CLAUDE.md", "GEMINI.md"])
+@pytest.mark.parametrize("rel", [".claude/CLAUDE.md", "GEMINI.md"])
 def test_host_files_only_point_to_agents_md(rel):
-    """CLAUDE.md / GEMINI.md là con trỏ, không phải bản luật thứ hai để trôi."""
+    """.claude/CLAUDE.md / GEMINI.md là con trỏ, không phải bản luật thứ hai để trôi."""
     text = read(rel)
     assert "AGENTS.md" in text and len(text.splitlines()) <= 6
+
+
+def test_claude_md_lives_in_dot_claude_and_imports_agents_md():
+    """`claude plugin validate --strict` đỏ khi có `CLAUDE.md` ở gốc plugin; `@import` tính đường từ file chứa nó."""
+    assert not (ROOT / "CLAUDE.md").exists()
+    assert "@../AGENTS.md" in read(".claude/CLAUDE.md").splitlines()
 
 
 @pytest.mark.parametrize("host", ["claude", "codex", "claude-desktop", "antigravity"])

@@ -7,6 +7,9 @@ kiểm).
 
 ## Chưa phát hành
 
+- **`CLAUDE.md` dời từ gốc sang `.claude/CLAUDE.md`** (một dòng `@../AGENTS.md`): `claude plugin validate --strict`
+  đỏ khi plugin có `CLAUDE.md` gốc («not loaded as project context»); `@import` tính đường từ file chứa nó, nên luật
+  `AGENTS.md` nay được nạp thật. `AGENTS.md`, `INSTALL.md`, `hosts/` nêu đường mới; test khoá vị trí và dòng import.
 - **`AGENTS.md` nói đúng 27 skill** (6 của repo + 21 HyperFrames), khớp cây `skills/` sau SPR-05 (RQ-025).
 - **Venv của video-use ra khỏi trạm khi máy có OpcOS:** `scripts/install-video-use.ps1 -VenvOnly`
   (`.sh --venv-only`) dựng venv ở `$OPCOS_RUNTIME/venvs/agent-video-studio/video-use` (bộ giải: `OPCOS_RUNTIME`

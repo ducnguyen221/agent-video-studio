@@ -5,8 +5,9 @@ Muốn agent cài giúp: dán prompt trong [INSTALL.md](../../INSTALL.md#prompt-
 Cách cài giống nhau trên Windows và macOS — chỉ khác đường gọi `.venv`
 (`.\.venv\Scripts\video-studio` hay `.venv/bin/video-studio`).
 
-Claude Code đọc [`CLAUDE.md`](../../CLAUDE.md), file này trỏ sang [`AGENTS.md`](../../AGENTS.md) —
-ranh giới mã/dữ liệu và luật dựng video nằm ở đó. Mở **thư mục repo** làm thư mục làm việc.
+Claude Code đọc [`.claude/CLAUDE.md`](../../.claude/CLAUDE.md), file này nạp [`AGENTS.md`](../../AGENTS.md)
+bằng dòng `@../AGENTS.md` (đường tính từ file chứa dòng `@`) — ranh giới mã/dữ liệu và luật dựng
+video nằm ở đó. Mở **thư mục repo** làm thư mục làm việc.
 
 **Skill:** cách chắc chắn là bảo Claude "đọc `skills/video-routing/SKILL.md` rồi làm theo" — skill
 định tuyến chỉ sang skill còn lại. Khi mở thư mục repo, Claude Code còn thấy adapter

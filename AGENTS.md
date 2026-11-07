@@ -1,7 +1,8 @@
 # AGENTS.md — Agent Video Studio
 
-> File hướng dẫn CHUẨN cho mọi AI agent (Claude Code · Codex · Google Antigravity · bất kỳ công cụ
-> nào đọc AGENTS.md). `CLAUDE.md` và `GEMINI.md` chỉ là con trỏ về file này — sửa Ở ĐÂY.
+> File hướng dẫn CHUẨN cho mọi AI agent (Claude Code · Codex · Google Antigravity · bất kỳ công cụ nào
+> đọc AGENTS.md). `.claude/CLAUDE.md` (một dòng `@../AGENTS.md`) và `GEMINI.md` chỉ là con trỏ về file
+> này — sửa Ở ĐÂY.
 
 ## 0. Ranh giới mã nguồn và dữ liệu
 
@@ -91,7 +92,7 @@ mẫu `samples/news-mini/` nếu máy có đủ công cụ render.
 
 | Host | File hướng dẫn | Skill | Ghi chú |
 |---|---|---|---|
-| Claude Code | `CLAUDE.md` → trỏ về đây | adapter `.claude/skills/` ở gốc repo → `skills/` | [hosts/claude](hosts/claude/README.md) |
+| Claude Code | `.claude/CLAUDE.md` (`@../AGENTS.md`) → trỏ về đây | adapter `.claude/skills/` ở gốc repo → `skills/` | [hosts/claude](hosts/claude/README.md) |
 | Codex CLI / desktop | `AGENTS.md` (file này) | adapter `.agents/skills/` ở gốc repo → `skills/` | [hosts/codex](hosts/codex/README.md) |
 | Antigravity | `GEMINI.md` → trỏ về đây | adapter `.agents/skills/` ở gốc repo → `skills/` | [hosts/antigravity](hosts/antigravity/README.md) |
 | Claude Desktop (tab chat) | — | — | Không chạy được lệnh; [hosts/claude-desktop](hosts/claude-desktop/README.md) |
