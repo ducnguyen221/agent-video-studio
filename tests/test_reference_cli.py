@@ -299,7 +299,7 @@ def test_init_leaves_nothing_when_a_template_is_missing(tmp_path, monkeypatch, c
 
 def test_init_cleans_up_when_writing_fails_midway(tmp_path, monkeypatch, capsys):
     def boom(project, prov):
-        raise OSError("đĩa đầy")
+        raise RuntimeError("lỗi ngoài hệ tệp")
 
     monkeypatch.setattr(gate, "save_provenance", boom)
     rc, _, _ = init(tmp_path, capsys)
@@ -314,3 +314,46 @@ def test_audit_ctrl_c_is_code_2(tmp_path, monkeypatch, capsys):
     monkeypatch.setattr(gate, "audit_assets", interrupt)
     rc, payload, _ = run(["audit", "--project", str(tmp_path), "--json"], capsys)
     assert rc == 2 and payload["ok"] is False
+
+
+def test_init_permission_error_on_mkdir_is_2(tmp_path, monkeypatch, capsys):
+    def deny(path, *a, **k):
+        raise PermissionError(13, "từ chối", path)
+
+    monkeypatch.setattr(os, "mkdir", deny)
+    rc, payload, _ = init(tmp_path, capsys)
+    assert rc == 2 and payload["code"] == 2 and "demo" in payload["error"]
+
+
+def test_init_permission_error_on_subdir_is_2_and_cleans_up(tmp_path, monkeypatch, capsys):
+    real = os.makedirs
+
+    def deny(path, *a, **k):
+        if str(path).endswith("transcripts"):
+            raise PermissionError(13, "từ chối", path)
+        return real(path, *a, **k)
+
+    monkeypatch.setattr(os, "makedirs", deny)
+    rc, payload, _ = init(tmp_path, capsys)
+    assert rc == 2 and payload["code"] == 2
+    assert not (tmp_path / "ref" / "demo").exists()
+
+
+def test_init_unreadable_file_is_2(tmp_path, monkeypatch, capsys):
+    clip = tmp_path / "clip.mp4"
+    clip.write_bytes(b"abc")
+
+    def deny(path):
+        raise PermissionError(13, "từ chối", path)
+
+    monkeypatch.setattr(gate, "sha256_file", deny)
+    rc, payload, _ = init(tmp_path, capsys, "--file", str(clip))
+    assert rc == 2 and payload["code"] == 2 and "clip.mp4" in payload["error"]
+    assert not (tmp_path / "ref" / "demo").exists()
+
+
+def test_init_dir_that_is_a_file_is_2(tmp_path, capsys):
+    f = tmp_path / "ref"
+    f.write_text("x", encoding="utf-8")
+    rc, payload, _ = init(tmp_path, capsys)
+    assert rc == 2 and "--dir không phải thư mục" in payload["error"]
