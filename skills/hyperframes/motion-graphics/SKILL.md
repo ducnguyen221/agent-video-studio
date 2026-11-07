@@ -21,6 +21,20 @@ thật vào biểu đồ · lớp phủ mạng xã hội.
 
 Mỗi thể loại có một hình dạng riêng — chọn thể loại **trước**, đừng chọn hiệu ứng trước.
 
+## Tra motion theo phân cảnh
+
+Khi cần ý tưởng chuyển động cụ thể, tra
+[`../../video-theme-library/assets/prompt-motion/INDEX.md`](../../video-theme-library/assets/prompt-motion/INDEX.md) sau khi chọn layout ở
+`video-theme-library`. Đây là thư viện tham chiếu Prompt Motion, có metadata nguồn và prompt
+HyperFrames tự viết, **không phải mã template đã render kiểm chứng**.
+
+Lọc theo vai trò cảnh, tỷ lệ khung hình và vùng chiếm màn hình; mở đúng file `motions/<slug>.md`
+qua mã `PM-<slug>`. Phân biệt kích thước nguồn công bố với kích thước khuyến nghị. Khi đề xuất
+storyboard, nêu mã, tên, link xem nguồn, mục đích cảnh, tỷ lệ đầu ra và vùng hiển thị; ghi rõ
+điều chỉnh cần thiết nếu chuyển từ toàn màn hình sang panel hoặc overlay. Chỉ nạp những mẫu
+được chọn. Cách chuyển sang timeline tua được ở
+[`../../video-theme-library/assets/prompt-motion/USAGE.md`](../../video-theme-library/assets/prompt-motion/USAGE.md).
+
 ## Bảy bước
 
 0. **Dựng project**, chốt khung hình và định dạng đầu ra (MP4 hay lớp trong suốt — quyết ngay, vì

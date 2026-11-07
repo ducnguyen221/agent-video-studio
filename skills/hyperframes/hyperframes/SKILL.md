@@ -41,6 +41,19 @@ Nó **không dựng video**. Nó làm ba việc rồi đứng sang một bên:
 Bản tin hằng ngày của repo này **không** đi qua bảng trên: nó đã có template cố định, xem
 `video-theme-library` và `docs/NEWS_V2_DESIGN.md`.
 
+## Khi lập hoặc sửa phân cảnh
+
+Trước khi chọn chuyển động cho các beat mới, đọc
+[`video-theme-library`](../../video-theme-library/SKILL.md) để chọn layout rồi tra
+[`Prompt Motion INDEX`](../../video-theme-library/assets/prompt-motion/INDEX.md).
+Áp dụng cả khi trạm đã có catalog layout riêng: thư viện motion bổ sung cách chuyển động,
+không thay catalog của trạm. Lọc theo việc cảnh cần làm và vùng hiển thị trước, rồi xếp hạng
+theo `ratio_fit` của khung cần giao; tỷ lệ ưu tiên là gợi ý, không phải bộ lọc loại bỏ mọi mẫu
+ngang khi dựng dọc. Chỉ mở file của các mã `PM-<slug>` phù hợp. Trong đề xuất phân cảnh, ghi mã, tên, link xem nguồn,
+mục đích, tỷ lệ và vùng màn hình; nếu không có mẫu khớp thì thiết kế mới và nói rõ lý do.
+Các entry là prompt chuyển thể và tài liệu tham chiếu, chưa phải template đã render. Sau đó
+tiếp tục đúng một workflow đã chọn trong bảng trên.
+
 ## Kỹ năng theo chủ đề (nạp khi cần, không nạp sẵn)
 
 - `hyperframes-core` — hợp đồng composition: `data-*`, `class="clip"`, track, sub-composition.

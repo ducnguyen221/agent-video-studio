@@ -1,0 +1,38 @@
+{
+  "method": "Original implementation refinements after independent Argon review. These are authoring proposals, not additional claims about observed source video.",
+  "records": [
+    {
+      "id": "gigabit-million-16b3a0",
+      "profile": "photo",
+      "adapter_guidance": "DOM/CSS + GSAP cho carousel thẻ game: mỗi thẻ có ảnh có quyền, tên và một điểm đáng thử. Các thẻ dùng transform/mask, giữ object-fit: contain cho ảnh có chữ; nhịp đổi thẻ theo cue lời đọc cố định. Carousel hữu hạn, không dùng chart/counter để thay cho nội dung game; video dài đặt trong composition cha qua general-video.",
+      "implementation_phases": [
+        "Thẻ game đầu hiện với ảnh, tên và một lý do đáng thử có nguồn.",
+        "Thẻ trượt sang một vị trí định trước; thẻ kế vào cùng vùng đọc theo cue lời dẫn.",
+        "Các thẻ đã giới thiệu thu về một hàng tổng kết, giữ một lời mời xem danh sách."
+      ],
+      "techniques": ["cards", "carousel", "mask", "stagger"]
+    },
+    {
+      "id": "twoclipping-6dd14e",
+      "adapter_guidance": "DOM/SVG + GSAP cho editor, typography và frame; clip dọc có quyền nằm trong phần tử video do HyperFrames quản lý playback. Đặt data-start/data-duration/data-track-index ở video hoặc wrapper định thời, không đặt đồng thời trên cả hai. Dùng media cục bộ, fit theo vùng preview, không video.play() hay đồng hồ riêng; control UI và frame video đều theo thời gian composition. Bản dọc của footage không tự quyết tỷ lệ canvas đầu ra."
+    },
+    {
+      "id": "template-showreel",
+      "adapter_guidance": "Một composition cha và các clip con cho ba pha motif; GSAP paused điều khiển đường nét SVG, wrapper chữ và hình học. Dùng SVG paths/mask cho đường nối hoặc reveal, không ép toàn showreel thành một tween chữ. Cue nhạc được chuẩn bị trước và đặt cùng timeline; framework quản lý audio/video, không render hoặc mux bằng lệnh trong prompt nguồn. Đây là adapter đề xuất chưa chạy kiểm.",
+      "implementation_phases": [
+        "Một đường nét mở ra từ khóa tự viết rồi giữ đủ để đọc.",
+        "Cùng đường nét cuộn thành hình học, đổi vai nhưng giữ anchor và màu nhận dạng.",
+        "Hình mở thành logo tự tạo cùng câu chốt; âm thanh kết ở cue đã chốt và hình giữ yên."
+      ]
+    },
+    {
+      "id": "template-realtime",
+      "adapter_guidance": "Three.js/WebGL cho các mặt phẳng và camera trong một không gian 3D; một GSAP timeline paused là nguồn thời gian cho mọi pose. Lưu world coordinates của card, vùng detail và điểm cuối; camera render trực tiếp tại time bất kỳ, không rAF/physics tích lũy hoặc tương tác thật. Texture và font cục bộ có quyền, nhãn chỉ hiện ở góc đọc được; framework quản lý media.",
+      "implementation_phases": [
+        "Camera đi từ một chi tiết có nhãn ra toàn cảnh nhiều panel tự thiết kế để xác lập không gian.",
+        "Camera chọn một panel bằng đường đi hữu hạn và dừng chính diện; panel mở phần detail có quan hệ với cảnh trước.",
+        "Camera lùi theo cùng hệ tọa độ, các panel hội tụ về một điểm nhận diện mới và giữ khung cuối."
+      ]
+    }
+  ]
+}

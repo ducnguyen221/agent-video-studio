@@ -19,7 +19,13 @@ description: Non-animation creative direction for HyperFrames videos - design sp
    viết một lần, mọi cảnh sau đó bám theo.
 3. **Lời đọc trước, hình sau.** Nhịp hình cắt theo lời, không phải ngược lại — nếu không thì chữ
    chạy xong mà người đọc vẫn đang nói dở câu.
-4. **Bảng phân cảnh** — mỗi cảnh: làm gì, dài bao lâu, chữ gì trên màn hình, hình gì.
+4. **Bảng phân cảnh** — mỗi cảnh: làm gì, dài bao lâu, chữ gì trên màn hình, hình gì. Trước khi
+   chọn chuyển động, tra
+   [`Prompt Motion INDEX`](../../video-theme-library/assets/prompt-motion/INDEX.md) theo vai
+   trò và vùng màn hình, rồi xếp hạng bằng `ratio_fit` của khung cần giao; không chỉ lọc cứng
+   theo tỷ lệ ưu tiên. Mở đúng file của mẫu phù hợp. Ghi mã `PM-<slug>`, tên, link nguồn,
+   mục đích, tỷ lệ, vùng màn hình và cách thích nghi vào đề xuất cho người dùng. Không có mẫu khớp thì thiết kế mới;
+   không coi reference hoặc phương án overlay là code đã chạy.
 5. Chỉ sau đó mới sang `hyperframes-core` để viết HTML và `hyperframes-animation` để chọn chuyển động.
 
 ## Bảng màu và chữ

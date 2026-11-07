@@ -17,6 +17,17 @@ description: Use BEFORE inventing a layout for any video or slide built with thi
 Đọc file đó — **không làm theo trí nhớ**, vì thư viện đổi theo từng đợt dựng và trí nhớ thì không.
 Không trộn hai catalog trong cùng một video, và **không sửa nội dung catalog khi chỉ đang tra**.
 
+## Tham chiếu chuyển động sau khi chọn layout
+
+Khi lập hoặc đổi các beat, sau khi chọn layout trong catalog đang dùng, tra
+[`assets/prompt-motion/INDEX.md`](assets/prompt-motion/INDEX.md)
+để chọn cách chuyển động phù hợp với từng beat. Thư viện này bổ sung cách chuyển động, không
+thay catalog layout của trạm và không mang tier S/A. Lọc vai trò và fullscreen/panel trước,
+rồi xếp hạng theo `ratio_fit` của tỷ lệ đầu ra; với lớp phủ dùng `overlay_alternative.possible`.
+Không loại mọi mẫu ngang chỉ vì cần dựng dọc. Mở file theo mã `PM-<slug>` rồi đưa mã, tên và link nguồn vào đề xuất
+phân cảnh cho người dùng. Kích thước và thời lượng khuyến nghị là phân tích, tách khỏi dữ kiện
+nguồn; mọi bản chuyển thể vẫn cần dựng và kiểm hình ảnh.
+
 ## Quy trình bốn bước
 
 1. **Phân loại TỪNG đoạn nội dung theo việc nó làm**: mở màn/hook · con số chủ đạo · N điểm ·

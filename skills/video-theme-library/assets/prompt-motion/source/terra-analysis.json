@@ -1,0 +1,181 @@
+{
+  "method": "Manual reading of complete prompt text; synopsis is not observed video behavior.",
+  "records": [
+    {
+      "id": "mandelduck-95fd08",
+      "technique_synopsis": "Interactive 3D game placing a cat-search activity inside a Van Gogh painting, beginning with Starry Night and its town."
+    },
+    {
+      "id": "gorden-sun-041f56",
+      "technique_synopsis": "Three.js animation of a falling ball bouncing through 3D environments and illuminating objects on musical beats; scenes change with music and include humor."
+    },
+    {
+      "id": "ajith-io-4c248f",
+      "technique_synopsis": "A 40-second product showreel using a self-composed score inspired by a film theme; individual scenes are unspecified."
+    },
+    {
+      "id": "polydao-7a572b",
+      "technique_synopsis": "A 24-second showreel around a supplied topic and brand colors with sound aligned to cuts; visual sequence is unspecified."
+    },
+    {
+      "id": "ajith-io-ea7f2d",
+      "technique_synopsis": "Research the named product and make a 30-second showreel using a supplied video as a visual reference; no scene sequence is specified."
+    },
+    {
+      "id": "ayushunleashed-ece3e3",
+      "technique_synopsis": "A 15-second motion designer showreel; scenes and techniques are not specified."
+    },
+    {
+      "id": "chatgptastra-0d95c7",
+      "technique_synopsis": "A 15-second motion graphics video demonstrating a polished motion designer aesthetic; the brief does not define scenes."
+    },
+    {
+      "id": "monokern-ade5b6",
+      "technique_synopsis": "A 20-second psychedelic, hypnotic motion showreel; the brief leaves subjects and sequence open."
+    },
+    {
+      "id": "kloss-xyz-15182a",
+      "technique_synopsis": "A vertical, deliberately chaotic video representing a creative model’s point of view on a launch, with motion and sound, generated in Python and rendered with ffmpeg."
+    },
+    {
+      "id": "0xnfrith-5be616",
+      "technique_synopsis": "An animation explaining the value of the named product; the sequence and visual approach are unspecified."
+    },
+    {
+      "id": "math-files-39c9d0",
+      "technique_synopsis": "A 20-second showreel themed around mathematics; the visual sequence is unspecified."
+    },
+    {
+      "id": "hanifproduktif-54bdee",
+      "technique_synopsis": "A 15-second motion design applicant showreel; subject and sequence are not prescribed."
+    },
+    {
+      "id": "nikolajankovic-ce4ff4",
+      "technique_synopsis": "A hand-drawn stop-motion explanation told in the first person by the named product; no shot sequence is given."
+    },
+    {
+      "id": "ddryo-loos-300829",
+      "technique_synopsis": "A 15-second simple but dynamic social motion graphic announcing the named CSS release; no scene structure is specified."
+    },
+    {
+      "id": "eyishazyer-af035b",
+      "technique_synopsis": "A 15-second motion designer showreel; scenes and techniques are not specified."
+    },
+    {
+      "id": "blue-clarity-ef56d0",
+      "technique_synopsis": "A 15-second motion designer showreel; scenes and techniques are not specified."
+    },
+    {
+      "id": "roundtablespace-d3a1be",
+      "technique_synopsis": "A 15-second motion designer showreel; scenes and techniques are not specified."
+    },
+    {
+      "id": "1littlecoder-9fef89",
+      "technique_synopsis": "A ten-second creative self-introduction for a named model; the prompt excludes decorative corner frames and labels."
+    },
+    {
+      "id": "sayan-shanky-f850d8",
+      "technique_synopsis": "A visual explanation of what happens inside an AI data center; the prompt leaves technique and sequence open."
+    },
+    {
+      "id": "twoclipping-5cba86",
+      "technique_synopsis": "A single shape morphs through button, loader, player, slider, tabs, chart and command palette under cursor control, returning to its initial state; the brief uses beat-mapped seeking, springs and motion-blur subframes.",
+      "evidence": "manual full prompt reading; not observed video"
+    },
+    {
+      "id": "twoclipping-221cab",
+      "technique_synopsis": "A continuous 2D photo-print launch connects wordmark, gallery grid, glass UI, phone, ordering sequence and a real-wall reveal through shared shapes; it requests seekable motion, beat review and a loop.",
+      "evidence": "manual full prompt reading; not observed video"
+    },
+    {
+      "id": "twoclipping-d89be5",
+      "technique_synopsis": "A camera glides over a captured landing page, rises overhead, dives into the hero and settles on a title card. The requested build layers captured webpage elements in WebGL2 with depth, time-seeking and frame previews.",
+      "evidence": "manual full prompt reading; not observed video"
+    },
+    {
+      "id": "lexnlin-038035",
+      "technique_synopsis": "A fast editorial brand ad combines supplied inspiration with researched assets, changing image scales, painted graphics, morphing text, zooms and a final logo.",
+      "evidence": "manual full prompt reading; not observed video"
+    },
+    {
+      "id": "twoclipping-6dd14e",
+      "technique_synopsis": "A minimalist product promo uses selected UI moments and owned vertical footage, masked typography, match cuts and beat-aligned transitions, with a review step before final render.",
+      "evidence": "manual full prompt reading; not observed video"
+    },
+    {
+      "id": "rossaxbt-3085b7",
+      "technique_synopsis": "A seven-scene narrated launch film moves from image collage through prompt, results, moodboard, settings and image burst into a logo. The brief specifies word-timed captions, simulated glass, a seekable canvas, 60fps rendering and sound mixing.",
+      "evidence": "manual full prompt reading; not observed video"
+    },
+    {
+      "id": "ultimaxbt-2ddf1e",
+      "technique_synopsis": "A food-ordering interaction travels from typed request to animated cooking, recommendation cards, order confirmation and branded outro. A lime flood and expanding controls connect shots, timed to a beat grid and rendered from time-derived states.",
+      "evidence": "manual full prompt reading; not observed video"
+    },
+    {
+      "id": "stephanlivera-df17a2",
+      "technique_synopsis": "Brief requests a 15-second designer showreel; it does not prescribe subjects, scenes, or technique.",
+      "evidence": "full prompt shorter than extracted 750-character limit; not observed video"
+    },
+    {
+      "id": "shneural-2abdfa",
+      "technique_synopsis": "Brief requests a 15-second designer showreel; it does not prescribe subjects, scenes, or technique.",
+      "evidence": "full prompt shorter than extracted 750-character limit; not observed video"
+    },
+    {
+      "id": "ajith-io-b5626e",
+      "technique_synopsis": "Brief requests a 15-second designer showreel; it does not prescribe subjects, scenes, or technique.",
+      "evidence": "full prompt shorter than extracted 750-character limit; not observed video"
+    },
+    {
+      "id": "himanshutwtxs-5f4b43",
+      "technique_synopsis": "Brief requests a 15-second designer showreel; it does not prescribe subjects, scenes, or technique.",
+      "evidence": "full prompt shorter than extracted 750-character limit; not observed video"
+    },
+    {
+      "id": "gabrielbuzziv-4ff0c6",
+      "technique_synopsis": "Brief requests a 15-second designer showreel; it does not prescribe subjects, scenes, or technique.",
+      "evidence": "full prompt shorter than extracted 750-character limit; not observed video"
+    },
+    {
+      "id": "ror-fly-9950f1",
+      "technique_synopsis": "Thirty-second recipe explainer progresses from an empty glass through measured ingredients to the finished cocktail.",
+      "evidence": "full prompt shorter than extracted 750-character limit; not observed video"
+    },
+    {
+      "id": "thismacapital-dfba20",
+      "technique_synopsis": "Brief requests a 15-second designer showreel; it does not prescribe subjects, scenes, or technique.",
+      "evidence": "full prompt shorter than extracted 750-character limit; not observed video"
+    },
+    {
+      "id": "ajith-io-c52e09",
+      "technique_synopsis": "Research the named product and create a 40-second promotional motion-design showcase; sequence and techniques are unspecified.",
+      "evidence": "full prompt shorter than extracted 750-character limit; not observed video"
+    },
+    {
+      "id": "samuel-yostt-891f87",
+      "technique_synopsis": "A 15-second product showreel should reflect the landing page visual style; the brief leaves scene selection open.",
+      "evidence": "full prompt shorter than extracted 750-character limit; not observed video"
+    },
+    {
+      "id": "emollick-8661a8",
+      "technique_synopsis": "Explain recursion with a self-referential sequence where each explanation changes visual style; the brief asks for rapid pacing.",
+      "evidence": "full prompt shorter than extracted 750-character limit; not observed video"
+    },
+    {
+      "id": "steventey-0d20e4",
+      "technique_synopsis": "A 15-second showreel-style launch promo for the named SaaS product; no specific sequence or visual mechanism is prescribed.",
+      "evidence": "full prompt shorter than extracted 750-character limit; not observed video"
+    },
+    {
+      "id": "notdwd-c2037d",
+      "technique_synopsis": "A 12-second square product sting advances from a header and cursor click through an orbiting app icon, prompt box, answer page, stacked feature cards and a final wordmark. Frame-timed movement, directional blur, beat-aligned sound and time-derived rendering are specified.",
+      "evidence": "manual full prompt reading; not observed video"
+    },
+    {
+      "id": "notdwd-7de38a",
+      "technique_synopsis": "A 12-second square product sting advances from a header and cursor click through an orbiting app icon, prompt box, answer page, stacked feature cards and a final wordmark. Frame-timed movement, directional blur, beat-aligned sound and time-derived rendering are specified.",
+      "evidence": "manual full prompt reading; not observed video"
+    }
+  ]
+}

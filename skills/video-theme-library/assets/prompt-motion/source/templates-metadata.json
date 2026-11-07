@@ -1,0 +1,585 @@
+{
+  "retrieved_at": "2026-11-07T11:43:55.353610+07:00",
+  "records": [
+    {
+      "url": "https://prompt-motion.com/templates/showreel",
+      "id": "showreel",
+      "title": "The showreel prompt",
+      "head_meta": [
+        {
+          "name": "viewport",
+          "property": null,
+          "content": "width=device-width, initial-scale=1"
+        },
+        {
+          "name": "description",
+          "property": null,
+          "content": "[description omitted; see source page]",
+          "content_source_not_archived": true,
+          "content_character_count": 177
+        },
+        {
+          "name": null,
+          "property": "og:title",
+          "content": "The showreel prompt"
+        },
+        {
+          "name": null,
+          "property": "og:description",
+          "content": "[description omitted; see source page]",
+          "content_source_not_archived": true,
+          "content_character_count": 177
+        },
+        {
+          "name": null,
+          "property": "og:site_name",
+          "content": "Prompt Motion"
+        },
+        {
+          "name": null,
+          "property": "og:image",
+          "content": "https://media.prompt-motion.com/improved-showreel-1/poster.99975d64.webp"
+        },
+        {
+          "name": null,
+          "property": "og:image:alt",
+          "content": "The showreel prompt"
+        },
+        {
+          "name": null,
+          "property": "og:type",
+          "content": "website"
+        },
+        {
+          "name": "twitter:card",
+          "property": null,
+          "content": "summary_large_image"
+        },
+        {
+          "name": "twitter:creator",
+          "property": null,
+          "content": "@p4nthera_"
+        },
+        {
+          "name": "twitter:title",
+          "property": null,
+          "content": "The showreel prompt"
+        },
+        {
+          "name": "twitter:description",
+          "property": null,
+          "content": "[description omitted; see source page]",
+          "content_source_not_archived": true,
+          "content_character_count": 177
+        },
+        {
+          "name": "twitter:image",
+          "property": null,
+          "content": "https://media.prompt-motion.com/improved-showreel-1/poster.99975d64.webp"
+        },
+        {
+          "name": "twitter:image:alt",
+          "property": null,
+          "content": "The showreel prompt"
+        }
+      ],
+      "canonical_url": null,
+      "json_ld": "not retained; may contain creative content",
+      "html_video_attributes": [
+        {
+          "src": "https://media.prompt-motion.com/improved-showreel-1/video.77d74909.mp4",
+          "width": "1920",
+          "height": "1080",
+          "muted": "",
+          "loop": "",
+          "playsinline": "",
+          "preload": "auto"
+        },
+        {
+          "src": "https://media.prompt-motion.com/stephanlivera-opus-5-5-on-max/preview.2f113dcf.mp4",
+          "muted": "",
+          "loop": "",
+          "playsinline": "",
+          "preload": "auto"
+        },
+        {
+          "src": "https://media.prompt-motion.com/shneural-after-opus-5-5-it/preview.d43a1cfa.mp4",
+          "muted": "",
+          "loop": "",
+          "playsinline": "",
+          "preload": "auto"
+        },
+        {
+          "src": "https://media.prompt-motion.com/ajith-io-wtf-made-with-claude/preview.be547d28.mp4",
+          "muted": "",
+          "loop": "",
+          "playsinline": "",
+          "preload": "auto"
+        },
+        {
+          "src": "https://media.prompt-motion.com/himanshutwtxs-this-is-insane-opus/preview.0e9e4c80.mp4",
+          "muted": "",
+          "loop": "",
+          "playsinline": "",
+          "preload": "auto"
+        }
+      ],
+      "links": [
+        {
+          "text": "All videos",
+          "url": "https://prompt-motion.com/"
+        },
+        {
+          "text": "Customize this prompt",
+          "url": "https://prompt-motion.com/templates/showreel/customize"
+        },
+        {
+          "text": "S @ stephanlivera Prompt",
+          "url": "https://prompt-motion.com/stephanlivera-df17a2"
+        },
+        {
+          "text": "S @ shneural Prompt",
+          "url": "https://prompt-motion.com/shneural-2abdfa"
+        },
+        {
+          "text": "A @ ajith_io Prompt",
+          "url": "https://prompt-motion.com/ajith-io-b5626e"
+        },
+        {
+          "text": "H @ himanshutwtxs Prompt",
+          "url": "https://prompt-motion.com/himanshutwtxs-5f4b43"
+        },
+        {
+          "text": "G @ gabrielbuzziv Prompt",
+          "url": "https://prompt-motion.com/gabrielbuzziv-4ff0c6"
+        },
+        {
+          "text": "T @ thismacapital Prompt",
+          "url": "https://prompt-motion.com/thismacapital-dfba20"
+        },
+        {
+          "text": "T @ thayto_dev Prompt",
+          "url": "https://prompt-motion.com/thayto-dev-44b911"
+        },
+        {
+          "text": "J @ jasonzhou1993 Prompt",
+          "url": "https://prompt-motion.com/jasonzhou1993-8595e0"
+        },
+        {
+          "text": "T @ tequilafunks Prompt",
+          "url": "https://prompt-motion.com/tequilafunks-97f6c9"
+        },
+        {
+          "text": "L @ lukasersil Prompt",
+          "url": "https://prompt-motion.com/lukasersil-0ed38e"
+        },
+        {
+          "text": "A @ ayushunleashed Prompt",
+          "url": "https://prompt-motion.com/ayushunleashed-ece3e3"
+        },
+        {
+          "text": "C @ ChatGptAstra Prompt",
+          "url": "https://prompt-motion.com/chatgptastra-0d95c7"
+        },
+        {
+          "text": "M @ monokern Prompt",
+          "url": "https://prompt-motion.com/monokern-ade5b6"
+        },
+        {
+          "text": "E @ eyishazyer Prompt",
+          "url": "https://prompt-motion.com/eyishazyer-af035b"
+        },
+        {
+          "text": "B @ blue_clarity Prompt",
+          "url": "https://prompt-motion.com/blue-clarity-ef56d0"
+        },
+        {
+          "text": "R @ RoundtableSpace Prompt",
+          "url": "https://prompt-motion.com/roundtablespace-d3a1be"
+        },
+        {
+          "text": "R @ RaphaelAubryy Prompt",
+          "url": "https://prompt-motion.com/raphaelaubryy-4b137e"
+        },
+        {
+          "text": "C @ codeSTACKr Prompt",
+          "url": "https://prompt-motion.com/codestackr-c071bf"
+        },
+        {
+          "text": "S @ samuel_spitz Prompt",
+          "url": "https://prompt-motion.com/samuel-spitz-974923"
+        },
+        {
+          "text": "A @ AIStockSavvy Prompt",
+          "url": "https://prompt-motion.com/aistocksavvy-3fb9f5"
+        },
+        {
+          "text": "Z @ zheke Prompt",
+          "url": "https://prompt-motion.com/zheke-38deff"
+        },
+        {
+          "text": "N @ ndhabarde11 Prompt",
+          "url": "https://prompt-motion.com/ndhabarde11-f155b4"
+        },
+        {
+          "text": "_ @ _topi_003 Prompt",
+          "url": "https://prompt-motion.com/topi-003-9ca6b5"
+        },
+        {
+          "text": "R @ rendesr Prompt",
+          "url": "https://prompt-motion.com/rendesr-86be44"
+        },
+        {
+          "text": "J @ jesscaroline7 Prompt",
+          "url": "https://prompt-motion.com/jesscaroline7-1ff7cb"
+        },
+        {
+          "text": "M @ MisbahSy Prompt",
+          "url": "https://prompt-motion.com/misbahsy-80eaec"
+        },
+        {
+          "text": "M @ motiondsgnr Prompt",
+          "url": "https://prompt-motion.com/motiondsgnr-9dcfa6"
+        },
+        {
+          "text": "W @ Web3Wesley Prompt",
+          "url": "https://prompt-motion.com/web3wesley-7bb108"
+        },
+        {
+          "text": "A @ Adamdesgns Prompt",
+          "url": "https://prompt-motion.com/adamdesgns-478d6d"
+        },
+        {
+          "text": "M @ m1n9_k7 Prompt",
+          "url": "https://prompt-motion.com/m1n9-k7-ff9ab9"
+        },
+        {
+          "text": "L @ levabashidze Prompt",
+          "url": "https://prompt-motion.com/levabashidze-2d713a"
+        },
+        {
+          "text": "Z @ zaqailo Prompt",
+          "url": "https://prompt-motion.com/zaqailo-212ad3"
+        },
+        {
+          "text": "C @ CrazyAlphaaa Prompt",
+          "url": "https://prompt-motion.com/crazyalphaaa-bc7e75"
+        },
+        {
+          "text": "F @ fionntobin Prompt",
+          "url": "https://prompt-motion.com/fionntobin-97b7af"
+        },
+        {
+          "text": "I @ itsuki_dev Prompt",
+          "url": "https://prompt-motion.com/itsuki-dev-10942d"
+        },
+        {
+          "text": "K @ kyonax_on_tech Prompt",
+          "url": "https://prompt-motion.com/kyonax-on-tech-aabc1d"
+        },
+        {
+          "text": "T @ tolgayhickiran Prompt",
+          "url": "https://prompt-motion.com/tolgayhickiran-e90799"
+        },
+        {
+          "text": "D @ danilowm Prompt",
+          "url": "https://prompt-motion.com/danilowm-d3720d"
+        },
+        {
+          "text": "V @ VanshWTFFF Prompt",
+          "url": "https://prompt-motion.com/vanshwtfff-db0466"
+        },
+        {
+          "text": "3 @ 3xtihor Prompt",
+          "url": "https://prompt-motion.com/3xtihor-0f6911"
+        },
+        {
+          "text": "J @ johnsavage_ai Prompt",
+          "url": "https://prompt-motion.com/johnsavage-ai-b091c0"
+        },
+        {
+          "text": "L @ LeonKohli Prompt",
+          "url": "https://prompt-motion.com/leonkohli-6dc01b"
+        },
+        {
+          "text": "M @ marouanegazouzi Prompt",
+          "url": "https://prompt-motion.com/marouanegazouzi-6071d5"
+        },
+        {
+          "text": "S @ safarkhanshuvo Prompt",
+          "url": "https://prompt-motion.com/safarkhanshuvo-ffd52d"
+        },
+        {
+          "text": "S @ sahildesigner23 Prompt",
+          "url": "https://prompt-motion.com/sahildesigner23-ee3155"
+        },
+        {
+          "text": "G @ Grace_sunnyy Prompt",
+          "url": "https://prompt-motion.com/grace-sunnyy-29bc61"
+        },
+        {
+          "text": "T @ TeslaChartz Prompt",
+          "url": "https://prompt-motion.com/teslachartz-c58b32"
+        },
+        {
+          "text": "L @ leadnotifi Prompt",
+          "url": "https://prompt-motion.com/leadnotifi-e83f94"
+        },
+        {
+          "text": "S @ Shinskinakamoto Prompt",
+          "url": "https://prompt-motion.com/shinskinakamoto-20190b"
+        }
+      ],
+      "section_headings": [
+        {
+          "heading": "Improved prompt"
+        },
+        {
+          "heading": "What changed"
+        },
+        {
+          "heading": "Original prompt"
+        },
+        {
+          "heading": "Made with the original prompt"
+        }
+      ],
+      "prompt_text": "not retained; rights not established",
+      "rights": "Site says prompt/video belong to creators",
+      "retrieval_status": 200,
+      "json_ld_count": 0,
+      "section_details": [
+        {
+          "heading": "Improved prompt",
+          "text": "[prompt omitted: redistribution rights not established]"
+        },
+        {
+          "heading": "What changed",
+          "summary": "The site describes a unified concept, beat grid and generated soundtrack, explicit exclusions, frame-by-frame rendering, per-beat review, and a storyboard before build."
+        },
+        {
+          "heading": "Original prompt",
+          "text": "[prompt omitted: redistribution rights not established]"
+        },
+        {
+          "heading": "Made with the original prompt",
+          "text": "[prompt omitted: redistribution rights not established]"
+        }
+      ],
+      "attribution": "Prompt Motion",
+      "reported_original_prompt_examples": {
+        "video_count": 49,
+        "creator_count": 49
+      },
+      "specification_summary": {
+        "duration_seconds": 15,
+        "size": "1920x1080",
+        "fps": 60,
+        "tempo_bpm": 120,
+        "sections": [
+          "direction",
+          "structure",
+          "build",
+          "start"
+        ],
+        "render_method_requested": "time-derived seeking and frame rendering with motion blur; soundtrack and muxing",
+        "evidence": "visible prompt instructions; not verified execution"
+      }
+    },
+    {
+      "url": "https://prompt-motion.com/templates/realtime",
+      "id": "realtime",
+      "title": "The 3D template",
+      "head_meta": [
+        {
+          "name": "viewport",
+          "property": null,
+          "content": "width=device-width, initial-scale=1"
+        },
+        {
+          "name": "description",
+          "property": null,
+          "content": "[description omitted; see source page]",
+          "content_source_not_archived": true,
+          "content_character_count": 135
+        },
+        {
+          "name": null,
+          "property": "og:title",
+          "content": "The 3D template"
+        },
+        {
+          "name": null,
+          "property": "og:description",
+          "content": "[description omitted; see source page]",
+          "content_source_not_archived": true,
+          "content_character_count": 135
+        },
+        {
+          "name": null,
+          "property": "og:site_name",
+          "content": "Prompt Motion"
+        },
+        {
+          "name": null,
+          "property": "og:image",
+          "content": "https://media.prompt-motion.com/improved-realtime-1/poster.bb539d45.webp"
+        },
+        {
+          "name": null,
+          "property": "og:image:alt",
+          "content": "The 3D template"
+        },
+        {
+          "name": null,
+          "property": "og:type",
+          "content": "website"
+        },
+        {
+          "name": "twitter:card",
+          "property": null,
+          "content": "summary_large_image"
+        },
+        {
+          "name": "twitter:creator",
+          "property": null,
+          "content": "@p4nthera_"
+        },
+        {
+          "name": "twitter:title",
+          "property": null,
+          "content": "The 3D template"
+        },
+        {
+          "name": "twitter:description",
+          "property": null,
+          "content": "[description omitted; see source page]",
+          "content_source_not_archived": true,
+          "content_character_count": 135
+        },
+        {
+          "name": "twitter:image",
+          "property": null,
+          "content": "https://media.prompt-motion.com/improved-realtime-1/poster.bb539d45.webp"
+        },
+        {
+          "name": "twitter:image:alt",
+          "property": null,
+          "content": "The 3D template"
+        }
+      ],
+      "canonical_url": null,
+      "json_ld": "not retained; may contain creative content",
+      "html_video_attributes": [
+        {
+          "src": "https://media.prompt-motion.com/improved-realtime-1/video.22ccfd17.mp4",
+          "width": "1920",
+          "height": "1080",
+          "muted": "",
+          "loop": "",
+          "playsinline": "",
+          "preload": "auto"
+        },
+        {
+          "src": "https://media.prompt-motion.com/nft-chen-opus-5-5-three-js-prompt/preview.f0bdafa8.mp4",
+          "muted": "",
+          "loop": "",
+          "playsinline": "",
+          "preload": "auto"
+        },
+        {
+          "src": "https://media.prompt-motion.com/mandelduck-single-prompt-with-opus/preview.5e7c1550.mp4",
+          "muted": "",
+          "loop": "",
+          "playsinline": "",
+          "preload": "auto"
+        },
+        {
+          "src": "https://media.prompt-motion.com/gorden-sun-opus-5-5-3d-blender-3d-3d-three-js/preview.5bed12d1.mp4",
+          "muted": "",
+          "loop": "",
+          "playsinline": "",
+          "preload": "auto"
+        },
+        {
+          "src": "https://media.prompt-motion.com/buildfastwithai-opus-5-5-high-just/preview.3c37abd5.mp4",
+          "muted": "",
+          "loop": "",
+          "playsinline": "",
+          "preload": "auto"
+        }
+      ],
+      "links": [
+        {
+          "text": "All videos",
+          "url": "https://prompt-motion.com/"
+        },
+        {
+          "text": "Customize this prompt",
+          "url": "https://prompt-motion.com/templates/realtime/customize"
+        },
+        {
+          "text": "N @ NFT_Chen Prompt",
+          "url": "https://prompt-motion.com/nft-chen-5f8bb0"
+        },
+        {
+          "text": "M @ MandelDuck Prompt",
+          "url": "https://prompt-motion.com/mandelduck-95fd08"
+        },
+        {
+          "text": "G @ Gorden_Sun Prompt",
+          "url": "https://prompt-motion.com/gorden-sun-041f56"
+        },
+        {
+          "text": "B @ BuildFastWithAI Prompt",
+          "url": "https://prompt-motion.com/buildfastwithai-ed9447"
+        },
+        {
+          "text": "A @ allforbigfire Prompt",
+          "url": "https://prompt-motion.com/allforbigfire-86ff3c"
+        }
+      ],
+      "section_headings": [
+        {
+          "heading": "Improved prompt"
+        },
+        {
+          "heading": "What the template does"
+        },
+        {
+          "heading": "Built on this template"
+        }
+      ],
+      "prompt_text": "not retained; rights not established",
+      "rights": "Site says prompt/video belong to creators",
+      "retrieval_status": 200,
+      "json_ld_count": 0,
+      "section_details": [
+        {
+          "heading": "Improved prompt",
+          "text": "[prompt omitted: redistribution rights not established]"
+        },
+        {
+          "heading": "What the template does",
+          "text": null,
+          "summary": "A signature shot shapes the shot list, with named camera moves, physical lighting and materials, and reactive motion."
+        },
+        {
+          "heading": "Built on this template",
+          "text": null,
+          "summary": "The site reports five improved prompts derived from this template."
+        }
+      ],
+      "attribution": "Prompt Motion",
+      "reported_derived_prompt_count": 5,
+      "specification_summary": {
+        "duration_seconds": 20,
+        "size": "1920x1080",
+        "fps": 60,
+        "requested_technology": "self-contained HTML with three.js CDN, physical materials, scene lighting, time-derived render mode",
+        "sequence": "macro card, pull back to curved wall, crane to corridors, card swings and reveals text, overhead signature shot, wordmark",
+        "evidence": "visible prompt instructions; not verified execution"
+      }
+    }
+  ]
+}

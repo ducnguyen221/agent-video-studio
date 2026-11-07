@@ -3,6 +3,25 @@
   "note": "Ban ghi nguon upstream cua tung thanh phan chung cat trong repo nay. `video-studio doctor` doi chieu muc `hyperframes-skills.skills` voi cay `skills/` tren dia; `--check-updates` in ra ban da ghim de nguoi dung so voi upstream.",
   "checked": "2026-09-20",
   "sources": {
+    "prompt-motion-reference": {
+      "url": "https://prompt-motion.com/",
+      "sitemap_url": "https://prompt-motion.com/sitemap.xml",
+      "checked": "2026-11-07",
+      "relationship": "idea_reference",
+      "status": "metadata_and_original_adaptation_briefs",
+      "license": "No bulk redistribution license established; source prompts and media belong to their creators",
+      "local_paths": [
+        "skills/video-theme-library/assets/prompt-motion/INDEX.md",
+        "skills/video-theme-library/assets/prompt-motion/index.json",
+        "skills/video-theme-library/assets/prompt-motion/source"
+      ],
+      "code_copied": false,
+      "assets_copied": false,
+      "original_prompts_archived": false,
+      "runtime_tested": false,
+      "how": "Metadata công khai và link nguồn từng entry; prompt HyperFrames tự viết, tách dữ kiện nguồn khỏi đề xuất phân cảnh/tỷ lệ/vùng màn hình. Không lưu toàn bộ prompt nguyên văn, mã hoặc media nguồn. Phạm vi và lỗi lần quét nằm trong source; không suy đây là bộ template đã render.",
+      "update_guide": "skills/video-theme-library/assets/prompt-motion/USAGE.md"
+    },
     "hyperframes-skills": {
       "repo": "heygen-com/hyperframes",
       "ref": "v0.8.51",

@@ -21,6 +21,12 @@ audience: agents and humans composing a new video or slide
 
 ## 1. Bảng chọn nhanh (việc → nhóm → template)
 
+Sau khi chọn layout, tra chuyển động tại
+[`Prompt Motion INDEX`](../skills/video-theme-library/assets/prompt-motion/INDEX.md).
+Mỗi mã `PM-<slug>` dẫn tới tên, link xem nguồn, metadata và prompt HyperFrames tự viết, kèm
+gợi ý vai trò cảnh, tỷ lệ và vùng hiển thị. Đây là reference chưa render kiểm chứng, không
+thuộc các tier S/A/B của catalog này. Catalog của trạm vẫn quyết định layout.
+
 | Đoạn nội dung là… | Nhóm | Chọn (16:9) | Chọn (9:16) |
 |---|---|---|---|
 | Mở màn / hook | §2 | `cover-long` (S) | `hook-orb-badge` (S) · `cover-short` (A) |

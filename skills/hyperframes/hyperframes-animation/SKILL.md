@@ -17,6 +17,13 @@ Một cảnh tốt thường là **2–4 luật nguyên tử ghép lại**, khô
 Luật nguyên tử là những đơn vị nhỏ đã được đặt tên ở upstream (chữ hiện theo dòng, số đếm tăng,
 camera lướt, ánh sáng nở, thanh chạy, lưới thẻ lắp vào chỗ, con trỏ thao tác trên giao diện…).
 
+Ý tưởng từ Prompt Motion được lập chỉ mục tại
+[`../../video-theme-library/assets/prompt-motion/INDEX.md`](../../video-theme-library/assets/prompt-motion/INDEX.md).
+Tra theo công việc của cảnh, tỷ lệ khung và vùng hiển thị; đọc file của mã `PM-<slug>` đã chọn
+để lấy phân tích kỹ thuật cùng prompt HyperFrames tự viết. Đây là reference chưa kiểm render;
+hiệu ứng theo chuột, cuộn trang hoặc đồng hồ phải chuyển thành thời gian composition xác định
+trước. Link nguồn giúp người dùng xem ý tưởng; nó không chứng minh bản dựng lại khớp hình ảnh.
+
 Chỉ nạp một **blueprint** (bản thiết kế cảnh nhiều pha) khi cảnh thật sự có nhiều pha nối tiếp và
 bạn muốn giữ nguyên nhịp đã được thử: ví dụ mở màn tiêu đề, so sánh hai phía, hành trình camera,
 tiết lộ không gian làm việc, chữ gõ máy, sân khấu tiến trình.

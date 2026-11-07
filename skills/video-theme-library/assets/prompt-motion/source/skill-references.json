@@ -1,0 +1,62 @@
+{
+  "method": "All five gallery entries without a Prompt section were re-read in full. They present a Skill section and a public repository link instead. Descriptions below are paraphrases of visible page metadata. Linked skills were not installed, fetched or run.",
+  "checked": "2026-11-07",
+  "records": [
+    {
+      "id": "lexnlin-f9b3bd8",
+      "entry_type": "skill_reference",
+      "author_display_name": "Leon Lin",
+      "author_handle": "LexnLin",
+      "source_repo_url": "https://github.com/Leonxlnx/taste-skill",
+      "source_skill_name": "design-taste-frontend",
+      "source_skill_description": "Trang giới thiệu skill định hướng thị giác cho website, dashboard và màn hình ứng dụng, có hình ảnh thật và bước kiểm trong browser. Đây là mô tả công bố, chưa kiểm nội dung repo hay khả năng thực thi.",
+      "prompt_absence_reason": "The page provides a Skill reference rather than an original Prompt section.",
+      "implementation_note": "Dùng như tham chiếu cách chia bậc thông tin trong dashboard; nếu dựng motion, chọn một metric và một thao tác UI có ý nghĩa rồi animate riêng. Không coi skill thiết kế giao diện là animation template đã chạy."
+    },
+    {
+      "id": "mengto-a7f4679",
+      "entry_type": "skill_reference",
+      "author_display_name": "Meng To",
+      "author_handle": "MengTo",
+      "source_repo_url": "https://github.com/MengTo/Skills/tree/main/agent-skills/web-design/html-demo",
+      "source_skill_name": "html-demo",
+      "source_skill_description": "Trang mô tả demo sản phẩm bằng HTML trong cửa sổ ứng dụng, các bước dùng chung một đồng hồ để tua, nhảy bước, dừng và lặp. Chưa kiểm repo hoặc demo.",
+      "prompt_absence_reason": "The page provides a Skill reference rather than an original Prompt section.",
+      "implementation_note": "Đề xuất một cửa sổ app có step list và nội dung theo thời gian tuyệt đối; chọn bước bằng tham số timeline, không lấy trạng thái UI tích lũy. Bản dọc phải giảm các cột và tăng vùng tác vụ chính."
+    },
+    {
+      "id": "lexnlin-6161a6",
+      "entry_type": "skill_reference",
+      "author_display_name": "Leon Lin",
+      "author_handle": "LexnLin",
+      "source_repo_url": "https://github.com/Leonxlnx/cinetic",
+      "source_skill_name": "cinetic",
+      "source_skill_description": "Trang giới thiệu skill tạo ý tưởng, nhận diện, âm nhạc và render phim launch hoặc motion ngắn bằng mã; chưa xác minh các chức năng đó.",
+      "prompt_absence_reason": "The page provides a Skill reference rather than an original Prompt section.",
+      "implementation_note": "Dùng như một gợi ý cho mạch concept → nhạc → các điểm nhấn → brand payoff. Với HyperFrames vẫn đi workflow studio hiện có, không tự cài công cụ khác từ lệnh trên trang."
+    },
+    {
+      "id": "anthonyriera-9b1b2a",
+      "entry_type": "skill_reference",
+      "author_display_name": "Anthony Riera",
+      "author_handle": "anthonyriera",
+      "source_repo_url": "https://github.com/Rieranthony/product-film-skill",
+      "source_skill_name": "product-film",
+      "source_skill_description": "Trang mô tả skill tìm hiểu thiết kế sản phẩm, hỏi brief và dựng launch/landing video bằng Remotion từ component, logo và nhạc thật. Đây là mô tả, chưa kiểm repo hay video.",
+      "visible_metadata": {"iterations_reported": "Many rounds", "stack_reported": "Remotion"},
+      "prompt_absence_reason": "The page provides a Skill reference rather than an original Prompt section.",
+      "implementation_note": "Đề xuất giữ component và token của sản phẩm được giao, chuyển động vào layer con và dùng một shared element để nối các cảnh. Chuyển nguyên tắc sang composition HyperFrames riêng; không gọi Remotion hay cài plugin nguồn chỉ vì metadata nhắc tới."
+    },
+    {
+      "id": "jake11moran-a269c4",
+      "entry_type": "skill_reference",
+      "author_display_name": "Jake Moran",
+      "author_handle": "jake11moran",
+      "source_repo_url": "https://github.com/heygen-com/hyperframes-community-skills/tree/master/skills/session-story",
+      "source_skill_name": "session-story",
+      "source_skill_description": "Trang mô tả skill tạo phim hoạt hình có nhạc bằng HyperFrames từ lịch sử một phiên agent. Chỉ lưu mô tả công khai, không đọc bất kỳ lịch sử phiên riêng nào và không xác minh skill đã chạy.",
+      "prompt_absence_reason": "The page provides a Skill reference rather than an original Prompt section.",
+      "implementation_note": "Đề xuất kể một phiên làm việc hư cấu bằng nhân vật và ba pha thử, vướng mắc, hoàn thành; nội dung đã được duyệt trước. Không tự đọc transcript hay cấu hình của người dùng để tạo câu chuyện."
+    }
+  ]
+}

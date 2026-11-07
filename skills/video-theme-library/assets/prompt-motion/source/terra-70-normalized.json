@@ -1,0 +1,494 @@
+{
+  "records": [
+    {
+      "id": "stephanlivera-df17a2",
+      "url": "https://prompt-motion.com/stephanlivera-df17a2",
+      "reading_scope": "full_public_prompt",
+      "technique_synopsis": "Brief requests a 15-second designer showreel; it does not prescribe subjects, scenes, or technique.",
+      "evidence": "full prompt shorter than extracted 750-character limit; not observed video"
+    },
+    {
+      "id": "twoclipping-5cba86",
+      "url": "https://prompt-motion.com/twoclipping-5cba86",
+      "reading_scope": "full_public_prompt",
+      "technique_synopsis": "A single shape morphs through button, loader, player, slider, tabs, chart and command palette under cursor control, returning to its initial state; the brief uses beat-mapped seeking, springs and motion-blur subframes.",
+      "evidence": "manual full prompt reading; not observed video"
+    },
+    {
+      "id": "shneural-2abdfa",
+      "url": "https://prompt-motion.com/shneural-2abdfa",
+      "reading_scope": "full_public_prompt",
+      "technique_synopsis": "Brief requests a 15-second designer showreel; it does not prescribe subjects, scenes, or technique.",
+      "evidence": "full prompt shorter than extracted 750-character limit; not observed video"
+    },
+    {
+      "id": "ajith-io-b5626e",
+      "url": "https://prompt-motion.com/ajith-io-b5626e",
+      "reading_scope": "full_public_prompt",
+      "technique_synopsis": "Brief requests a 15-second designer showreel; it does not prescribe subjects, scenes, or technique.",
+      "evidence": "full prompt shorter than extracted 750-character limit; not observed video"
+    },
+    {
+      "id": "twoclipping-221cab",
+      "url": "https://prompt-motion.com/twoclipping-221cab",
+      "reading_scope": "full_public_prompt",
+      "technique_synopsis": "A continuous 2D photo-print launch connects wordmark, gallery grid, glass UI, phone, ordering sequence and a real-wall reveal through shared shapes; it requests seekable motion, beat review and a loop.",
+      "evidence": "manual full prompt reading; not observed video"
+    },
+    {
+      "id": "twoclipping-d89be5",
+      "url": "https://prompt-motion.com/twoclipping-d89be5",
+      "reading_scope": "full_public_prompt",
+      "technique_synopsis": "A camera glides over a captured landing page, rises overhead, dives into the hero and settles on a title card. The requested build layers captured webpage elements in WebGL2 with depth, time-seeking and frame previews.",
+      "evidence": "manual full prompt reading; not observed video"
+    },
+    {
+      "id": "himanshutwtxs-5f4b43",
+      "url": "https://prompt-motion.com/himanshutwtxs-5f4b43",
+      "reading_scope": "full_public_prompt",
+      "technique_synopsis": "Brief requests a 15-second designer showreel; it does not prescribe subjects, scenes, or technique.",
+      "evidence": "full prompt shorter than extracted 750-character limit; not observed video"
+    },
+    {
+      "id": "gabrielbuzziv-4ff0c6",
+      "url": "https://prompt-motion.com/gabrielbuzziv-4ff0c6",
+      "reading_scope": "full_public_prompt",
+      "technique_synopsis": "Brief requests a 15-second designer showreel; it does not prescribe subjects, scenes, or technique.",
+      "evidence": "full prompt shorter than extracted 750-character limit; not observed video"
+    },
+    {
+      "id": "lexnlin-038035",
+      "url": "https://prompt-motion.com/lexnlin-038035",
+      "reading_scope": "full_public_prompt",
+      "technique_synopsis": "A fast editorial brand ad combines supplied inspiration with researched assets, changing image scales, painted graphics, morphing text, zooms and a final logo.",
+      "evidence": "manual full prompt reading; not observed video"
+    },
+    {
+      "id": "ror-fly-9950f1",
+      "url": "https://prompt-motion.com/ror-fly-9950f1",
+      "reading_scope": "full_public_prompt",
+      "technique_synopsis": "Thirty-second recipe explainer progresses from an empty glass through measured ingredients to the finished cocktail.",
+      "evidence": "full prompt shorter than extracted 750-character limit; not observed video"
+    },
+    {
+      "id": "notdwd-c2037d",
+      "url": "https://prompt-motion.com/notdwd-c2037d",
+      "reading_scope": "full_public_prompt",
+      "technique_synopsis": "A 12-second square product sting advances from a header and cursor click through an orbiting app icon, prompt box, answer page, stacked feature cards and a final wordmark. Frame-timed movement, directional blur, beat-aligned sound and time-derived rendering are specified.",
+      "evidence": "manual full prompt reading; not observed video"
+    },
+    {
+      "id": "thismacapital-dfba20",
+      "url": "https://prompt-motion.com/thismacapital-dfba20",
+      "reading_scope": "full_public_prompt",
+      "technique_synopsis": "Brief requests a 15-second designer showreel; it does not prescribe subjects, scenes, or technique.",
+      "evidence": "full prompt shorter than extracted 750-character limit; not observed video"
+    },
+    {
+      "id": "lexnlin-f9b3bd8",
+      "url": "https://prompt-motion.com/lexnlin-f9b3bd8",
+      "reading_scope": "no_public_prompt",
+      "technique_synopsis": null,
+      "evidence": null
+    },
+    {
+      "id": "mengto-a7f4679",
+      "url": "https://prompt-motion.com/mengto-a7f4679",
+      "reading_scope": "no_public_prompt",
+      "technique_synopsis": null,
+      "evidence": null
+    },
+    {
+      "id": "ajith-io-c52e09",
+      "url": "https://prompt-motion.com/ajith-io-c52e09",
+      "reading_scope": "full_public_prompt",
+      "technique_synopsis": "Research the named product and create a 40-second promotional motion-design showcase; sequence and techniques are unspecified.",
+      "evidence": "full prompt shorter than extracted 750-character limit; not observed video"
+    },
+    {
+      "id": "twoclipping-6dd14e",
+      "url": "https://prompt-motion.com/twoclipping-6dd14e",
+      "reading_scope": "full_public_prompt",
+      "technique_synopsis": "A minimalist product promo uses selected UI moments and owned vertical footage, masked typography, match cuts and beat-aligned transitions, with a review step before final render.",
+      "evidence": "manual full prompt reading; not observed video"
+    },
+    {
+      "id": "samuel-yostt-891f87",
+      "url": "https://prompt-motion.com/samuel-yostt-891f87",
+      "reading_scope": "full_public_prompt",
+      "technique_synopsis": "A 15-second product showreel should reflect the landing page visual style; the brief leaves scene selection open.",
+      "evidence": "full prompt shorter than extracted 750-character limit; not observed video"
+    },
+    {
+      "id": "emollick-8661a8",
+      "url": "https://prompt-motion.com/emollick-8661a8",
+      "reading_scope": "full_public_prompt",
+      "technique_synopsis": "Explain recursion with a self-referential sequence where each explanation changes visual style; the brief asks for rapid pacing.",
+      "evidence": "full prompt shorter than extracted 750-character limit; not observed video"
+    },
+    {
+      "id": "lexnlin-6161a6",
+      "url": "https://prompt-motion.com/lexnlin-6161a6",
+      "reading_scope": "no_public_prompt",
+      "technique_synopsis": null,
+      "evidence": null
+    },
+    {
+      "id": "steventey-0d20e4",
+      "url": "https://prompt-motion.com/steventey-0d20e4",
+      "reading_scope": "full_public_prompt",
+      "technique_synopsis": "A 15-second showreel-style launch promo for the named SaaS product; no specific sequence or visual mechanism is prescribed.",
+      "evidence": "full prompt shorter than extracted 750-character limit; not observed video"
+    },
+    {
+      "id": "alex-prompter-1ea044",
+      "url": "https://prompt-motion.com/alex-prompter-1ea044",
+      "reading_scope": "full_public_prompt",
+      "technique_synopsis": "Thirty-second business explainer as one HTML page: problem, offer, three-step process, proof point, and closing name, using bold text and brand colors.",
+      "evidence": "manual reading of full prompt; not observation of video"
+    },
+    {
+      "id": "majin-appsheet-2d3c1a",
+      "url": "https://prompt-motion.com/majin-appsheet-2d3c1a",
+      "reading_scope": "full_public_prompt",
+      "technique_synopsis": "Short Japanese request for a promotional video about the named subject; no sequence or rendering method is specified.",
+      "evidence": "manual reading of full prompt; not observation of video"
+    },
+    {
+      "id": "tdinh-me-815acb",
+      "url": "https://prompt-motion.com/tdinh-me-815acb",
+      "reading_scope": "full_public_prompt",
+      "technique_synopsis": "A slow reveal assembles the named product logo; further sequence and technique are unspecified.",
+      "evidence": "manual reading of full prompt; not observation of video"
+    },
+    {
+      "id": "thayto-dev-44b911",
+      "url": "https://prompt-motion.com/thayto-dev-44b911",
+      "reading_scope": "full_public_prompt",
+      "technique_synopsis": "Brief requests a 15-second designer showreel; it does not prescribe subjects, scenes, or technique.",
+      "evidence": "manual reading of full prompt; not observation of video"
+    },
+    {
+      "id": "sab8a-364a5a",
+      "url": "https://prompt-motion.com/sab8a-364a5a",
+      "reading_scope": "full_public_prompt",
+      "technique_synopsis": "Edit an existing talking-head clip with subtitles, graphic overlays and music; sequence and format are unspecified.",
+      "evidence": "manual reading of full prompt; not observation of video"
+    },
+    {
+      "id": "anthonyriera-9b1b2a",
+      "url": "https://prompt-motion.com/anthonyriera-9b1b2a",
+      "reading_scope": "no_public_prompt",
+      "technique_synopsis": null,
+      "evidence": null
+    },
+    {
+      "id": "davidmarcus-a28a60",
+      "url": "https://prompt-motion.com/davidmarcus-a28a60",
+      "reading_scope": "full_public_prompt",
+      "technique_synopsis": "Short modern social promotion for the named company, with sound; scenes and visual technique are unspecified.",
+      "evidence": "manual reading of full prompt; not observation of video"
+    },
+    {
+      "id": "techhalla-90b8ec",
+      "url": "https://prompt-motion.com/techhalla-90b8ec",
+      "reading_scope": "full_public_prompt",
+      "technique_synopsis": "Twenty-second square poster-inspired kinetic type bumper: six timed messages move through slams, glyph scrambling, letter-shaped masks, a proof stack and brand lockup. Strict dark/magenta/green palette, beat-synced time-derived motion and per-beat still review are requested.",
+      "evidence": "manual reading of full prompt; not observation of video"
+    },
+    {
+      "id": "ultimaxbt-bbebf5",
+      "url": "https://prompt-motion.com/ultimaxbt-bbebf5",
+      "reading_scope": "full_public_prompt",
+      "technique_synopsis": "An orange dot links a clicked toggle, typography, spring graph, transforming geometric shapes, orbiting words and halftone end card, then returns to its opening state. One seekable 2D scene uses the same spring to move the dot and draw its graph.",
+      "evidence": "manual reading of full prompt; not observation of video"
+    },
+    {
+      "id": "rossaxbt-94583b",
+      "url": "https://prompt-motion.com/rossaxbt-94583b",
+      "reading_scope": "full_public_prompt",
+      "technique_synopsis": "A white ball travels through a switch, slider, notification cards and keyboard before returning to the start. A single camera follows a continuous UI world; fixed-time typing, contact sounds and frame review support a seamless loop.",
+      "evidence": "manual reading of full prompt; not observation of video"
+    },
+    {
+      "id": "itsolelehmann-e47532",
+      "url": "https://prompt-motion.com/itsolelehmann-e47532",
+      "reading_scope": "full_public_prompt",
+      "technique_synopsis": "Four seasons pass outside a train window while a cozy carriage and coffee remain foreground context; timing and build method are unspecified.",
+      "evidence": "manual reading of full prompt; not observation of video"
+    },
+    {
+      "id": "linearuncle-5d2bae",
+      "url": "https://prompt-motion.com/linearuncle-5d2bae",
+      "reading_scope": "full_public_prompt",
+      "technique_synopsis": "A beginner-friendly derivative explainer with examples and reflective questions, requested in Manim with edge-tts narration; no storyboard is specified.",
+      "evidence": "manual reading of full prompt; not observation of video"
+    },
+    {
+      "id": "pankajstwt-49978ed",
+      "url": "https://prompt-motion.com/pankajstwt-49978ed",
+      "reading_scope": "full_public_prompt",
+      "technique_synopsis": "A 14.5-second camera move glides over a landing page, rises overhead, dives back to the hero and ends on a branded card. The brief requests webpage capture, WebGL2 depth, time-seekable motion, 60fps output and approval of stills before render.",
+      "evidence": "manual reading of full prompt; not observation of video"
+    },
+    {
+      "id": "jacksonfall-54b2ac",
+      "url": "https://prompt-motion.com/jacksonfall-54b2ac",
+      "reading_scope": "full_public_prompt",
+      "technique_synopsis": "A 30-second motion designer showreel for a startup branding agency, with original graphics; individual scenes are unspecified.",
+      "evidence": "manual reading of full prompt; not observation of video"
+    },
+    {
+      "id": "kloss-xyz-fe0c31",
+      "url": "https://prompt-motion.com/kloss-xyz-fe0c31",
+      "reading_scope": "full_public_prompt",
+      "technique_synopsis": "An overview of milestones in AI history; the brief does not specify events, order or visual treatment.",
+      "evidence": "manual reading of full prompt; not observation of video"
+    },
+    {
+      "id": "jasonzhou1993-8595e0",
+      "url": "https://prompt-motion.com/jasonzhou1993-8595e0",
+      "reading_scope": "full_public_prompt",
+      "technique_synopsis": "A 15-second motion designer showreel; scenes and techniques are not specified.",
+      "evidence": "manual reading of full prompt; not observation of video"
+    },
+    {
+      "id": "robj3d3-b18fad",
+      "url": "https://prompt-motion.com/robj3d3-b18fad",
+      "reading_scope": "full_public_prompt",
+      "technique_synopsis": "Use a product roadmap to create a 15-second teaser for an upcoming feature; no visual sequence is specified.",
+      "evidence": "manual reading of full prompt; not observation of video"
+    },
+    {
+      "id": "ho-ba-f3f0e9",
+      "url": "https://prompt-motion.com/ho-ba-f3f0e9",
+      "reading_scope": "full_public_prompt",
+      "technique_synopsis": "A 30-second product introduction uses real product assets decomposed into animated interface components, with motion synchronized to music.",
+      "evidence": "manual reading of full prompt; not observation of video"
+    },
+    {
+      "id": "itisrazak-3ad902",
+      "url": "https://prompt-motion.com/itisrazak-3ad902",
+      "reading_scope": "full_public_prompt",
+      "technique_synopsis": "Research the named product and create a 40-second motion-design showcase; the brief leaves the sequence open.",
+      "evidence": "manual reading of full prompt; not observation of video"
+    },
+    {
+      "id": "notdwd-7de38a",
+      "url": "https://prompt-motion.com/notdwd-7de38a",
+      "reading_scope": "full_public_prompt",
+      "technique_synopsis": "A 12-second square product sting advances from a header and cursor click through an orbiting app icon, prompt box, answer page, stacked feature cards and a final wordmark. Frame-timed movement, directional blur, beat-aligned sound and time-derived rendering are specified.",
+      "evidence": "manual full prompt reading; not observed video"
+    },
+    {
+      "id": "viktoroddy-98c1d8",
+      "url": "https://prompt-motion.com/viktoroddy-98c1d8",
+      "reading_scope": "full_public_prompt",
+      "technique_synopsis": "Launch video celebrating a product milestone; no sequence or animation method is prescribed.",
+      "evidence": "manual reading of full prompt; not observation of video"
+    },
+    {
+      "id": "ismailfahmi-557268",
+      "url": "https://prompt-motion.com/ismailfahmi-557268",
+      "reading_scope": "full_public_prompt",
+      "technique_synopsis": "A 15-second showreel highlighting a named media intelligence product; scenes and techniques are unspecified.",
+      "evidence": "manual reading of full prompt; not observation of video"
+    },
+    {
+      "id": "melvynx-6cde6c",
+      "url": "https://prompt-motion.com/melvynx-6cde6c",
+      "reading_scope": "full_public_prompt",
+      "technique_synopsis": "A 15-second motion showreel for a supplied website; scenes and techniques are unspecified.",
+      "evidence": "manual reading of full prompt; not observation of video"
+    },
+    {
+      "id": "rossaxbt-3085b7",
+      "url": "https://prompt-motion.com/rossaxbt-3085b7",
+      "reading_scope": "full_public_prompt",
+      "technique_synopsis": "A seven-scene narrated launch film moves from image collage through prompt, results, moodboard, settings and image burst into a logo. The brief specifies word-timed captions, simulated glass, a seekable canvas, 60fps rendering and sound mixing.",
+      "evidence": "manual full prompt reading; not observed video"
+    },
+    {
+      "id": "tequilafunks-97f6c9",
+      "url": "https://prompt-motion.com/tequilafunks-97f6c9",
+      "reading_scope": "full_public_prompt",
+      "technique_synopsis": "A 15-second motion designer showreel; scenes and techniques are not specified.",
+      "evidence": "manual reading of full prompt; not observation of video"
+    },
+    {
+      "id": "sudo-kiran-49176d",
+      "url": "https://prompt-motion.com/sudo-kiran-49176d",
+      "reading_scope": "full_public_prompt",
+      "technique_synopsis": "Very short open-ended direction with no specified subject, scene or technique.",
+      "evidence": "manual reading of full prompt; not observation of video"
+    },
+    {
+      "id": "lukasersil-0ed38e",
+      "url": "https://prompt-motion.com/lukasersil-0ed38e",
+      "reading_scope": "full_public_prompt",
+      "technique_synopsis": "A 15-second portfolio reel combining typography, geometry, 2D/3D, masking, fluid, compositing, light and camera motion into naturally connected shots.",
+      "evidence": "manual reading of full prompt; not observation of video"
+    },
+    {
+      "id": "nft-chen-5f8bb0",
+      "url": "https://prompt-motion.com/nft-chen-5f8bb0",
+      "reading_scope": "full_public_prompt",
+      "technique_synopsis": "A Web3D recreation of an aerial combat scene above a sunset sea, with colored aircraft, clouds and reflected light; the brief references a particular film aesthetic.",
+      "evidence": "manual reading of full prompt; not observation of video"
+    },
+    {
+      "id": "axtonliu-0b861d",
+      "url": "https://prompt-motion.com/axtonliu-0b861d",
+      "reading_scope": "full_public_prompt",
+      "technique_synopsis": "Create a detailed animated pelican riding a bicycle; the creator leaves technology open.",
+      "evidence": "manual reading of full prompt; not observation of video"
+    },
+    {
+      "id": "gizakdag-cf4ae6",
+      "url": "https://prompt-motion.com/gizakdag-cf4ae6",
+      "reading_scope": "full_public_prompt",
+      "technique_synopsis": "A 15-second motion showreel interprets overthinking using supplied graphic references; the sequence is unspecified.",
+      "evidence": "manual reading of full prompt; not observation of video"
+    },
+    {
+      "id": "mandelduck-95fd08",
+      "url": "https://prompt-motion.com/mandelduck-95fd08",
+      "reading_scope": "full_public_prompt",
+      "technique_synopsis": "Interactive 3D game placing a cat-search activity inside a Van Gogh painting, beginning with Starry Night and its town.",
+      "evidence": "manual full prompt reading; not observed video"
+    },
+    {
+      "id": "gorden-sun-041f56",
+      "url": "https://prompt-motion.com/gorden-sun-041f56",
+      "reading_scope": "full_public_prompt",
+      "technique_synopsis": "Three.js animation of a falling ball bouncing through 3D environments and illuminating objects on musical beats; scenes change with music and include humor.",
+      "evidence": "manual full prompt reading; not observed video"
+    },
+    {
+      "id": "ajith-io-4c248f",
+      "url": "https://prompt-motion.com/ajith-io-4c248f",
+      "reading_scope": "full_public_prompt",
+      "technique_synopsis": "A 40-second product showreel using a self-composed score inspired by a film theme; individual scenes are unspecified.",
+      "evidence": "manual full prompt reading; not observed video"
+    },
+    {
+      "id": "polydao-7a572b",
+      "url": "https://prompt-motion.com/polydao-7a572b",
+      "reading_scope": "full_public_prompt",
+      "technique_synopsis": "A 24-second showreel around a supplied topic and brand colors with sound aligned to cuts; visual sequence is unspecified.",
+      "evidence": "manual full prompt reading; not observed video"
+    },
+    {
+      "id": "ajith-io-ea7f2d",
+      "url": "https://prompt-motion.com/ajith-io-ea7f2d",
+      "reading_scope": "full_public_prompt",
+      "technique_synopsis": "Research the named product and make a 30-second showreel using a supplied video as a visual reference; no scene sequence is specified.",
+      "evidence": "manual full prompt reading; not observed video"
+    },
+    {
+      "id": "ayushunleashed-ece3e3",
+      "url": "https://prompt-motion.com/ayushunleashed-ece3e3",
+      "reading_scope": "full_public_prompt",
+      "technique_synopsis": "A 15-second motion designer showreel; scenes and techniques are not specified.",
+      "evidence": "manual full prompt reading; not observed video"
+    },
+    {
+      "id": "chatgptastra-0d95c7",
+      "url": "https://prompt-motion.com/chatgptastra-0d95c7",
+      "reading_scope": "full_public_prompt",
+      "technique_synopsis": "A 15-second motion graphics video demonstrating a polished motion designer aesthetic; the brief does not define scenes.",
+      "evidence": "manual full prompt reading; not observed video"
+    },
+    {
+      "id": "ultimaxbt-2ddf1e",
+      "url": "https://prompt-motion.com/ultimaxbt-2ddf1e",
+      "reading_scope": "full_public_prompt",
+      "technique_synopsis": "A food-ordering interaction travels from typed request to animated cooking, recommendation cards, order confirmation and branded outro. A lime flood and expanding controls connect shots, timed to a beat grid and rendered from time-derived states.",
+      "evidence": "manual full prompt reading; not observed video"
+    },
+    {
+      "id": "monokern-ade5b6",
+      "url": "https://prompt-motion.com/monokern-ade5b6",
+      "reading_scope": "full_public_prompt",
+      "technique_synopsis": "A 20-second psychedelic, hypnotic motion showreel; the brief leaves subjects and sequence open.",
+      "evidence": "manual full prompt reading; not observed video"
+    },
+    {
+      "id": "kloss-xyz-15182a",
+      "url": "https://prompt-motion.com/kloss-xyz-15182a",
+      "reading_scope": "full_public_prompt",
+      "technique_synopsis": "A vertical, deliberately chaotic video representing a creative model’s point of view on a launch, with motion and sound, generated in Python and rendered with ffmpeg.",
+      "evidence": "manual full prompt reading; not observed video"
+    },
+    {
+      "id": "0xnfrith-5be616",
+      "url": "https://prompt-motion.com/0xnfrith-5be616",
+      "reading_scope": "full_public_prompt",
+      "technique_synopsis": "An animation explaining the value of the named product; the sequence and visual approach are unspecified.",
+      "evidence": "manual full prompt reading; not observed video"
+    },
+    {
+      "id": "math-files-39c9d0",
+      "url": "https://prompt-motion.com/math-files-39c9d0",
+      "reading_scope": "full_public_prompt",
+      "technique_synopsis": "A 20-second showreel themed around mathematics; the visual sequence is unspecified.",
+      "evidence": "manual full prompt reading; not observed video"
+    },
+    {
+      "id": "hanifproduktif-54bdee",
+      "url": "https://prompt-motion.com/hanifproduktif-54bdee",
+      "reading_scope": "full_public_prompt",
+      "technique_synopsis": "A 15-second motion design applicant showreel; subject and sequence are not prescribed.",
+      "evidence": "manual full prompt reading; not observed video"
+    },
+    {
+      "id": "nikolajankovic-ce4ff4",
+      "url": "https://prompt-motion.com/nikolajankovic-ce4ff4",
+      "reading_scope": "full_public_prompt",
+      "technique_synopsis": "A hand-drawn stop-motion explanation told in the first person by the named product; no shot sequence is given.",
+      "evidence": "manual full prompt reading; not observed video"
+    },
+    {
+      "id": "ddryo-loos-300829",
+      "url": "https://prompt-motion.com/ddryo-loos-300829",
+      "reading_scope": "full_public_prompt",
+      "technique_synopsis": "A 15-second simple but dynamic social motion graphic announcing the named CSS release; no scene structure is specified.",
+      "evidence": "manual full prompt reading; not observed video"
+    },
+    {
+      "id": "eyishazyer-af035b",
+      "url": "https://prompt-motion.com/eyishazyer-af035b",
+      "reading_scope": "full_public_prompt",
+      "technique_synopsis": "A 15-second motion designer showreel; scenes and techniques are not specified.",
+      "evidence": "manual full prompt reading; not observed video"
+    },
+    {
+      "id": "blue-clarity-ef56d0",
+      "url": "https://prompt-motion.com/blue-clarity-ef56d0",
+      "reading_scope": "full_public_prompt",
+      "technique_synopsis": "A 15-second motion designer showreel; scenes and techniques are not specified.",
+      "evidence": "manual full prompt reading; not observed video"
+    },
+    {
+      "id": "roundtablespace-d3a1be",
+      "url": "https://prompt-motion.com/roundtablespace-d3a1be",
+      "reading_scope": "full_public_prompt",
+      "technique_synopsis": "A 15-second motion designer showreel; scenes and techniques are not specified.",
+      "evidence": "manual full prompt reading; not observed video"
+    },
+    {
+      "id": "1littlecoder-9fef89",
+      "url": "https://prompt-motion.com/1littlecoder-9fef89",
+      "reading_scope": "full_public_prompt",
+      "technique_synopsis": "A ten-second creative self-introduction for a named model; the prompt excludes decorative corner frames and labels.",
+      "evidence": "manual full prompt reading; not observed video"
+    },
+    {
+      "id": "sayan-shanky-f850d8",
+      "url": "https://prompt-motion.com/sayan-shanky-f850d8",
+      "reading_scope": "full_public_prompt",
+      "technique_synopsis": "A visual explanation of what happens inside an AI data center; the prompt leaves technique and sequence open.",
+      "evidence": "manual full prompt reading; not observed video"
+    }
+  ]
+}

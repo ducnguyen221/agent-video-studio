@@ -5,6 +5,16 @@ chính nhưng chưa có tag; khi phát hành, mục đó đổi tên thành số
 `pyproject.toml`, `video_studio/__init__.py` cùng ba manifest plugin (`tests/test_version_sync.py`
 kiểm).
 
+## 0.7.0 — 2026-11-07
+
+- **Thư viện motion để lập phân cảnh:** thêm 240 tài liệu tham chiếu Prompt Motion, mã tra cứu,
+  URL nguồn và metadata, prompt HyperFrames viết mới, bộ lọc vai trò/tỷ lệ/vùng màn hình và
+  hướng thích nghi overlay. Có 170 đề xuất gallery riêng, 68 baseline được gắn nhãn và 2 template
+  chi tiết; không phân phối lại toàn bộ prompt, code hoặc media gốc và chưa render kiểm chứng.
+- **Tra ngay lúc thiết kế:** cửa vào HyperFrames, hướng sáng tạo, motion-graphics và animation
+  nối tới thư viện. Catalog layout riêng của trạm vẫn được ưu tiên; phương án được chọn có mã,
+  tên, link xem nguồn, tỷ lệ và vùng màn hình trong đề xuất phân cảnh.
+
 ## 0.6.0 — 2026-10-31
 
 - **`render --images` cho cả `news`, `news-weekly`, `topstory`:** một ảnh mỗi cảnh, viết dạng chuỗi hoặc danh sách
