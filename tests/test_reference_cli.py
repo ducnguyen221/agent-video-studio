@@ -235,8 +235,16 @@ def test_reference_checks_only_warn(monkeypatch):
     assert all(c["level"] == "warn" and c["ok"] is False and c["hint"] for c in checks)
 
 
+def test_reference_checks_warn_when_fetch_would_refuse_ytdlp(monkeypatch):
+    monkeypatch.setattr(_env, "ytdlp_exe", lambda: "C:/x/yt-dlp.cmd")
+    monkeypatch.setattr("video_studio.edit.transcribe.available", lambda: True)
+    yt = next(c for c in doctor.reference_checks() if c["name"] == "yt-dlp")
+    assert yt["ok"] is False and yt["level"] == "warn"
+    assert "fetch sẽ từ chối" in yt["detail"] and yt["hint"] == doctor.HINT_YTDLP
+
+
 def test_reference_checks_ok_when_present(monkeypatch):
-    monkeypatch.setattr(_env, "ytdlp_exe", lambda: "/bin/yt-dlp")
+    monkeypatch.setattr(_env, "ytdlp_exe", lambda: "C:/x/yt-dlp.exe")
     monkeypatch.setattr("video_studio.edit.transcribe.available", lambda: True)
     assert all(c["ok"] and c["level"] == "ok" for c in doctor.reference_checks())
 

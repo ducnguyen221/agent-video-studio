@@ -220,8 +220,11 @@ def tool_checks():
 def reference_checks():
     """Hai công cụ tuỳ chọn của `reference`: chỉ cảnh báo, không bao giờ làm doctor đỏ."""
     from .edit import transcribe
+    from .reference import fetch                  # nhập lười: cùng luật với `reference fetch`
     yt = _env.ytdlp_exe()
-    return [_check("yt-dlp", bool(yt), yt or "không thấy yt-dlp", level="warn", hint=HINT_YTDLP),
+    refused = fetch.exe_refused(yt) if yt else None
+    detail = f"{yt} — fetch sẽ từ chối: {refused}" if refused else (yt or "không thấy yt-dlp")
+    return [_check("yt-dlp", yt and not refused, detail, level="warn", hint=HINT_YTDLP),
             _check("faster-whisper", transcribe.available(),
                    "đã cài" if transcribe.available() else "chưa cài (chỉ cần khi video không có phụ đề)",
                    level="warn", hint=transcribe.INSTALL_HINT)]
