@@ -63,9 +63,11 @@ _BLOCKED_V4 = tuple(ipaddress.ip_network(n) for n in (
     "255.255.255.255/32"))
 # `::ffff:0:0/96` (IPv4-mapped) có trong bảng cho đủ, nhưng địa chỉ mapped được gỡ ra và kiểm bằng bảng IPv4
 # TRƯỚC khi tới đây, nên `::ffff:8.8.8.8` vẫn qua còn `::ffff:127.0.0.1` thì bị chặn.
+# `fec0::/10` (site-local cũ) đã bỏ khỏi registry (RFC 3879) nhưng chặn cho chắc.
 _BLOCKED_V6 = tuple(ipaddress.ip_network(n) for n in (
     "::/128", "::1/128", "::ffff:0:0/96", "::ffff:0:0:0/96", "64:ff9b::/96", "64:ff9b:1::/48", "100::/64",
-    "2001::/23", "2001:db8::/32", "2002::/16", "3fff::/20", "5f00::/16", "fc00::/7", "fe80::/10", "ff00::/8"))
+    "2001::/23", "2001:db8::/32", "2002::/16", "3fff::/20", "5f00::/16", "fc00::/7", "fe80::/10", "fec0::/10",
+    "ff00::/8"))
 _LDH_HOST = re.compile(r"[a-z0-9-]+(\.[a-z0-9-]+)*\.?")
 _HEX64 = re.compile(r"[0-9a-fA-F]{64}")
 _INTENTS = ("public", "private")
