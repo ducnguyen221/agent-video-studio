@@ -162,10 +162,11 @@ def do_reference(args):
     if action == "fetch":
         from . import fetch                      # nhập lười để lõi không cần yt-dlp
         fetch.check_limits(args.max_mb, args.sub_langs)
-        url, _prov = fetch.authorize(args.url, args.allow_url, args.project)   # cổng 1→5, đúng thứ tự
+        project = os.path.abspath(args.project)
+        url, _prov = fetch.authorize(args.url, args.allow_url, project)   # cổng 1→5, đúng thứ tự
         if args.go:                              # cổng 6–7 nằm trong plan_fetch / do_fetch
-            return fetch.do_fetch(url, args.project, args.max_mb, args.sub_langs)
-        return fetch.plan_fetch(url, args.project)
+            return fetch.do_fetch(url, project, args.max_mb, args.sub_langs)
+        return fetch.plan_fetch(url, project)
     raise ContractError(f"hành động lạ: {action}")
 
 

@@ -264,7 +264,8 @@ def require_fetch_allowed(prov, url, allow_url):
 
     status, basis = prov.get("rights_status"), prov.get("rights_basis")
     if status != "approved":
-        raise ContractError(f"rights_status là {status!r}, cần 'approved' mới được tải")
+        raise ContractError(f"rights_status đang là {status!r}: chỉ phân tích từ mô tả hoặc tệp người dùng có quyền, "
+                            "không tải")
     if basis not in BASES:
         raise ContractError(f"rights_basis là {basis!r}, cần một trong {list(BASES)}")
     if basis != "own_content" and _blank(prov.get("rights_proof")):

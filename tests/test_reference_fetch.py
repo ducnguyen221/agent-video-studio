@@ -106,16 +106,14 @@ def test_argv_download_pins_output_template_and_limits():
         assert banned not in argv
 
 
-@pytest.mark.parametrize("langs", ["vi;rm", "", "vi,", "a,b,c,d,e,f", "vi en", "vi\n", "--exec"])
-def test_bad_sub_langs_rejected(langs):
+@pytest.mark.parametrize("langs,mb", [
+    ("vi;rm", 500), ("", 500), ("vi,", 500), ("a,b,c,d,e,f", 500), ("vi en", 500), ("vi\n", 500),
+    ("--exec", 500), ("all", 500), ("ALL", 500), ("vi,All", 500),
+    ("vi", 0), ("vi", -1), ("vi", 4097), ("vi", True), ("vi", "500"), ("vi", 1.5), ("vi", None),
+])
+def test_bad_sub_langs_or_size_rejected(langs, mb):
     with pytest.raises(ContractError):
-        fetch.ytdlp_argv("yt-dlp", URL, "/d", plan=False, max_mb=500, sub_langs=langs)
-
-
-@pytest.mark.parametrize("mb", [0, -1, 4097, True, "500", 1.5, None])
-def test_bad_max_mb_rejected(mb):
-    with pytest.raises(ContractError):
-        fetch.ytdlp_argv("yt-dlp", URL, "/d", plan=False, max_mb=mb, sub_langs="vi")
+        fetch.ytdlp_argv("yt-dlp", URL, "/d", plan=False, max_mb=mb, sub_langs=langs)
 
 
 @pytest.mark.parametrize("extra", [["--sub-langs", "vi;rm"], ["--max-mb", "0"], ["--max-mb", "4097"]])
@@ -138,8 +136,8 @@ GATE_CASES = [
     # (id, mutate prov, url, allow_url, mảnh thông điệp của cổng hỏng)
     ("no-allow-url", None, URL, None, "phép đích danh"),
     ("allow-mismatch", None, URL, "https://example.com/other", "phép đích danh"),
-    ("rights-pending", _mut(lambda p: p.update(rights_status="rights_pending")), URL, URL, "rights_status"),
-    ("blocked", _mut(lambda p: p.update(rights_status="blocked")), URL, URL, "rights_status"),
+    ("rights-pending", _mut(lambda p: p.update(rights_status="rights_pending")), URL, URL, "chỉ phân tích"),
+    ("blocked", _mut(lambda p: p.update(rights_status="blocked")), URL, URL, "chỉ phân tích"),
     ("approved-no-basis", _mut(lambda p: p.update(rights_basis=None)), URL, URL, "rights_basis"),
     ("no-proof", _mut(lambda p: p.update(rights_proof="  ")), URL, URL, "rights_proof"),
     ("perm-url-mismatch", _mut(lambda p: p["permission"].update(url="https://example.com/x")), URL, URL,
@@ -326,7 +324,7 @@ def test_go_tool_version_failure_is_null(project, has_ytdlp):
     assert gate.load_provenance(str(project))["fetch"]["tool_version"] is None
 
 
-def test_go_without_media_is_engine_error(project, capsys, has_ytdlp, monkeypatch):
+def test_go_without_output_file_is_engine_error(project, capsys, has_ytdlp, monkeypatch):
     monkeypatch.setattr(subprocess, "run", FakeRun(files=("reference.vi.vtt",)))
     rc, payload, _ = cmd(["fetch", "--url", URL, "--allow-url", URL, "--project", str(project), "--go",
                           "--json"], capsys)
@@ -347,3 +345,101 @@ def test_go_leaves_input_provenance_untouched_on_failure(project, has_ytdlp):
     with pytest.raises(EngineError):
         fetch.do_fetch(URL, str(project), 500, "vi", run=FakeRun(files=()))
     assert gate.load_provenance(str(project)) == before
+
+
+# ---------------------------------------------------------------- vòng sửa 1
+
+@pytest.mark.parametrize("shim", ["C:\\tools\\yt-dlp.cmd", "C:\\tools\\yt-dlp.BAT", "/x/yt-dlp.Cmd"])
+def test_batch_shim_is_refused_with_code_3(project, capsys, no_subprocess, monkeypatch, shim):
+    monkeypatch.setattr(_env, "ytdlp_exe", lambda: shim)
+    for extra in ([], ["--go"]):
+        rc, payload, _ = cmd(["fetch", "--url", URL, "--allow-url", URL, "--project", str(project),
+                              "--json", *extra], capsys)
+        assert rc == 3 and ".exe" in payload["error"]
+    assert list((project / "source").iterdir()) == []
+
+
+def test_media_and_subtitles_are_told_apart_by_name(project, has_ytdlp):
+    fetch.do_fetch(URL, str(project), 500, "vi", run=FakeRun(files=("reference.webm", "reference.vi.srt")))
+    f = gate.load_provenance(str(project))["fetch"]
+    assert f["file"] == "source/reference.webm" and f["subtitles"] == ["source/reference.vi.srt"]
+    assert f["sha256"] == gate.sha256_file(str(project / "source" / "reference.webm"))
+
+
+def test_only_non_vtt_subtitles_is_engine_error(project, has_ytdlp):
+    with pytest.raises(EngineError) as ei:
+        fetch.do_fetch(URL, str(project), 500, "vi", run=FakeRun(files=("reference.vi.ttml",)))
+    assert "không tạo tệp" in str(ei.value)
+    assert gate.load_provenance(str(project))["fetch"] is None
+
+
+def test_partial_files_are_not_media(project, has_ytdlp):
+    with pytest.raises(EngineError):
+        fetch.do_fetch(URL, str(project), 500, "vi", run=FakeRun(files=("reference.mp4.part", "reference.ytdl")))
+
+
+def test_public_functions_run_the_gates_themselves(tmp_path, has_ytdlp):
+    p = tmp_path / "pend"
+    (p / "source").mkdir(parents=True)
+    prov = approved()
+    prov["rights_status"] = "rights_pending"
+    gate.save_provenance(str(p), prov)
+
+    def boom(*a, **k):
+        raise AssertionError("run bị gọi")
+    for call in (lambda: fetch.plan_fetch(URL, str(p), run=boom),
+                 lambda: fetch.do_fetch(URL, str(p), 500, "vi", run=boom)):
+        with pytest.raises(ContractError) as ei:
+            call()
+        assert "chỉ phân tích" in str(ei.value)
+    bare = tmp_path / "bare"
+    bare.mkdir()
+    with pytest.raises(ContractError):
+        fetch.plan_fetch(URL, str(bare), run=boom)
+    with pytest.raises(ContractError):
+        fetch.do_fetch("http://127.0.0.1/", str(p), 500, "vi", run=boom)
+
+
+def test_smuggle_marker_is_refused(project, capsys, no_subprocess, has_ytdlp):
+    u = URL + "#__youtubedl_smuggle=%7B%7D"
+    rc, payload, _ = cmd(["fetch", "--url", u, "--allow-url", u, "--project", str(project), "--json"], capsys)
+    assert rc == 2 and "__youtubedl_smuggle" in payload["error"]
+
+
+def test_old_ytdlp_without_flag_gets_update_hint(project, has_ytdlp):
+    run = FakeRun(dump_rc=2, dump_err="yt-dlp: error: no such option: --no-plugin-dirs")
+    with pytest.raises(EngineError) as ei:
+        fetch.plan_fetch(URL, str(project), run=run)
+    assert "cập nhật yt-dlp" in str(ei.value) and "--no-plugin-dirs" in str(ei.value)
+
+
+def test_go_timeout_is_engine_error_via_cli(project, capsys, has_ytdlp, monkeypatch):
+    def slow(argv, **kw):
+        if "-P" in argv:
+            raise subprocess.TimeoutExpired(argv, kw["timeout"])
+        return done("v\n")
+    monkeypatch.setattr(subprocess, "run", slow)
+    rc, payload, _ = cmd(["fetch", "--url", URL, "--allow-url", URL, "--project", str(project), "--go",
+                          "--json"], capsys)
+    assert rc == 1 and "3600" in payload["error"]
+
+
+def test_oserror_when_running_is_engine_error(project, has_ytdlp):
+    def broken(argv, **kw):
+        raise OSError("không chạy được")
+    with pytest.raises(EngineError) as ei:
+        fetch.plan_fetch(URL, str(project), run=broken)
+    assert "không chạy được" in str(ei.value)
+
+
+def test_limit_error_wins_over_failed_gate(project, capsys, no_subprocess, has_ytdlp):
+    rc, payload, _ = cmd(["fetch", "--url", "file:///etc/passwd", "--project", str(project), "--sub-langs",
+                          "vi;rm", "--json"], capsys)
+    assert rc == 2 and "--sub-langs" in payload["error"]
+
+
+def test_relative_project_becomes_absolute(project, capsys, has_ytdlp, monkeypatch):
+    monkeypatch.chdir(project.parent)
+    monkeypatch.setattr(subprocess, "run", FakeRun())
+    rc, payload, _ = cmd(["fetch", "--url", URL, "--allow-url", URL, "--project", "demo", "--json"], capsys)
+    assert rc == 0 and payload["plan"]["dest_dir"] == str(project / "source")
