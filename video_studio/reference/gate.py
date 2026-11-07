@@ -403,15 +403,17 @@ def audit_assets(project_dir, assets_dir=None):
         if entries is None:
             hidden = os.path.basename(path).startswith(".")
             add(rel, "tệp ẩn chưa khai" if hidden else "chưa khai trong assets")
+        else:
+            if len({(e["origin"], e.get("owner")) for e in entries}) > 1:
+                add(rel, "khai trùng mâu thuẫn")
+            for entry in entries:
+                if entry["origin"] not in BUILD_ORIGINS:
+                    add(rel, "origin reference không được dùng để dựng")
+                if _blank(entry.get("owner")):
+                    add(rel, "owner trống")
+        if not os.path.isfile(path):
             continue
-        if len({(e["origin"], e.get("owner")) for e in entries}) > 1:
-            add(rel, "khai trùng mâu thuẫn")
-        for entry in entries:
-            if entry["origin"] not in BUILD_ORIGINS:
-                add(rel, "origin reference không được dùng để dựng")
-            if _blank(entry.get("owner")):
-                add(rel, "owner trống")
-        same = ref_hashes.get(sha256_file(path))
+        same = ref_hashes.get(sha256_file(path))  # khai hay chưa đều so hash với tư liệu mẫu
         if same:
             add(rel, f"trùng byte với tệp mẫu {same}")
 

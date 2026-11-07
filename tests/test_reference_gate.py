@@ -647,3 +647,27 @@ def test_audit_accepts_assets_dir_with_trailing_separator_and_dot_segments(tmp_p
     _declare(proj, _asset(path="assets/a.png"))
     for variant in (os.path.join(proj, "assets") + os.sep, os.path.join(proj, ".", "assets"), os.path.join(proj, "x", "..", "assets")):
         assert gate.audit_assets(proj, variant) == {"ok": True, "checked": 1, "findings": []}
+
+
+# ------------------------------------------------- vòng sửa 3: tệp chưa khai cũng được so hash
+
+@pytest.mark.parametrize("name", ["looks_mine.png", ".looks_mine.png"])
+def test_audit_hashes_undeclared_files_too(tmp_path, name):
+    proj = _project(tmp_path)
+    frame = b"\x89PNG khung 1000ms"
+    _write(proj, "evidence/frames/frame_001000.png", frame)
+    _write(proj, f"assets/{name}", frame)
+    out = gate.audit_assets(proj)
+    problems = [f["problem"] for f in out["findings"] if f["path"] == f"assets/{name}"]
+    assert out["ok"] is False
+    assert ("tệp ẩn chưa khai" if name.startswith(".") else "chưa khai trong assets") in problems
+    assert "trùng byte với tệp mẫu evidence/frames/frame_001000.png" in problems
+    assert len(problems) == 2
+
+
+def test_audit_undeclared_unique_file_gets_only_the_undeclared_finding(tmp_path):
+    proj = _project(tmp_path)
+    _write(proj, "evidence/frames/frame_001000.png", b"mau")
+    _write(proj, "assets/own.png", b"khac")
+    out = gate.audit_assets(proj)
+    assert [f["problem"] for f in out["findings"]] == ["chưa khai trong assets"]
