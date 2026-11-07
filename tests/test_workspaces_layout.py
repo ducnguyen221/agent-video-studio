@@ -129,7 +129,9 @@ def _walk_text_files(root):
     """Duyệt bằng `os.walk` (không cần git: bản `git archive`/wheel cũng được quét)."""
     for dp, dn, fn in os.walk(root):
         at_root = Path(dp) == Path(root)
-        dn[:] = sorted(d for d in dn if d not in SKIP_DIRS and not (at_root and d in ROOT_SKIP_DIRS))
+        in_dot_claude = Path(dp).name == ".claude"      # RQ-026: worktree của app ở `.claude/worktrees/`
+        dn[:] = sorted(d for d in dn if d not in SKIP_DIRS and not (at_root and d in ROOT_SKIP_DIRS)
+                       and not (in_dot_claude and d == "worktrees"))
         for name in sorted(fn):
             p = Path(dp) / name
             rel = p.relative_to(root).as_posix()
@@ -187,6 +189,21 @@ def test_the_scanner_covers_the_template_tree_but_not_root_level_user_data(tmp_p
     (tmp_path / "workspace").mkdir()
     (tmp_path / "workspace" / "note.txt").write_text(form + "\n", encoding="utf-8")   # dữ liệu người dùng
     assert _hidden_hits(tmp_path)[0] == []
+
+
+def test_nested_app_worktrees_are_skipped_but_the_rest_of_dot_claude_is_scanned(tmp_path):
+    """RQ-026: worktree của app nằm ở `.claude/worktrees/<tên>/` là bản sao repo khác nhánh — không quét."""
+    form = "~/." + "video"
+    wt = tmp_path / ".claude" / "worktrees" / "spr-x" / "docs"
+    wt.mkdir(parents=True)
+    (wt / "CHANGELOG.md").write_text("## Chưa phát hành\n" + form + "\n", encoding="utf-8")
+    assert _hidden_hits(tmp_path)[0] == []
+    (tmp_path / ".claude" / "settings.md").write_text(form + "\n", encoding="utf-8")
+    assert _hidden_hits(tmp_path)[0] == [".claude/settings.md:1"]
+    (tmp_path / "worktrees").mkdir()
+    (tmp_path / "worktrees" / "note.md").write_text(form + "\n", encoding="utf-8")   # chỉ bỏ dưới `.claude`
+    assert ".claude/settings.md:1" in _hidden_hits(tmp_path)[0]
+    assert "worktrees/note.md:1" in _hidden_hits(tmp_path)[0]
 
 
 def test_the_real_template_tree_is_scanned():
