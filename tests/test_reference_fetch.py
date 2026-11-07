@@ -6,6 +6,7 @@ Không mạng, không yt-dlp thật: `run` được giả; test cổng thay cả
 import copy
 import hashlib
 import json
+import os
 import subprocess
 from types import SimpleNamespace
 
@@ -464,6 +465,7 @@ def test_posix_refuses_only_batch_shims(exe, refused):
     assert bool(fetch.exe_refused(exe, nt=False)) is refused
 
 
+@pytest.mark.skipif(os.name != "nt", reason="đuôi khoảng trắng/dấu chấm chỉ có nghĩa trên Windows")
 def test_odd_suffix_exe_is_code_3_through_cli(project, capsys, no_subprocess, monkeypatch):
     monkeypatch.setattr(_env, "ytdlp_exe", lambda: "C:\\tools\\yt-dlp.cmd ")
     rc, payload, _ = cmd(["fetch", "--url", URL, "--allow-url", URL, "--project", str(project), "--json"], capsys)
