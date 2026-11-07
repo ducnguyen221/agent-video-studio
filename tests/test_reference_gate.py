@@ -777,3 +777,35 @@ def test_fetch_gate_quote_with_curly_quotes_and_dashes_around_url():
         prov = _ok_prov()
         prov["permission"]["quote"] = quote
         assert gate.require_fetch_allowed(prov, URL, URL) is None, quote
+
+
+# ------------------------------------------------- TK12 sửa 4: danh sách chặn IANA tường minh (CI py3.10)
+
+_BLOCK_SAMPLES = [
+    "0.1.2.3", "10.1.2.3", "100.64.1.1", "127.0.0.2", "169.254.169.254", "172.16.5.5", "192.0.0.8", "192.0.0.170",
+    "192.0.2.5", "192.31.196.1", "192.52.193.1", "192.88.99.1", "192.168.1.1", "192.175.48.1", "198.18.0.1",
+    "198.19.255.1", "198.51.100.7", "203.0.113.9", "224.0.0.1", "239.255.255.250", "240.0.0.1", "255.255.255.255",
+    "[::]", "[::1]", "[::ffff:127.0.0.1]", "[::ffff:192.0.0.8]", "[64:ff9b::808:808]", "[64:ff9b:1::1]", "[100::1]",
+    "[2001::1]", "[2001:1::1]", "[2001:db8::1]", "[2002:808:808::]", "[3fff::1]", "[5f00::1]", "[fc00::1]",
+    "[fd12:3456::1]", "[fe80::1]", "[ff02::1]",
+]
+
+
+@pytest.mark.parametrize("host", _BLOCK_SAMPLES)
+def test_check_url_blocks_every_iana_special_purpose_block(host):
+    with pytest.raises(ContractError, match="host nội bộ"):
+        gate.check_url(f"http://{host}/x")
+
+
+def test_check_url_does_not_rely_on_is_global_or_other_ipaddress_flags(monkeypatch):
+    import ipaddress
+    # bảng cũ của CPython 3.10.11: 192.0.0.8 "global", mọi cờ khác False
+    for cls in (ipaddress.IPv4Address, ipaddress.IPv6Address):
+        for flag in ("is_private", "is_loopback", "is_link_local", "is_reserved", "is_multicast", "is_unspecified"):
+            monkeypatch.setattr(cls, flag, property(lambda self: False))
+        monkeypatch.setattr(cls, "is_global", property(lambda self: True))
+    for host in _BLOCK_SAMPLES:
+        with pytest.raises(ContractError, match="host nội bộ"):
+            gate.check_url(f"http://{host}/x")
+    for ok in ("https://8.8.8.8/", "https://[::ffff:8.8.8.8]/", "https://[2606:4700:4700::1111]/x"):
+        assert gate.check_url(ok) == ok

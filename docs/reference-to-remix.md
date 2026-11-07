@@ -42,7 +42,7 @@ tiến trình con nào. Không có `--go` thì chỉ in kế hoạch.
  --max-mb / --sub-langs hợp lệ (không có `all`)?  ── không ──> mã 2
             │ có
  (1) check_url: chỉ http/https, có host, không user:pass@, host công khai
-     (IP nội bộ và IP viết lạ như 127.1, hex, bát phân bị chặn; IP công khai viết số vẫn qua)
+     (IP nội bộ và IP viết lạ như 127.1, hex, bát phân bị chặn; IP công khai viết số vẫn qua; khối đặc biệt theo bảng IANA chặn tường minh, không phụ thuộc bản Python)
      + URL không chứa __youtubedl_smuggle
             │ qua                                        └─ hỏng ─> mã 2
  (2) --allow-url khớp đúng URL (đã chuẩn hoá)            └─ lệch ─> mã 2
