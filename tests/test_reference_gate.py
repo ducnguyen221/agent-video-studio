@@ -747,3 +747,26 @@ def test_audit_flags_nested_link_inside_reference_dirs(tmp_path, rel):
     out = gate.audit_assets(proj)
     assert out["ok"] is False
     assert {"path": rel, "problem": "liên kết mềm không được kiểm"} in out["findings"]
+
+
+# ------------------------------------------------- TK12 sửa 2: ranh giới URL trong quote
+
+@pytest.mark.parametrize("quote", [f"{URL}abcdef", f"{URL}/x", f"{URL}&t=5", f"{URL}0"])
+def test_fetch_gate_quote_url_must_end_at_a_boundary(quote):
+    prov = _ok_prov()
+    prov["permission"]["quote"] = quote
+    with pytest.raises(ContractError, match="permission.quote"):
+        gate.require_fetch_allowed(prov, URL, URL)
+
+
+@pytest.mark.parametrize("tail", ["", " nhé", ".", ",", ";", ":", "!", "?", ")", "]", "}", ">", "»", '"', "'", "\n"])
+def test_fetch_gate_quote_url_boundary_accepts_end_space_or_punctuation(tail):
+    prov = _ok_prov()
+    prov["permission"]["quote"] = f"tải {URL}{tail}"
+    assert gate.require_fetch_allowed(prov, URL, URL) is None
+
+
+def test_fetch_gate_quote_second_occurrence_may_satisfy_boundary():
+    prov = _ok_prov()
+    prov["permission"]["quote"] = f"{URL}abc rồi {URL}."
+    assert gate.require_fetch_allowed(prov, URL, URL) is None

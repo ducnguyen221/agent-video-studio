@@ -167,7 +167,9 @@ def _extract_embedded(video, dest_dir, language=None):
         return None
     video = os.path.abspath(video)
     with labelled_ff():
-        picked = _pick_text_stream(_ff._probe_raw(video), language)
+        raw = _ff._probe_raw(video)
+    gate.require_plain_format(raw, video)
+    picked = _pick_text_stream(raw, language)
     if picked is None:
         return None
     k, index = picked
@@ -229,6 +231,7 @@ def transcribe(input_path, project_dir, subs=None, language="vi", force=False):
         raise ContractError(f"--input không phải tệp: {input_path}")
     if not os.path.isdir(project_dir):
         raise ContractError(f"--project không phải thư mục: {project_dir}")
+    gate.require_media_file(input_path)   # mọi nhánh, kể cả --subs/sidecar: không nhận playlist làm "video"
     input_path = os.path.abspath(input_path)
     stem = os.path.splitext(os.path.basename(input_path))[0]
     out = os.path.join(project_dir, "transcripts", stem + ".json")
@@ -244,7 +247,6 @@ def transcribe(input_path, project_dir, subs=None, language="vi", force=False):
     if side:
         return _from_cues(_read_cues(side), language, "subtitles:sidecar", out)
 
-    gate.require_media_file(input_path)   # trước ffprobe/ffmpeg/ASR: playlist không được mở
     with tempfile.TemporaryDirectory() as tmp:
         got = _extract_embedded(input_path, tmp, language)
         if got:

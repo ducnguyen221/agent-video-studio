@@ -344,3 +344,29 @@ def test_ffmpeg_timeout_is_not_mislabelled(ff, tmp_path, monkeypatch):
     with pytest.raises(EngineError) as ei:
         media.extract_frames(ff["video"], str(tmp_path / "o"), [1.0])
     assert "stderr ffmpeg" not in str(ei.value) and "quá 600s" in str(ei.value)
+
+
+# ------------------------------------------------- TK12 sửa 2: demuxer nhận theo nội dung
+
+def _with_format(name):
+    raw = _raw()
+    raw["format"]["format_name"] = name
+    return raw
+
+
+@pytest.mark.parametrize("fmt", ["concat", "hls", "applehttp", "sdp", "rtp", "rtsp", "image2", "image2pipe",
+                                 "ffmetadata", "tee", "lavfi", "mov,concat"])
+def test_sniffed_playlist_demuxer_is_refused_before_ffmpeg(ff, tmp_path, fmt):
+    ff["raw"] = _with_format(fmt)
+    with pytest.raises(ContractError, match="không phải video/âm thanh thường"):
+        media.extract_frames(ff["video"], str(tmp_path / "o"), [1.0])
+    with pytest.raises(ContractError, match="không phải video/âm thanh thường"):
+        media.contact_sheets(ff["video"], str(tmp_path / "o"), 2)
+    assert ff["calls"] == []
+
+
+@pytest.mark.parametrize("fmt", ["mov,mp4,m4a,3gp,3g2,mj2", "matroska,webm", "mpegts", "wav", None])
+def test_ordinary_container_formats_pass(ff, tmp_path, fmt):
+    ff["raw"] = _with_format(fmt) if fmt else _raw()
+    media.extract_frames(ff["video"], str(tmp_path / "o"), [1.0])
+    assert len(ff["calls"]) == 1

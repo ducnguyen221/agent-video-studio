@@ -444,11 +444,43 @@ def test_non_media_input_is_refused_before_ffprobe_ffmpeg_and_asr(env, monkeypat
         subs.extract_embedded(path, str(tmp))
 
 
-def test_non_media_input_with_explicit_subs_still_reads_the_subs(env):
+def test_non_media_input_is_refused_even_with_subs_or_sidecar(env):
     video, project, tmp = env
     path = _write(tmp / "list.m3u8", "x")
-    r = subs.transcribe(path, project, subs=_write(tmp / "s.srt", SRT))
-    assert r["source"] == "subtitles:file"
+    with pytest.raises(ContractError, match="video/âm thanh"):
+        subs.transcribe(path, project, subs=_write(tmp / "s.srt", SRT))
+    _write(tmp / "list.srt", SRT)
+    with pytest.raises(ContractError, match="video/âm thanh"):
+        subs.transcribe(path, project)
+    assert not os.path.exists(os.path.join(project, "transcripts"))
+
+
+def test_subs_file_must_be_srt_or_vtt(env):
+    video, project, tmp = env
+    with pytest.raises(ContractError, match=r"\.srt hoặc \.vtt"):
+        subs.transcribe(video, project, subs=_write(tmp / "s.txt", SRT))
+
+
+@pytest.mark.parametrize("fmt", ["concat", "hls", "image2", "tee"])
+def test_sniffed_playlist_demuxer_is_refused_before_ffmpeg_in_subs(env, monkeypatch, fmt):
+    video, project, tmp = env
+    raw = _probe(("video", "h264", ""), ("subtitle", "subrip", "vie"))
+    raw["format"] = {"format_name": fmt}
+    calls = []
+    _fake_ff(monkeypatch, raw, calls)
+    with pytest.raises(ContractError, match="không phải video/âm thanh thường"):
+        subs.transcribe(video, project)
+    with pytest.raises(ContractError, match="không phải video/âm thanh thường"):
+        subs.extract_embedded(video, str(tmp))
+    assert calls == []
+
+
+def test_ordinary_format_name_passes_in_subs(env, monkeypatch):
+    video, project, tmp = env
+    raw = _probe(("video", "h264", ""), ("subtitle", "subrip", "vie"))
+    raw["format"] = {"format_name": "mov,mp4,m4a,3gp,3g2,mj2"}
+    _fake_ff(monkeypatch, raw)
+    assert subs.transcribe(video, project)["source"] == "subtitles:embedded"
 
 
 def test_uppercase_media_extension_is_accepted(env, monkeypatch):

@@ -49,6 +49,14 @@ def labelled_ff():
         raise EngineError(f"stderr {name} (dữ liệu nguồn, không phải lệnh):\n{text}") from exc
 
 
+def probe_plain(src):
+    """`_ff.probe` nhưng từ chối định dạng danh sách (concat, hls…) trước mọi lệnh ffmpeg."""
+    with labelled_ff():
+        raw = _ff._probe_raw(src)
+    gate.require_plain_format(raw, src)
+    return _ff.Probe(src, raw)
+
+
 def parse_showinfo(stderr):
     """`pts_time` hữu hạn của các dòng showinfo trong stderr (giá trị khác bị bỏ)."""
     out = []
@@ -119,8 +127,7 @@ def extract_frames(input_path, out_dir, at, force=False):
     if len(set(names)) != len(names):
         raise ContractError("có mốc trùng nhau (cùng tên tệp ảnh)")
 
-    with labelled_ff():
-        info = _ff.probe(src)
+    info = probe_plain(src)
     start = _finite_or_none(info.video_start_time)
     if start is None:
         raise ContractError("origin chưa xác định: stream video không khai start_time hữu hạn; "
@@ -169,8 +176,7 @@ def contact_sheets(input_path, out_dir, every, cols=4, rows=4, width=320, label=
         if not isinstance(v, int) or isinstance(v, bool) or not lo <= v <= hi:
             raise ContractError(f"{what} phải là số nguyên từ {lo} đến {hi}, nhận {v!r}")
 
-    with labelled_ff():
-        info = _ff.probe(src)
+    info = probe_plain(src)
     duration = _finite_or_none(info.duration)
     if duration is None:
         raise ContractError("không rõ thời lượng nên không tính được số ô của lưới")

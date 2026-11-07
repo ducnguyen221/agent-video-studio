@@ -43,6 +43,11 @@ BUILD_ORIGINS = ("user", "generated", "template")
 MEDIA_EXTS = frozenset(("mp4", "m4v", "mov", "mkv", "webm", "avi", "flv", "ts", "mts", "m2ts", "mpg", "mpeg",
                         "ogv", "ogg", "wmv", "3gp", "mp3", "m4a", "aac", "wav", "flac", "opus"))
 
+# Demuxer ffmpeg chọn theo NỘI DUNG (đuôi `.mp4` vẫn có thể là danh sách) mà kéo tệp khác lên.
+PLAYLIST_FORMATS = frozenset(("concat", "hls", "applehttp", "sdp", "rtp", "rtsp", "image2", "image2pipe",
+                              "ffmetadata", "tee", "lavfi"))
+_QUOTE_END = r"""(?=$|\s|[.,;:!?)\]}>»"'])"""
+
 PROVENANCE_FILE = "provenance.json"
 MAX_URL_LEN = 2048
 _LAST_LABEL_NUMERIC = re.compile(r"0x[0-9a-f]*|[0-9]+")
@@ -257,6 +262,16 @@ def require_media_file(path):
                             f"không được nhận: {path}")
 
 
+def require_plain_format(raw, path):
+    """`ContractError` nếu `format.format_name` (ffprobe, nhiều tên cách nhau dấu phẩy) có demuxer danh sách."""
+    fmt = (raw.get("format") or {}).get("format_name") if isinstance(raw, dict) else None
+    names = {n.strip().lower() for n in str(fmt or "").split(",")}
+    bad = sorted(names & PLAYLIST_FORMATS)
+    if bad:
+        raise ContractError(f"định dạng {','.join(bad)} không phải video/âm thanh thường (đọc theo nội dung, "
+                            f"có thể kéo tệp khác lên): {path}")
+
+
 def _blank(value):
     return not isinstance(value, str) or not value.strip()
 
@@ -296,7 +311,7 @@ def require_fetch_allowed(prov, url, allow_url):
         if _blank(perm.get(key)):
             raise ContractError(f"permission.{key} trống")
     quote = perm["quote"].strip()
-    if target not in quote and url.strip() not in quote:
+    if not any(re.search(re.escape(c) + _QUOTE_END, quote) for c in (target, url.strip())):
         raise ContractError("permission.quote phải chứa đúng URL cần tải (lời người dùng nói đích danh URL)")
     stamp = perm.get("granted_at")
     if isinstance(stamp, str) and stamp[-1:] in ("Z", "z"):  # Python 3.10 chưa nhận hậu tố Z
