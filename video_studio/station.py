@@ -478,6 +478,9 @@ def _video_use_info(st):
     d = os.path.join(st, "video-use")
     if not os.path.isdir(d):
         return {"dir": None, "python": None}
+    ext = _env.runtime_venv_python("video-use")
+    if ext:                                # máy có OpcOS và venv đã dựng ngoài trạm ⇒ đường tuyệt đối
+        return {"dir": "video-use", "python": ext}
     rel = ".venv/Scripts/python.exe" if os.name == "nt" else ".venv/bin/python"
     py = os.path.join(d, *rel.split("/"))
     return {"dir": "video-use", "python": "video-use/" + rel if os.path.isfile(py) else None}

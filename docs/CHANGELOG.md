@@ -8,6 +8,17 @@ kiểm).
 ## Chưa phát hành
 
 - **`AGENTS.md` nói đúng 27 skill** (6 của repo + 21 HyperFrames), khớp cây `skills/` sau SPR-05 (RQ-025).
+- **Venv của video-use ra khỏi trạm khi máy có OpcOS:** `scripts/install-video-use.ps1 -VenvOnly`
+  (`.sh --venv-only`) dựng venv ở `$OPCOS_RUNTIME/venvs/agent-video-studio/video-use` (bộ giải: `OPCOS_RUNTIME`
+  → `OPCOS_ROOT/runtime` → `~/OpcOS/runtime` khi có `~/OpcOS/paths.json`), cài gói **sao chép** từ bản sao tạm
+  của clone, không `-e`, không clone/pull, không gọi git; có công cụ `opcos-runtime` thì nhờ nó theo
+  `opcos-runtime.json`. Thêm `-PrintPlan` / `--print-plan` (chỉ in kế hoạch). `station.json` ghi `video_use.python`
+  tuyệt đối khi venv runtime có thật, `doctor` nhận đường tuyệt đối. Máy không có OpcOS: hành vi cũ nguyên vẹn
+  (venv trong trạm, cài `-e`). Công cụ `opcos-runtime` được tìm ở `$OPCOS_ROOT/system/operations/runtime/` trước,
+  rồi cạnh `R`; nhu cầu khai `package: "@source"` (gói luôn đến từ `--source-dir`, băm theo cây, bản sao không mang `.git`);
+  venv Windows có thêm ba gói `nvidia-*-cu12` (cublas, nvrtc, cudnn); bóc lời rơi CPU vì lỗi tải thư viện CUDA nay
+  cảnh báo rõ ra stderr; thành bại của lời gọi ngoài chỉ theo mã
+  thoát (log uv/pip ra stderr không làm hỏng). Chưa kiểm bằng một lần cài thật: test chạy trên cây giả.
 
 ## 0.8.0 — 2026-11-07
 

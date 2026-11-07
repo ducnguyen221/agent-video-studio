@@ -415,6 +415,24 @@ def test_optional_parts_only_warn(machine, good_station, capsys):
     assert _check(res, "voice-studio")["level"] in ("ok", "warn")
 
 
+def test_video_use_absolute_python_outside_station_is_ok(machine, good_station, tmp_path, capsys):
+    """FR7.2: `video_use.python` tuyệt đối (venv ngoài trạm) dùng nguyên, không ghép vào trạm."""
+    (good_station / "video-use").mkdir()
+    ext = tmp_path / "rt" / "venvs" / "agent-video-studio" / "video-use" / "bin"
+    ext.mkdir(parents=True)
+    py = ext / "python"
+    py.write_text("", encoding="utf-8")
+    sj = good_station / "station.json"
+    cfg = json.loads(sj.read_text(encoding="utf-8"))
+    cfg["video_use"] = {"dir": "video-use", "python": py.as_posix()}
+    sj.write_text(json.dumps(cfg), encoding="utf-8")
+    rc, out, _ = run(["--json"], capsys)
+    assert _check(last_json(out), "video-use")["level"] == "ok"
+    py.unlink()                                      # venv biến mất ⇒ lại là cảnh báo, không sập
+    rc, out, _ = run(["--json"], capsys)
+    assert _check(last_json(out), "video-use")["level"] == "warn"
+
+
 def test_real_run_helper_is_list_argv_no_shell(monkeypatch):
     seen = {}
 

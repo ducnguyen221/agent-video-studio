@@ -68,23 +68,82 @@ def available():
     return importlib.util.find_spec("faster_whisper") is not None
 
 
+def _cuda_bin_dirs():
+    """Các thư mục `nvidia/<pkg>/bin` (cublas, cudnn, cuda_nvrtc) có thật trong sys.path, không trùng."""
+    import sys
+    found = []
+    for base in sys.path:
+        for pkg in ("cublas", "cudnn", "cuda_nvrtc"):
+            d = os.path.join(base, "nvidia", pkg, "bin")
+            if os.path.isdir(d) and d not in found:
+                found.append(d)
+    return found
+
+
 def _add_cuda_dll_dirs():
     """Windows: wheel `nvidia-*-cu12` để DLL trong site-packages/nvidia/*/bin, ngoài PATH.
 
-    Không thêm thì ctranslate2 không thấy cublas/cudnn và ta lặng lẽ chạy CPU (chậm 10 lần)
-    trên một máy có GPU.
+    ctranslate2 tìm `cublas64_12.dll` theo PATH — `os.add_dll_directory` một mình KHÔNG đủ (đo thật:
+    bóc lời rơi CPU 39,8 s thay vì GPU 1,7 s). Nên làm cả hai, và phải gọi TRƯỚC khi import
+    faster_whisper/ctranslate2. PATH chỉ được thêm ở Windows, không trùng (không phân biệt hoa thường),
+    gọi nhiều lần không làm nó phình.
     """
-    import sys
-    if not hasattr(os, "add_dll_directory"):
+    dirs = _cuda_bin_dirs()
+    if hasattr(os, "add_dll_directory"):
+        for d in dirs:
+            try:
+                os.add_dll_directory(d)
+            except OSError:
+                pass
+    if os.name != "nt" or not dirs:
         return
-    for base in sys.path:
-        for pkg in ("cublas", "cudnn"):
-            d = os.path.join(base, "nvidia", pkg, "bin")
-            if os.path.isdir(d):
-                try:
-                    os.add_dll_directory(d)
-                except OSError:
-                    pass
+
+    def key(p):
+        return os.path.normpath(p).lower()
+
+    parts = [p for p in os.environ.get("PATH", "").split(os.pathsep) if p]
+    have = {key(p) for p in parts}
+    new = [d for d in dirs if key(d) not in have]
+    if new:
+        os.environ["PATH"] = os.pathsep.join(new + parts)
+
+
+_CUDA_LIB_NAMES = ("cublas", "cudnn", "nvrtc", "libcu", "cuda")
+_CUDA_LOAD_WORDS = (".dll", ".so", "library", "not found", "cannot be loaded", "shared object")
+
+
+def _is_cuda_library_error(exc):
+    """Lỗi do THIẾU/không tải được thư viện CUDA (khác với không có GPU/driver): phải có CẢ tên
+    thư viện CUDA lẫn từ khoá nạp thư viện. ctranslate2 nạp cuBLAS lười nên lỗi có thể ném ở
+    lần `transcribe` đầu, không phải lúc dựng model."""
+    text = str(exc).lower()
+    return any(n in text for n in _CUDA_LIB_NAMES) and any(w in text for w in _CUDA_LOAD_WORDS)
+
+
+def _warn_cuda_library(exc):
+    log(f"[edit] CẢNH BÁO: thư viện CUDA không tải được ({exc}) — cài nvidia-cublas-cu12, "
+        "nvidia-cuda-nvrtc-cu12, nvidia-cudnn-cu12 vào venv này; tạm chạy CPU (chậm hơn)")
+
+
+def _is_cuda_model(model):
+    device = getattr(model, "device", None) or (_model_device if model is _model else None)
+    return device == "cuda"
+
+
+def _reload_cpu_model(model):
+    """Bỏ model GPU, nạp lại bản CPU (cùng tên model) và đặt nó làm model chung của tiến trình."""
+    global _model
+    name = getattr(model, "model_size_or_path", None)
+    name = name if isinstance(name, str) and name else (_model_name or DEFAULT_MODEL)
+    _model = None
+    return load_model(name, prefer_gpu=False)
+
+
+def _transcribe_wav(model, wav, identity, language):
+    segments, info = model.transcribe(
+        wav, language=identity["language"] if identity else
+        (None if language in (None, "auto") else language), **ASR_SETTINGS)
+    return list(segments), info     # generator: lỗi nạp thư viện cũng có thể nổ ở lúc duyệt
 
 
 def load_model(name=None, prefer_gpu=True):
@@ -93,19 +152,22 @@ def load_model(name=None, prefer_gpu=True):
     name = name or os.environ.get("VIDEO_WHISPER_MODEL") or DEFAULT_MODEL
     if _model is not None and _model_name == name:
         return _model
+    _add_cuda_dll_dirs()      # TRƯỚC import: ctranslate2 dò DLL CUDA theo PATH lúc nạp
     try:
         from faster_whisper import WhisperModel
     except ImportError as e:
         raise StationMissing("bước bóc lời cần `faster-whisper` — " + INSTALL_HINT) from e
-    _add_cuda_dll_dirs()
     if prefer_gpu:
         try:
             _model = WhisperModel(name, device="cuda", compute_type="float16")
             _model_name = name
             _model_device, _model_compute_type = "cuda", "float16"
             return _model
-        except Exception:      # noqa: BLE001 — không có GPU/driver là chuyện thường, lùi về CPU
-            log("[edit] không dùng được GPU cho bóc lời — chạy CPU (chậm hơn)")
+        except Exception as e:  # noqa: BLE001 — không có GPU/driver là chuyện thường, lùi về CPU
+            if _is_cuda_library_error(e):
+                _warn_cuda_library(e)
+            else:
+                log("[edit] không dùng được GPU cho bóc lời — chạy CPU (chậm hơn)")
     _model = WhisperModel(name, device="cpu", compute_type="int8")
     _model_name = name
     _model_device, _model_compute_type = "cpu", "int8"
@@ -407,10 +469,18 @@ def transcribe_one(video, work_dir, language=DEFAULT_LANGUAGE, force=False, mode
         wav = os.path.join(tmp, "audio.wav")
         extract_audio(snapshot, wav)
         log(f"[edit] bóc lời {os.path.basename(video)} …")
-        segments, info = m.transcribe(wav, language=identity["language"] if identity else
-                                      (None if language in (None, "auto") else language),
-                                      **ASR_SETTINGS)
-        payload = _to_scribe(list(segments), info,
+        try:
+            segments, info = _transcribe_wav(m, wav, identity, language)
+        except Exception as exc:   # noqa: BLE001 — chỉ lỗi thư viện CUDA của model GPU được cứu
+            if not (_is_cuda_model(m) and _is_cuda_library_error(exc)):
+                raise
+            _warn_cuda_library(exc)
+            m = _reload_cpu_model(m)
+            model_metadata = _effective_model_metadata(m)
+            identity = (_transcript_identity(source_hash, model_metadata, language)
+                        if model_metadata is not None else None)
+            segments, info = _transcribe_wav(m, wav, identity, language)
+        payload = _to_scribe(segments, info,
                              (model_metadata or {}).get("name", _model_name or DEFAULT_MODEL))
         _require_live_source_matches(video, source_hash, "trong khi bóc lời")
         if not _valid_payload(payload):

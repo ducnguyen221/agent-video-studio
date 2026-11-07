@@ -116,7 +116,7 @@ cài cùng venv **đã được chọn** (`studio.local.json` hoặc `workspaces
 ├── .video-studio/runs/     QUẢN LÝ  nhật ký từng lần `init` + bản cũ của thứ bị thay (cho `--undo`)
 ├── scratch/                NHÁP     bản render câm trung gian, dữ liệu tạm
 ├── cache/                  NHÁP     cache công cụ
-└── video-use/              TUỲ CHỌN bản upstream cho `edit --backend vendored`
+└── video-use/              TUỲ CHỌN clone upstream cho `edit --backend vendored` (venv ở đây khi không có OpcOS)
 ```
 
 Thư mục KHÁC ở gốc trạm (dự án riêng, bản vendored, nhạc, log cũ) **engine không bao giờ chạm
@@ -137,7 +137,7 @@ nên `--undo` trả lại được.
 | `templates/` | **KHÔNG** | có | có (brand là danh tính của bạn) |
 | `.video-studio/` | xoá được, mất khả năng `--undo` | không | không |
 | `scratch/`, `cache/` | xoá thoải mái | không | không |
-| `video-use/` | cài lại bằng script | không (có venv riêng, nặng) | không |
+| `video-use/` | cài lại bằng script | không (venv nặng: trong trạm khi không có OpcOS, ngoài trạm khi có) | không |
 
 ## Chế độ `embedded`: hai lớp rào
 

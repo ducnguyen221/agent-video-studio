@@ -290,6 +290,62 @@ def opcos_station(station="video"):
     return path if has_marker(path) else None
 
 
+# ── tài nguyên chạy (runtime) của OpcOS ────────────────────────────────────────────────
+
+RUNTIME_REPO_KEY = "agent-video-studio"
+_RUNTIME_KEY = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
+
+
+def runtime_root(environ=None, home=None, isfile=None):
+    """Gốc R của tài nguyên chạy OpcOS, hoặc None khi máy không có OpcOS.
+
+    Luật đích (hợp đồng runtime-resource-v1): `$OPCOS_RUNTIME` → `$OPCOS_ROOT/runtime` →
+    (có `<home>/OpcOS/paths.json` thì `<home>/OpcOS/runtime`) → None. CHỈ đọc `environ`
+    (mặc định `os.environ`), không đọc `.env`: một file trong repo không được dời nơi đặt venv.
+    Ba tham số tuỳ chọn để test và vỏ cài truyền môi trường/home giả.
+    """
+    environ = os.environ if environ is None else environ
+    isfile = os.path.isfile if isfile is None else isfile
+
+    def val(name):
+        return (environ.get(name) or "").strip()
+
+    if val("OPCOS_RUNTIME"):
+        return os.path.expanduser(val("OPCOS_RUNTIME"))
+    if val("OPCOS_ROOT"):
+        return os.path.join(os.path.expanduser(val("OPCOS_ROOT")), "runtime")
+    home = home or os.path.expanduser("~")
+    opcos = os.path.join(home, "OpcOS")
+    if isfile(os.path.join(opcos, "paths.json")):
+        return os.path.join(opcos, "runtime")
+    return None
+
+
+def runtime_resource(category, resource_key, environ=None, home=None, isfile=None):
+    """`R/<category>/agent-video-studio/<resource_key>` hoặc None khi máy không có OpcOS.
+
+    Khoá sai (rỗng, có dấu ngăn đường, `..`, khoảng trắng) ⇒ `ValueError` — kiểm TRƯỚC khi tính R,
+    để lỗi gọi không bị che bởi máy không có OpcOS. Không tạo thư mục, không kiểm tồn tại.
+    """
+    for label, key in (("category", category), ("resource_key", resource_key)):
+        if not isinstance(key, str) or not _RUNTIME_KEY.match(key) or key.endswith("."):
+            raise ValueError(f"{label} không hợp lệ: {key!r}")
+    root = runtime_root(environ, home, isfile)
+    if not root:
+        return None
+    return os.path.join(root, category, RUNTIME_REPO_KEY, resource_key)
+
+
+def runtime_venv_python(resource_key):
+    """Python TUYỆT ĐỐI của venv `venvs/<resource_key>` ngoài trạm nếu nó đã tồn tại, ngược lại None."""
+    venv = runtime_resource("venvs", resource_key)
+    if not venv:
+        return None
+    rel = ("Scripts", "python.exe") if os.name == "nt" else ("bin", "python")
+    py = os.path.join(venv, *rel)
+    return os.path.abspath(py) if os.path.isfile(py) else None
+
+
 def has_marker(path):
     """Thư mục có phải một trạm video không: có station.json, có projects/, hoặc là trạm đời
     cũ (trước khi có station.json) có seed `demo/hyperframes.json`."""

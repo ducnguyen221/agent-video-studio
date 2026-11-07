@@ -164,6 +164,21 @@ video-studio init --station <trạm>              # ghi lại vào station.json
 video-studio edit --footage <dir> --out <dir> --backend vendored
 ```
 
+Máy có OpcOS: venv của video-use ở `$OPCOS_RUNTIME/venvs/agent-video-studio/video-use`, tạo bằng
+`install-video-use.ps1 -VenvOnly` (`install-video-use.sh --venv-only`; gọi `opcos-runtime ensure
+--repo-dir <repo>` theo `opcos-runtime.json` khi có công cụ). Gói được cài **sao chép**, không `-e`.
+Không có OpcOS: venv ở trong trạm như trước (`<trạm>/video-use/.venv`). Mã nguồn `video-use` vẫn
+clone trong trạm tới khi chuyển sang `plugins/vendor-video-use`. Chỉ khi máy có OpcOS, venv
+cài từ bản sao nên không ghi gì vào clone; không có OpcOS thì cài `-e` như cũ, có ghi vào clone.
+Gói của nhu cầu này (`package: "@source"` trong `opcos-runtime.json`) luôn đến từ `--source-dir
+venvs/video-use=<bản sao>` do `install-video-use` truyền; gọi `ensure` trần, không `--source-dir`, là sai (báo
+`RT_BAD_NEEDS`). `ensure` băm cây thư mục của bản sao (bỏ `.git`, `__pycache__`, `*.egg-info`) và không kiểm git, nên bản
+sao không mang `.git`; mã mới ở clone ⇒ băm đổi ⇒ cài lại (`--upgrade`). Công cụ `opcos-runtime` được tìm ở `$OPCOS_ROOT/system/operations/runtime/`
+trước, rồi `<cha của $OPCOS_RUNTIME>/system/operations/runtime/`. `-VenvOnly` không clone và không gọi git (cần clone `<trạm>/video-use` có sẵn); `-PrintPlan` chỉ in kế hoạch (`station=`, `venv=`, `clone=`, `installer=`) rồi thoát, không cài gì.
+Venv trên Windows có thêm `nvidia-cublas-cu12`, `nvidia-cuda-nvrtc-cu12`, `nvidia-cudnn-cu12` (cùng ghim trong
+`locks/video-use-windows.txt`); thiếu chúng thì bóc lời bằng GPU lặng lẽ rơi về CPU. Thứ tự tìm nơi đặt venv: `OPCOS_RUNTIME` → `OPCOS_ROOT/runtime` → `~/OpcOS/runtime` (khi có
+`~/OpcOS/paths.json`) → không có OpcOS.
+
 ## 6. macOS: những chỗ khác Windows
 
 1. **`python3` là 3.9** trên Mac mới — tạo venv bằng `python3.12`, không bằng `python3`.
