@@ -442,6 +442,11 @@ def npm_exe():
     return _tool("npm", "NODE_DIR")
 
 
+def ytdlp_exe():
+    """yt-dlp: YTDLP_DIR → PATH. Chỉ `reference fetch` cần; không có thì None."""
+    return _tool("yt-dlp", "YTDLP_DIR")
+
+
 # `brew install ffmpeg-full` là keg-only: KHÔNG link vào /opt/homebrew/bin. Bản `ffmpeg` core ở
 # đó (nếu có) không còn libfreetype/libass ⇒ không có `drawtext`/`subtitles`/`ass` (đo trên Mac
 # mini 01/10/2026). Keg phải thắng PATH, nếu không máy có cả hai bản sẽ dùng bản thiếu bộ lọc.

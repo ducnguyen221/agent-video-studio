@@ -59,6 +59,9 @@ HINT_FFMPEG = ("cài ffmpeg CÓ libfreetype + libass — Windows: `winget instal
                "đặt FFMPEG_DIR")
 HINT_FONT = ("cài font Inter — macOS: `brew install --cask font-inter`; Windows: tải từ rsms.me/inter "
              "rồi Install; hoặc đặt VIDEO_FONT cho font khác")
+HINT_YTDLP = ("chỉ cần cho `reference fetch` với URL đã được phép — Windows: "
+              "`winget install yt-dlp.yt-dlp`; macOS: `brew install yt-dlp`; hoặc đặt YTDLP_DIR. "
+              "Không tự cài.")
 INSTALL_HINT = ("Cài trạm video: Node ≥ 22 + ffmpeg → `pip install -e <repo agent-video-studio>` → "
                 "`video-studio init` → `video-studio doctor`. Trạm có sẵn từ trước: "
                 "`video-studio init --station <trạm> --migrate --dry-run`.")
@@ -212,6 +215,16 @@ def tool_checks():
     return [_check("ffmpeg", bool(ff), ff or "không thấy ffmpeg", hint=HINT_FFMPEG),
             _check("ffprobe", bool(fp), fp or "không thấy ffprobe", hint=HINT_FFMPEG),
             filter_check(ff)]
+
+
+def reference_checks():
+    """Hai công cụ tuỳ chọn của `reference`: chỉ cảnh báo, không bao giờ làm doctor đỏ."""
+    from .edit import transcribe
+    yt = _env.ytdlp_exe()
+    return [_check("yt-dlp", bool(yt), yt or "không thấy yt-dlp", level="warn", hint=HINT_YTDLP),
+            _check("faster-whisper", transcribe.available(),
+                   "đã cài" if transcribe.available() else "chưa cài (chỉ cần khi video không có phụ đề)",
+                   level="warn", hint=transcribe.INSTALL_HINT)]
 
 
 def station_checks(st, src):
@@ -496,6 +509,7 @@ def run_checks(hf=None, offline=False, check_updates=False):
     checks.append(telemetry_check(version))
     checks.append(chromium_check(version))
     checks += tool_checks()
+    checks += reference_checks()
     checks.append(font_check())
     checks += station_checks(st, src)
     checks += opcos_station_check(src)

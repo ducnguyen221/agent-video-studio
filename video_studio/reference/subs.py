@@ -7,6 +7,7 @@ chạy; nhánh duy nhất gọi tiến trình con là ffmpeg/ffprobe ở nhánh 
 Lỗi: tham số sai, phụ đề hỏng/quá lớn, transcript đã có mà thiếu `--force` = `ContractError`;
 thiếu faster-whisper khi không có phụ đề = `StationMissing`.
 """
+import html
 import json
 import os
 import re
@@ -20,7 +21,10 @@ MAX_SUBS_BYTES = 5 * 1024 * 1024
 
 _LANG_RE = re.compile(r"[A-Za-z0-9-]{1,16}")
 _TEXT_CODECS = ("subrip", "ass", "ssa", "webvtt", "mov_text")
-_TAG_RE = re.compile(r"<[^>]*>|\{\\[^}]*\}")
+_TAG_RE = re.compile(r"</?[A-Za-z][^<>]*>|<\d+:\d+(?::\d+)?[.,]\d+>|\{\\[^}]*\}")
+_LANG_GROUPS = ("vi vie", "en eng", "ja jpn", "ko kor", "zh zho chi", "fr fra fre", "de deu ger",
+                "es spa", "it ita", "pt por", "ru rus", "th tha", "id ind", "ar ara", "hi hin",
+                "nl nld dut", "tr tur", "pl pol", "sv swe", "cs ces cze", "el ell gre")
 _TIME_RE = r"(?:(\d+):)?(\d{1,2}):(\d{2})[.,](\d{1,3})"
 _CUE_LINE = re.compile(r"\s*" + _TIME_RE + r"\s*-->\s*" + _TIME_RE)
 _MERGE_GAP = 0.001
@@ -33,7 +37,7 @@ def _seconds(h, m, s, frac):
 
 
 def _clean(lines):
-    text = _TAG_RE.sub("", " ".join(lines))
+    text = html.unescape(_TAG_RE.sub("", " ".join(lines)))
     return " ".join(text.split())
 
 
@@ -88,17 +92,21 @@ def cues_to_transcript(cues, language, source):
     }
 
 
-def _read_cues(path):
+def _read_cues(path, label=None):
     ext = os.path.splitext(path)[1].lower()
     if ext not in (".srt", ".vtt"):
         raise ContractError(f"phụ đề phải là .srt hoặc .vtt, nhận {ext or 'không đuôi'}: {path}")
+    label = label or path
     if os.path.getsize(path) > MAX_SUBS_BYTES:
-        raise ContractError(f"phụ đề lớn hơn {MAX_SUBS_BYTES} byte: {path}")
+        raise ContractError(f"phụ đề lớn hơn {MAX_SUBS_BYTES} byte: {label}")
     with open(path, "rb") as f:
-        text = f.read().decode("utf-8-sig", errors="replace")
+        data = f.read(MAX_SUBS_BYTES + 1)
+    if len(data) > MAX_SUBS_BYTES:
+        raise ContractError(f"phụ đề lớn hơn {MAX_SUBS_BYTES} byte: {label}")
+    text = data.decode("utf-8-sig", errors="replace")
     cues = parse_srt(text) if ext == ".srt" else parse_vtt(text)
     if not cues:
-        raise ContractError(f"phụ đề không đọc được (0 cue hợp lệ): {path}")
+        raise ContractError(f"phụ đề không đọc được (0 cue hợp lệ): {label}")
     return cues
 
 
@@ -112,6 +120,7 @@ def _check_language(language):
 
 def find_sidecar(video, project_dir, language):
     """Phụ đề cạnh video rồi trong `<project>/source/`; None nếu không có."""
+    language = "auto" if language is None else language
     _check_language(language)
     stem = os.path.splitext(os.path.basename(video))[0]
     names = [f"{stem}.vtt", f"{stem}.srt"]
@@ -125,6 +134,14 @@ def find_sidecar(video, project_dir, language):
     return None
 
 
+def _same_language(tag, wanted):
+    a = str(tag or "").lower().split("-")[0].split("_")[0]
+    b = wanted.lower().split("-")[0].split("_")[0]
+    if a == b:
+        return True
+    return any(a in g.split() and b in g.split() for g in _LANG_GROUPS)
+
+
 def _pick_text_stream(raw, language):
     """(k, index) của luồng chữ được chọn; k = thứ tự trong các luồng phụ đề (cho `-map 0:s:k`)."""
     subtitle = [s for s in (raw.get("streams") or []) if s.get("codec_type") == "subtitle"]
@@ -134,28 +151,36 @@ def _pick_text_stream(raw, language):
     chosen = text[0]
     if language and language != "auto":
         for k, s in text:
-            if str((s.get("tags") or {}).get("language", "")).lower() == language.lower():
+            if _same_language((s.get("tags") or {}).get("language"), language):
                 chosen = (k, s)
                 break
-    return chosen[0], chosen[1].get("index", chosen[0])
+    return chosen[0], chosen[1].get("index")
 
 
 def _extract_embedded(video, dest_dir, language=None):
+    if not os.path.isfile(video):
+        raise ContractError(f"không phải tệp cục bộ: {video}")
     if not _env.ffprobe_exe():
         return None
+    video = os.path.abspath(video)
     picked = _pick_text_stream(_ff._probe_raw(video), language)
     if picked is None:
         return None
     k, index = picked
     dest = os.path.join(dest_dir, "embedded.srt")
-    _ff.run(["-y", "-i", str(video), "-map", f"0:s:{k}", "-c:s", "srt", dest])
+    if os.path.exists(dest):
+        raise ContractError(f"đã có {dest}; không ghi đè")
+    _ff.run(["-n", "-i", video, "-map", f"0:s:{k}", "-c:s", "srt", dest])
     if not os.path.isfile(dest):
         return None
     return dest, index
 
 
 def extract_embedded(video, dest_dir):
-    """Xuất luồng phụ đề chữ đầu tiên của video ra `dest_dir`; None nếu không có ffprobe/luồng chữ."""
+    """Xuất luồng phụ đề chữ đầu tiên của video ra `dest_dir`; None nếu không có ffprobe/luồng chữ.
+
+    `video` phải là tệp cục bộ (không URL/giao thức); không ghi đè `embedded.srt` có sẵn.
+    """
     got = _extract_embedded(video, dest_dir)
     return got[0] if got else None
 
@@ -173,9 +198,9 @@ def _write_json(path, payload):
             os.unlink(tmp)
 
 
-def _from_cues(cues, language, source, out, stream=None):
+def _from_cues(cues, language, source, out, embedded=False, stream=None):
     transcript = cues_to_transcript(cues, None if language == "auto" else language, source)
-    if stream is not None:
+    if embedded:
         transcript["_source_stream"] = stream
     _write_json(out, transcript)
     return {"transcript": out, "source": source, "granularity": "cue", "entries": len(cues)}
@@ -186,12 +211,16 @@ def transcribe(input_path, project_dir, subs=None, language="vi", force=False):
 
     Nhánh phụ đề ghi tệp KHÔNG kèm `.meta`; lượt ASR sau đó (`force`, hoặc không còn phụ đề)
     coi nó là cache miss và ghi đè — đúng ý. Chiều ngược (đã có bản ASR, nay đưa `subs`) cần `force`.
+
+    Luồng phụ đề nhúng đã chọn mà hỏng (0 cue, quá cỡ, ffmpeg không chuyển được) thì DỪNG với lỗi
+    nêu «luồng phụ đề nhúng #<index>», không tự rơi xuống ASR: người dùng quyết (`--subs` hoặc sửa nguồn).
     """
     _check_language(language)
     if not os.path.isfile(input_path):
         raise ContractError(f"--input không phải tệp: {input_path}")
     if not os.path.isdir(project_dir):
         raise ContractError(f"--project không phải thư mục: {project_dir}")
+    input_path = os.path.abspath(input_path)
     stem = os.path.splitext(os.path.basename(input_path))[0]
     out = os.path.join(project_dir, "transcripts", stem + ".json")
     if os.path.exists(out) and not force:
@@ -209,7 +238,8 @@ def transcribe(input_path, project_dir, subs=None, language="vi", force=False):
     with tempfile.TemporaryDirectory() as tmp:
         got = _extract_embedded(input_path, tmp, language)
         if got:
-            return _from_cues(_read_cues(got[0]), language, "subtitles:embedded", out, got[1])
+            return _from_cues(_read_cues(got[0], f"luồng phụ đề nhúng #{got[1]}"), language, "subtitles:embedded", out,
+                               embedded=True, stream=got[1])
 
     from ..edit import transcribe as asr
     if not asr.available():

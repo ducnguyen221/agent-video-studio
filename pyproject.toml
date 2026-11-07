@@ -33,7 +33,7 @@ include = ["video_studio*"]
 # Template mang theo HTML/JSON mẫu; không khai ở đây thì bản cài wheel thiếu file và
 # `render` hỏng đúng lúc chạy thật.
 [tool.setuptools.package-data]
-video_studio = ["templates/**/*.html", "templates/**/*.json"]
+video_studio = ["templates/**/*.html", "templates/**/*.json", "reference/templates/*.md"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
