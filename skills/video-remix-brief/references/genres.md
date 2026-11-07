@@ -1,107 +1,124 @@
-# Bảy khuôn thể loại
+# Bảy khuôn dựng
 
-Dùng khi viết Treatment: nhận ra mẫu thuộc khuôn nào, giữ gì, đổi gì, và dựng bằng đường nào của
-`video-studio`. Mỗi khuôn do repo này tự viết lại từ ý tham khảo, không dịch từng câu của tài liệu nào. Khuôn chỉ là
-điểm xuất phát: mẫu lai thì ghi khuôn chính và khuôn phụ trong Treatment.
+Dùng khi viết Treatment: từ `reference-map.md` nhận ra mẫu gần khuôn nào, rồi đi theo đường dựng
+có thật của `video-studio`. Tài liệu này tự viết theo các đường dựng của repo; ý thể loại tham khảo
+nguồn ghi ở `NOTICE`. Khuôn chỉ là điểm xuất phát: mẫu lai thì ghi khuôn chính và khuôn phụ trong
+Treatment.
 
-Quy ước chung cho cả bảy khuôn: **giữ** là cấu trúc và nhịp; **đổi** luôn gồm giọng, hình, lời,
-nhạc, tên gọi (theo [`role-matrix.md`](role-matrix.md)). Đường dựng: `render` (spec JSON theo
-template), `edit` (EDL từ footage của người dùng), composition HyperFrames viết tay, `narrate`
-(thêm giọng vào video câm).
+Mỗi khuôn trả lời năm câu theo thứ tự: nhận ra ở đâu trong bản đồ beat, dựng bằng lệnh nào và cần
+gì trong `assets/`, giữ gì của mẫu, bắt buộc đổi gì, kiểm gì trước khi dựng. Phần **giữ** là cấu
+trúc và nhịp; phần **đổi** luôn gồm giọng, hình, lời, nhạc, tên gọi theo
+[`role-matrix.md`](role-matrix.md) (đổi một vai thì đổi đủ hàng).
 
 | Khuôn | Đường dựng |
 |---|---|
 | 1. Kể chuyện có lời dẫn | composition HyperFrames + `narrate` |
 | 2. Người dẫn trình bày | `edit` từ footage người dùng quay |
-| 3. Xếp hạng | template `news` hoặc `topstory` của `render` |
+| 3. Xếp hạng | `render` template `news` hoặc `topstory` |
 | 4. Podcast hai người | `edit` (giới hạn: bản bóc lời tại máy không phân biệt người nói) |
 | 5. Phỏng vấn đường phố | `edit` + đồng ý của người xuất hiện |
 | 6. Talking head | `edit` |
 | 7. Phim ngắn | **chưa hỗ trợ** |
 
-## 1. Kể chuyện có lời dẫn (demo, hướng dẫn, tiểu luận hình ảnh)
+Các khuôn dùng `edit` chạy theo ba bước: `edit --step transcribe`, `--step pack`, rồi
+`edit --step render --edl <edl.json>` khi đã có EDL. Footage đặt trong thư mục `--footage`, tài sản
+khác đặt trong `assets/` của project tham chiếu và khai trong `assets[]` của `provenance.json`.
 
-- **Cấu trúc:** một mạch lời kể liền; hình thay đổi liên tục bên dưới để chứng minh từng ý. Mở
-  bằng cảnh đặt bối cảnh, sau đó xen cảnh chứng minh (dùng thật, kết quả, so sánh), màn hình khi
-  chi tiết giao diện quan trọng, đồ hoạ khi ý cần sơ đồ.
-- **Nhịp:** đổi hình theo ý chứ không theo đồng hồ; một đoạn lời dài có thể mang nhiều hình.
-- **Giữ:** thứ tự ý, tỷ lệ cảnh chứng minh so với cảnh minh hoạ chung, chỗ im lặng cho nhạc.
-- **Đổi:** toàn bộ lời, giọng người kể, sản phẩm/màn hình thật của người dùng, đồ hoạ.
-- **Cạm bẫy:** minh hoạ từng danh từ bằng ảnh chung chung cho cảm giác bận rộn mà không chứng minh
-  gì; mỗi hình phải làm rõ hoặc chứng minh điều đang nói.
-- **Đường dựng:** viết composition HyperFrames từ Treatment, thêm lời bằng `narrate`; lời neo
-  theo thẻ `T4`.
+## 1. Kể chuyện có lời dẫn
 
-## 2. Người dẫn trình bày kèm hình minh hoạ
+- **Nhận ra trong bản đồ:** cột Lời gần như liền mạch một giọng; cột Hình đổi nhiều lần dưới cùng
+  một đoạn lời; người nói không xuất hiện mặt; cột Việc làm cho người xem ghi chứng minh, giải
+  thích hoặc cho xem kết quả.
+- **Đường dựng:** viết composition HyperFrames từ Treatment, rồi `narrate` thêm giọng đọc; lời neo
+  theo thẻ `T4`. Cần trong `assets/`: ảnh hoặc cảnh quay sản phẩm của người dùng, ảnh chụp màn hình
+  thật, đồ hoạ sinh mới hoặc từ template, tệp giọng hoặc cấu hình giọng của người kể.
+- **Giữ từ mẫu:** thứ tự ý, độ dài tương đối của từng ý, chỗ để im lặng cho nhạc, mật độ đổi hình
+  tính theo ý chứ không theo giây của mẫu.
+- **Đổi bắt buộc:** hàng Người kể trong `role-matrix.md` (lời, giọng, hình bám lời), hàng Sản phẩm
+  nếu có; mọi chữ trên màn hình.
+- **Kiểm trước khi dựng:** mỗi cảnh trong composition trỏ được tới một câu lời nó làm rõ; chạy
+  `reference audit --project <dir>` rồi xem khung đầu, giữa, cuối của bản ra.
 
-- **Cấu trúc:** người dẫn nói, còn hình dần phát triển lập luận: so sánh hai thứ, giữ cả hai trên
-  màn hình khi giải thích, đổi quan hệ khi có thứ thứ ba. Người dẫn lúc chiếm khung, lúc thu
-  nhỏ vào góc, lúc nhường khung cho đồ hoạ rồi quay lại.
-- **Nhịp:** thay đổi bố cục khi ý đổi, không theo giờ; vật lặp lại giúp người xem nhớ mạch.
-- **Giữ:** thứ tự lập luận, chỗ người dẫn quay lại nhìn thẳng người xem.
-- **Đổi:** người dẫn (cả hàng vai trò), ví dụ, số liệu, đồ hoạ.
-- **Cạm bẫy:** kể ra các đồ vật xuất hiện mà bỏ quên hành vi của chúng (xuất hiện, di chuyển,
-  rời đi).
-- **Đường dựng:** `edit` trên footage người dùng tự quay; đồ hoạ chèn thêm bằng template hoặc
-  composition. Không dùng khung của người dẫn trong mẫu.
+## 2. Người dẫn trình bày
+
+- **Nhận ra trong bản đồ:** có người nói trước máy; cột Hình xen giữa mặt người dẫn và đồ hoạ;
+  các lần đổi bố cục trùng với lúc chuyển ý trong cột Lời.
+- **Đường dựng:** `edit` trên footage người dùng tự quay (`edit --step transcribe`, `--step pack`,
+  rồi `edit --step render --edl <edl.json>`); đồ hoạ chèn thêm từ template hoặc composition. Cần
+  trong `assets/`: footage của người dẫn mới, đồ hoạ và số liệu thuộc đề tài mới.
+- **Giữ từ mẫu:** thứ tự lập luận, chỗ người dẫn nhìn thẳng người xem, tỷ lệ thời gian giữa mặt
+  người và đồ hoạ.
+- **Đổi bắt buộc:** hàng Người dẫn đủ cột (giọng, footage, B-roll gắn với vai, khung tên, caption,
+  tên gọi); ví dụ và số liệu. Không dùng khung hình của người dẫn trong mẫu. Người dẫn là người
+  khác ngoài chủ project thì cần đồng ý của họ.
+- **Kiểm trước khi dựng:** mỗi đoạn đồ hoạ trong EDL có nguồn khai trong `assets[]`; xem khung giữa
+  video để chắc không còn vết của mẫu.
 
 ## 3. Xếp hạng
 
-- **Cấu trúc:** bảng xếp hạng đóng vai bộ nhớ của video: những mục đã chấm nằm sẵn trên màn hình,
-  còn lời nói và bằng chứng chỉ lo mục đang xét. Video có thể bắt đầu khi bảng đã có vài hàng.
-- **Nhịp:** mỗi mục một đoạn có mở (giới thiệu), bằng chứng, phán quyết; bảng đổi trạng thái đúng
-  lúc phán quyết, không phải lúc bắt đầu nói.
-- **Giữ:** số mục, thứ tự từ dưới lên hoặc trên xuống, cách đẩy bảng.
-- **Đổi:** chủ đề, các mục, tiêu chí, biểu tượng từng mục, giọng, màu.
-- **Cạm bẫy:** biểu tượng cần nhận ra được ở cỡ hiển thị thật; tên, phiên bản, số liệu của mục
-  phải lấy từ nguồn người dùng, không chép từ mẫu.
-- **Đường dựng:** `render` với template `news` hoặc `topstory`; bảng nhiều tầng tuỳ biến thì viết
-  composition riêng. Khuôn này nên được kiểm thật bằng một lần dựng thử trước khi cam kết.
+- **Nhận ra trong bản đồ:** cùng một cấu trúc con lặp lại cho từng mục (giới thiệu, bằng chứng,
+  chốt); cột Hình có bảng hoặc danh sách thay đổi trạng thái; số mục cố định.
+- **Đường dựng:** `render` với template `news` hoặc `topstory` từ spec JSON; bảng nhiều tầng tuỳ
+  biến thì viết composition riêng. Cần trong `assets/`: biểu tượng hoặc ảnh từng mục, số liệu kèm
+  nguồn của người dùng. Nên dựng thử một lần trước khi cam kết bản đầy đủ.
+- **Giữ từ mẫu:** số mục, chiều xếp (trên xuống hoặc dưới lên), thời điểm bảng đổi trạng thái so
+  với lời, độ dài tương đối mỗi mục.
+- **Đổi bắt buộc:** chủ đề, các mục, tiêu chí, hàng Sản phẩm của từng mục (tên, phiên bản, số liệu
+  lấy từ nguồn người dùng, không chép từ mẫu), hàng Thương hiệu (màu, chữ), giọng.
+- **Kiểm trước khi dựng:** `reference audit --project <dir>`; xem một khung ở kích thước thật để
+  chắc biểu tượng từng mục còn nhận ra được.
 
 ## 4. Podcast hai người
 
-- **Cấu trúc:** lập luận đi qua sự tương tác giữa hai người: người này đặt vấn đề, người kia phản
-  ứng làm ý đó đổi sắc thái, rồi một câu đáp khép lại. Hai góc máy đối xứng nhau; người đang nghe
-  vẫn có cử động nhỏ như đổi tư thế hoặc liếc đi.
-- **Nhịp:** cắt sang người đang có ý quan trọng hoặc người phản ứng đáng giá, không luân phiên
-  máy móc.
-- **Giữ:** cấu trúc hỏi–đáp–phản ứng, vị trí hai người, các đoạn B-roll che khi một người kể ví dụ.
-- **Đổi:** cả hai người, giọng, bối cảnh, sản phẩm, chủ đề.
-- **Cạm bẫy / giới hạn:** bản `edit` và bản bóc lời tại máy **không phân biệt người nói**, nên nhãn
-  người nói trong caption phải do người dựng xác nhận (thẻ `T8`); ghi giới hạn này vào Treatment.
-- **Đường dựng:** `edit` từ footage hai người của người dùng.
+- **Nhận ra trong bản đồ:** hai giọng luân phiên trong cột Lời; cột Hình gồm hai khung người và
+  đôi lúc cảnh minh hoạ che khi một người kể ví dụ.
+- **Đường dựng:** `edit` từ footage hai người của người dùng, `edit --step render --edl <edl.json>`.
+  Cần trong `assets/`: footage cả hai người, B-roll nếu cần che. Giới hạn: bản bóc lời tại máy
+  **không phân biệt người nói**, nên nhãn người nói trong caption do người dựng xác nhận (thẻ `T8`);
+  ghi giới hạn này vào Treatment.
+- **Giữ từ mẫu:** thứ tự hỏi–đáp, vị trí hai người trong khung, chỗ chèn B-roll, mật độ cắt giữa
+  hai góc máy.
+- **Đổi bắt buộc:** hàng Người dẫn cho từng người (hai hàng), giọng, bối cảnh, chủ đề. Mỗi người
+  xuất hiện phải có đồng ý riêng.
+- **Kiểm trước khi dựng:** mỗi điểm cắt trong EDL rơi vào đúng người đang giữ ý chính (so lại với
+  transcript do người dựng gán nhãn); xem khung đầu, giữa, cuối để chắc nhãn không đảo.
 
 ## 5. Phỏng vấn đường phố
 
-- **Cấu trúc:** một người hỏi chặn đường người qua đường đang bận việc của họ, đặt câu hỏi và thu
-  về câu trả lời đáng xem. Phần hấp dẫn nằm ở khách; người hỏi chỉ dẫn khán giả vào. Cảnh mở cho
-  thấy khách đang làm gì đó rồi người hỏi tiến lại; cảnh kết để khách rời đi sau câu chốt.
-- **Nhịp:** cắt về khách khi họ trả lời; người hỏi chỉ lên khi ngạc nhiên hoặc phản biện thật.
-  Khoảnh khắc lộ đáp án có thể kèm đổi chữ, âm và màu cùng lúc.
-- **Giữ:** cấu trúc mở–hỏi–đáp–kết, tần suất cắt, chỗ lộ đáp án.
-- **Đổi:** người xuất hiện, địa điểm, câu hỏi, giọng, chữ trên màn hình.
-- **Cạm bẫy:** cần **đồng ý của người xuất hiện** cho việc quay và dùng hình/giọng họ; nếu chưa có
-  thì dừng và hỏi, không dựng.
-- **Đường dựng:** `edit` từ footage người dùng quay.
+- **Nhận ra trong bản đồ:** cột Lời có một câu hỏi ngắn rồi một câu trả lời dài hơn, lặp lại nhiều
+  lần với những người khác nhau; cột Hình ở ngoài trời, nhiều người xuất hiện chỉ một lần.
+- **Đường dựng:** `edit` từ footage người dùng quay, `edit --step render --edl <edl.json>`. Cần
+  trong `assets/`: footage quay thật, và bằng chứng đồng ý của từng người xuất hiện (khai ở hồ sơ
+  quyền trước khi dựng, xem [`rights-and-provenance.md`](rights-and-provenance.md)). Thiếu đồng ý
+  của ai thì dừng và hỏi, không dựng đoạn có người đó.
+- **Giữ từ mẫu:** thứ tự mở–hỏi–đáp–kết trong mỗi lượt, tần suất cắt, vị trí chữ trên màn hình.
+- **Đổi bắt buộc:** hàng Người dẫn (người hỏi), toàn bộ người trả lời, địa điểm, câu hỏi, chữ
+  hiển thị, giọng.
+- **Kiểm trước khi dựng:** mỗi người xuất hiện trong EDL đối chiếu được với một đồng ý đã khai;
+  `reference audit --project <dir>` sạch trước khi xuất bản.
 
 ## 6. Talking head
 
-- **Cấu trúc:** một người nói thẳng với người xem; thái độ của họ dẫn video, caption và bằng
-  chứng giúp theo kịp. Có thể kèm bảng xếp hạng hoặc minh hoạ nhưng không bắt buộc.
-- **Nhịp:** cắt nhảy bỏ khoảng lặng, thay đổi nhẹ tư thế giữa hai đoạn như một bản ghi đã dựng;
-  nhấn bằng cử chỉ nhỏ có lý do.
-- **Giữ:** nhịp cắt, chỗ nhấn, vị trí chữ so với mặt người nói.
-- **Đổi:** người nói (cả hàng vai trò), kịch bản, caption, bằng chứng, nhạc.
-- **Cạm bẫy:** chữ và số quan trọng nên nằm trong caption hay đồ hoạ, đừng trông vào cử chỉ.
-- **Đường dựng:** `edit` từ footage của người dùng, có caption theo thẻ `T3`/`T8`.
+- **Nhận ra trong bản đồ:** một người nói liền suốt video; cột Cắt/hiệu ứng toàn cắt nhảy; chữ
+  trên màn hình theo sát từng câu.
+- **Đường dựng:** `edit` từ footage của người dùng, có caption theo thẻ `T3` và `T8`:
+  `edit --step transcribe`, `--step pack`, `--step render --edl <edl.json>`. Cần trong `assets/`:
+  footage người nói, bằng chứng hoặc đồ hoạ cho số liệu nếu có.
+- **Giữ từ mẫu:** nhịp cắt bỏ khoảng lặng (tham số `--silence`), chỗ nhấn bằng chữ, vị trí chữ so
+  với khuôn mặt.
+- **Đổi bắt buộc:** hàng Người dẫn đủ cột, kịch bản, caption (tách chữ hiển thị khỏi cách đọc), nhạc,
+  tên gọi.
+- **Kiểm trước khi dựng:** mọi con số và tên riêng hiện ở caption hoặc đồ hoạ, khớp với nguồn của
+  người dùng; xem khung đầu, giữa, cuối để chắc chữ không đè lên mặt.
 
 ## 7. Phim ngắn
 
-- **Cấu trúc:** kể chuyện bằng diễn xuất: nhân vật muốn gì, hành động gây hậu quả, tiết lộ làm
-  người xem hiểu khác đi. Nhân vật, bối cảnh và hành động phải nhất quán qua nhiều cảnh.
-- **Nhịp:** theo quan hệ nhân quả giữa cảnh, có chỗ cho im lặng và phản ứng.
-- **Giữ:** chuỗi nhân quả, vai trò từng cảnh.
-- **Đổi:** toàn bộ người, nơi chốn, đạo cụ, lời thoại.
-- **Đường dựng: `chưa hỗ trợ`.** Repo này không sinh diễn xuất nhất quán nhiều cảnh; cần người
-  dùng quay thật hoặc cung cấp footage, và continuity theo thẻ `T7`. Phần làm được: viết kịch bản
-  và danh sách cảnh để quay, rồi dựng bằng `edit` khi đã có footage. Không giả vờ dựng bản phim.
+- **Nhận ra trong bản đồ:** nhiều cảnh với nhân vật lặp lại; cột Lời là thoại; cột Việc làm cho
+  người xem là diễn biến chuyện chứ không phải thông tin.
+- **Đường dựng: `chưa hỗ trợ`.** Repo này không sinh diễn xuất nhất quán nhiều cảnh. Phần làm được:
+  viết kịch bản và danh sách cảnh để người dùng quay, giữ nhân vật nhất quán theo thẻ `T7`; khi đã
+  có footage thì dựng bằng `edit`. Không giả vờ dựng bản phim.
+- **Giữ từ mẫu:** thứ tự các cảnh và quan hệ nhân quả giữa chúng.
+- **Đổi bắt buộc:** hàng Nhân vật đủ cột, nơi chốn, đạo cụ, lời thoại.
+- **Kiểm trước khi dựng:** nói thẳng với người dùng rằng đây là khuôn `chưa hỗ trợ` trước khi viết
+  Treatment; Treatment chỉ chứa kịch bản và danh sách cảnh.
