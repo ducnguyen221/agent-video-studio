@@ -98,7 +98,8 @@ Hướng dẫn từng bước cho người dùng: [GUIDE.vi.md](GUIDE.vi.md).
 ## Skill cho agent
 
 `skills/` có **27 skill**: sáu skill của chính repo này (`video-routing`, `video-edit`,
-`video-cleanup`, `video-theme-library`, `video-reference-analysis`, `video-remix-brief`) và **21 skill chưng cất từ bộ skill hiện hành của HyperFrames**
+`video-cleanup`, `video-theme-library`, `video-reference-analysis`,
+`video-remix-brief`) và **21 skill chưng cất từ bộ skill hiện hành của HyperFrames**
 (`skills/hyperframes/`). Bộ 21 này là bản **đã dịch sang tiếng Việt, rút gọn và biên tập lại** từ
 `skills/<tên>/SKILL.md` của upstream tại một tag cụ thể — frontmatter giữ tiếng Anh vì đó là thứ
 harness đọc để định tuyến. Không file nhị phân nào của upstream (font, nhạc, ảnh) được chép vào

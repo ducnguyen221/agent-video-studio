@@ -103,7 +103,8 @@ always an exact version (never `latest`).
 ## Agent skills
 
 `skills/` holds **27 skills**: six written for this repo (`video-routing`, `video-edit`,
-`video-cleanup`, `video-theme-library`, `video-reference-analysis`, `video-remix-brief`) and **21 distilled from the current HyperFrames skill set**
+`video-cleanup`, `video-theme-library`, `video-reference-analysis`,
+`video-remix-brief`) and **21 distilled from the current HyperFrames skill set**
 (`skills/hyperframes/`). Those 21 are translated into Vietnamese, condensed and edited from the
 upstream `skills/<name>/SKILL.md` at one pinned tag; the frontmatter stays in English because
 that is what a harness reads to route. No upstream binary (font, audio, image) and no upstream

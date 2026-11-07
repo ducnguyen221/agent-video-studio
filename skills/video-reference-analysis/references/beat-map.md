@@ -29,6 +29,8 @@ xem; đổi việc là sang beat mới. Ô nào không quan sát được thì g
 - Mật độ cắt: số lần cắt mỗi 10 giây; chỗ nhanh lên hay chậm lại.
 - Điểm đảo nhịp: chỗ video đột ngột đổi tốc độ.
 
+Khi điền bảng: **Nhịp** và **Chuyển động** (mục Hình) cùng đi vào cột «Cắt/hiệu ứng».
+
 ## Việc làm cho người xem
 
 Chọn một hoặc hai, ghi lý do bằng chứng:
