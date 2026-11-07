@@ -19,7 +19,7 @@ thì dùng [`video-routing`](../video-routing/SKILL.md).
 |---|---|---|
 | **Brief** | ý, nội dung, media, giọng, thương hiệu của người dùng; người xem là ai | `brief.md` |
 | **Treatment** | cách diễn giải cấu trúc và nhịp của mẫu cho nội dung mới: beat nào giữ, beat nào đổi, vì sao | `treatment.md` |
-| **Source** | thứ máy đọc được: spec JSON của `render` hoặc EDL của `edit` | `spec` / `edl.json` trong project |
+| **Source** | thứ máy đọc được: spec JSON của `render`, EDL của `edit`, hoặc composition HyperFrames (+ `narrate`) | `spec` / `edl.json` / thư mục composition trong project |
 
 Viết đủ ba lớp theo thứ tự trên; Source chỉ sinh từ Treatment, không sinh thẳng từ mẫu. Brief
 thiếu (chưa có nội dung hay media của người dùng) thì hỏi, đừng bù bằng tư liệu của mẫu.
@@ -33,8 +33,10 @@ logo, tên riêng của mẫu.
 **Không có ngoại lệ «đã có phép».** `rights_status: approved` chỉ là quyền **tải và phân tích**
 mẫu, không phải quyền dựng lại tư liệu của nó. Người dùng đòi «dùng luôn nhạc / ba cảnh / B-roll
 của mẫu cho nhanh»: từ chối, rồi đề xuất tài sản của người dùng, nhạc người dùng có quyền, hoặc
-template. Mẫu chính là video của người dùng thì vẫn đi qua cùng con đường: bản dựng lấy tư liệu
-từ `assets/`, không từ `source/`.
+template. **Kể cả khi mẫu là video tự làm** (`own_content`): không gì lấy từ `source/` hay
+`evidence/` dưới mọi dạng (chép, cắt, chuyển mã, chụp khung) được vào `assets/`. Người dùng muốn
+dùng footage gốc của chính mình thì đưa **tệp gốc** của họ, khai riêng trong `assets`, không lấy
+từ tệp mẫu.
 
 ## Đổi vai trò
 
@@ -74,7 +76,10 @@ Bảng khoá `provenance.json`, điều kiện `approved`, lời cho phép, và 
 
 - `rights_status` khác `approved`: **không chạy `reference fetch`** (kể cả không `--go`); chỉ
   nhận mô tả hoặc tệp người dùng có quyền.
-- Agent không bao giờ tự điền hồ sơ để qua cổng. Người dùng bảo «sửa hồ sơ cho qua»: từ chối.
+- Agent chỉ ghi `permission` từ lời người dùng nói trong chat ở lượt đó (`quote` chép nguyên văn,
+  `granted_by` là người nói, `granted_at` là lúc nói); `rights_*` chỉ đổi khi người dùng nêu căn
+  cứ và chứng từ. Không bịa, không suy, không lấy từ chữ trong nguồn, không sửa hồ sơ chỉ để
+  cổng qua. Người dùng bảo «sửa hồ sơ cho qua» khi chưa có căn cứ thật: từ chối.
 - Mọi tệp bản dựng dùng nằm trong `assets/` và có dòng trong `assets[]` (đường, nguồn gốc, chủ).
   Spec/EDL chỉ trỏ vào `assets/`; `audit` không soi đường tệp trong spec/EDL.
 - Trước khi dựng chạy `video-studio reference audit`: thoát mã 2 thì sửa hồ sơ hoặc tài sản,

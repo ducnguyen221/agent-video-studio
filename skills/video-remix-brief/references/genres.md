@@ -1,7 +1,7 @@
 # Bảy khuôn thể loại
 
 Dùng khi viết Treatment: nhận ra mẫu thuộc khuôn nào, giữ gì, đổi gì, và dựng bằng đường nào của
-`video-studio`. Mỗi khuôn do repo này tự mô tả; không phải bản dịch của tài liệu nào. Khuôn chỉ là
+`video-studio`. Mỗi khuôn do repo này tự viết lại từ ý tham khảo, không dịch từng câu của tài liệu nào. Khuôn chỉ là
 điểm xuất phát: mẫu lai thì ghi khuôn chính và khuôn phụ trong Treatment.
 
 Quy ước chung cho cả bảy khuôn: **giữ** là cấu trúc và nhịp; **đổi** luôn gồm giọng, hình, lời,
@@ -14,7 +14,7 @@ template), `edit` (EDL từ footage của người dùng), composition HyperFram
 | 1. Kể chuyện có lời dẫn | composition HyperFrames + `narrate` |
 | 2. Người dẫn trình bày | `edit` từ footage người dùng quay |
 | 3. Xếp hạng | template `news` hoặc `topstory` của `render` |
-| 4. Podcast hai người | `edit` (giới hạn: không phân biệt người nói) |
+| 4. Podcast hai người | `edit` (giới hạn: bản bóc lời tại máy không phân biệt người nói) |
 | 5. Phỏng vấn đường phố | `edit` + đồng ý của người xuất hiện |
 | 6. Talking head | `edit` |
 | 7. Phim ngắn | **chưa hỗ trợ** |
@@ -47,8 +47,8 @@ template), `edit` (EDL từ footage của người dùng), composition HyperFram
 
 ## 3. Xếp hạng
 
-- **Cấu trúc:** một bảng nhớ các lượt đánh giá trước, còn người nói và bằng chứng giải thích lượt
-  hiện tại. Bảng có thể mở với vài hạng đã điền sẵn, các mục mới vào lần lượt.
+- **Cấu trúc:** bảng xếp hạng đóng vai bộ nhớ của video: những mục đã chấm nằm sẵn trên màn hình,
+  còn lời nói và bằng chứng chỉ lo mục đang xét. Video có thể bắt đầu khi bảng đã có vài hàng.
 - **Nhịp:** mỗi mục một đoạn có mở (giới thiệu), bằng chứng, phán quyết; bảng đổi trạng thái đúng
   lúc phán quyết, không phải lúc bắt đầu nói.
 - **Giữ:** số mục, thứ tự từ dưới lên hoặc trên xuống, cách đẩy bảng.
@@ -60,21 +60,22 @@ template), `edit` (EDL từ footage của người dùng), composition HyperFram
 
 ## 4. Podcast hai người
 
-- **Cấu trúc:** quan hệ giữa hai người mang lập luận: câu hỏi mời một nhận định, phản ứng đổi
-  nghĩa nó, lời đáp chốt ý. Hai góc máy đối xứng, người nghe vẫn sống (đổi tư thế, liếc).
+- **Cấu trúc:** lập luận đi qua sự tương tác giữa hai người: người này đặt vấn đề, người kia phản
+  ứng làm ý đó đổi sắc thái, rồi một câu đáp khép lại. Hai góc máy đối xứng nhau; người đang nghe
+  vẫn có cử động nhỏ như đổi tư thế hoặc liếc đi.
 - **Nhịp:** cắt sang người đang có ý quan trọng hoặc người phản ứng đáng giá, không luân phiên
   máy móc.
 - **Giữ:** cấu trúc hỏi–đáp–phản ứng, vị trí hai người, các đoạn B-roll che khi một người kể ví dụ.
 - **Đổi:** cả hai người, giọng, bối cảnh, sản phẩm, chủ đề.
-- **Cạm bẫy / giới hạn:** bản `edit` và transcript của repo **không phân biệt người nói**, nên nhãn
+- **Cạm bẫy / giới hạn:** bản `edit` và bản bóc lời tại máy **không phân biệt người nói**, nên nhãn
   người nói trong caption phải do người dựng xác nhận (thẻ `T8`); ghi giới hạn này vào Treatment.
 - **Đường dựng:** `edit` từ footage hai người của người dùng.
 
 ## 5. Phỏng vấn đường phố
 
-- **Cấu trúc:** người phỏng vấn gặp một người đang làm việc riêng của họ, hỏi, nhận câu trả lời
-  đáng xem. Khách mang câu chuyện, người hỏi giúp khán giả khám phá. Có mở đầu (khách đang bận
-  gì đó, người hỏi bước tới) và kết (khách quay đi sau câu chốt).
+- **Cấu trúc:** một người hỏi chặn đường người qua đường đang bận việc của họ, đặt câu hỏi và thu
+  về câu trả lời đáng xem. Phần hấp dẫn nằm ở khách; người hỏi chỉ dẫn khán giả vào. Cảnh mở cho
+  thấy khách đang làm gì đó rồi người hỏi tiến lại; cảnh kết để khách rời đi sau câu chốt.
 - **Nhịp:** cắt về khách khi họ trả lời; người hỏi chỉ lên khi ngạc nhiên hoặc phản biện thật.
   Khoảnh khắc lộ đáp án có thể kèm đổi chữ, âm và màu cùng lúc.
 - **Giữ:** cấu trúc mở–hỏi–đáp–kết, tần suất cắt, chỗ lộ đáp án.

@@ -2,7 +2,7 @@
 
 Dùng khi viết `treatment.md`. Mỗi hàng là một **vai trò** trong video mẫu; mỗi cột là một chỗ
 vai trò đó **hiện ra**. Điền ô bằng «giữ: …» hoặc «đổi sang: …» kèm tài sản thay thế có trong
-`assets/`. Ô để trống nghĩa là chưa quyết, và chưa được dựng.
+`assets/`. Ô để trống nghĩa là chưa quyết, và chưa được dựng. Ô ghi «—» nghĩa là không áp dụng cho vai đó.
 
 ## Luật
 
