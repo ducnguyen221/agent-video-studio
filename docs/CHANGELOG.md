@@ -5,7 +5,7 @@ chính nhưng chưa có tag; khi phát hành, mục đó đổi tên thành số
 `pyproject.toml`, `video_studio/__init__.py` cùng ba manifest plugin (`tests/test_version_sync.py`
 kiểm).
 
-## Chưa phát hành
+## 0.8.0 — 2026-11-07
 
 - **Video mẫu → bản chuyển thể:** thêm `video-studio reference` (init, frames, tiles, transcribe, fetch có cổng, audit) và hai skill `video-reference-analysis`, `video-remix-brief`: đọc video mẫu thành bản đồ có bằng chứng, chuyển thể sang nội dung và media của mình, giữ hồ sơ quyền. Ý tưởng tham khảo Hypit (idea_reference), không chép mã hay chữ; tải video luôn cần phép đích danh.
 - **Tải video mẫu: lời phép phải chứa đúng URL, và `granted_at` phải có cả giờ.** `reference fetch` từ chối lời phép không nêu URL (hỏi người dùng nói lại kèm URL, đừng tự chèn) và ngày trần không giờ; không có `--go` thì chỉ in kế hoạch, không tải gì.
