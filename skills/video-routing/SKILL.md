@@ -71,8 +71,8 @@ Trạm là nơi chứa project, seed, skill cho agent, nháp, cache — **không
 | Lồng tiếng cho video câm | `video-studio narrate --video <mp4>\|--project <tên> --text\|--file … --out <mp4>` | có |
 | Xem trước project | `video-studio preview [--project <tên\|thư mục>]` | có |
 | Chỉnh footage quay thật | `video-studio edit --footage <dir> --out <dir> [--edl edl.json]` | có |
-| Chỉnh một vùng trong video local | `video-studio cleanup inspect|preview|apply|verify` | có; đọc skill `video-cleanup` |
-| Đọc video mẫu, lập hồ sơ nguồn, kiểm tài sản | `video-studio reference init|frames|tiles|transcribe|fetch|audit` | có; đọc skill `video-reference-analysis` rồi `video-remix-brief`; `fetch` chỉ in kế hoạch, tải cần `--go` và phép đích danh |
+| Chỉnh một vùng trong video local | `video-studio cleanup inspect\|preview\|apply\|verify` | có; đọc skill `video-cleanup` |
+| Đọc video mẫu, lập hồ sơ nguồn, kiểm tài sản | `video-studio reference init\|frames\|tiles\|transcribe\|fetch\|audit` | có; đọc skill `video-reference-analysis` rồi `video-remix-brief`; `fetch` chỉ in kế hoạch, tải cần `--go` và phép đích danh |
 | Zip cả trạm | `video-studio backup --out <file>.zip` | có |
 | Chuyển trạm ra ngoài repo | `video-studio migrate --to separate [--station DIR]` (thiếu `--station` thì hỏi nơi dời; agent không có terminal phải hỏi người dùng rồi truyền `--station`) | có |
 | Cập nhật bản clone | `video-studio update` | có |
