@@ -33,6 +33,11 @@ nguồn; mọi bản chuyển thể vẫn cần dựng và kiểm hình ảnh.
 
 ## Quy trình bốn bước
 
+Với lyric video, sau layout hãy tra [lyric-video-effects](../lyric-video-effects/SKILL.md)
+cho preset chữ A/B/C và kiểm nét script. Với ảnh tĩnh có lớp phủ chuyển động, tra
+[photo-ambient-effects](../photo-ambient-effects/SKILL.md). Đây là reference chuyên đề,
+không tự thêm style ngoài bộ người dùng đã duyệt.
+
 1. **Phân loại TỪNG đoạn nội dung theo việc nó làm**: mở màn/hook · con số chủ đạo · N điểm ·
    quy trình/chuỗi sự kiện · so sánh A-B · xếp hạng · phát ngôn · demo sản phẩm/clip nguồn · mặt
    trái/cảnh báo · chốt hạ · kết + kêu gọi.

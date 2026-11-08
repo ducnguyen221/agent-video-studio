@@ -1,0 +1,82 @@
+// Original reusable line drawings. All shapes share a 128-unit canvas.
+const p=d=>`<path d="${d}" pathLength="1"/>`;
+const c=(x,y,r)=>`<circle cx="${x}" cy="${y}" r="${r}" pathLength="1"/>`;
+const r=(x,y,w,h,rx=5)=>`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${rx}" pathLength="1"/>`;
+const g=(shape,transform)=>`<g transform="${transform}">${shape}</g>`;
+const heart=p('M64 105 C45 90 17 71 17 47 C17 23 49 18 64 40 C79 18 111 23 111 47 C111 71 83 90 64 105 Z');
+const miniHeart=g(heart,'translate(32 17) scale(.5)');
+const rays=p('M64 10V23 M64 105V118 M10 64H23 M105 64H118 M26 26L35 35 M93 93L102 102 M26 102L35 93 M93 35L102 26');
+const sun=c(64,64,28)+rays;
+const moon=p('M88 19 C60 18 39 42 45 69 C51 96 79 109 104 96 C88 119 53 120 31 97 C6 70 18 29 50 17 C64 12 77 13 88 19 Z');
+const sprout=p('M64 112V63 M64 81 C29 84 20 58 25 37 C51 36 70 52 64 81 M64 63 C60 34 77 18 104 20 C106 47 88 65 64 63');
+const hands=p('M12 69 L31 52 L47 54 L59 42 Q64 38 71 42 L96 61 L114 59 M14 74 L34 94 L44 94 M35 58 L53 76 Q59 81 64 76 L77 64 M60 45 L48 57 Q46 64 53 67 L67 56 L94 80 Q100 86 94 92 Q90 96 85 92 L67 77 M82 91 Q83 102 73 104 L57 90 M68 102 Q63 112 55 105 L36 88 M8 61L23 49 M104 56L120 76');
+const infinity=p('M64 65 C44 30 17 30 14 62 C11 92 42 102 64 65 C86 28 117 38 114 68 C111 100 84 100 64 65');
+const house=p('M15 57 L64 17 L113 57 M28 50 V111 H100 V50 M53 111V77H77V111 M39 62H48 M81 62H90');
+const wave=p('M7 86 Q21 72 35 86 T63 86 T91 86 T119 86 M7 103 Q21 89 35 103 T63 103 T91 103 T119 103');
+const people=c(42,35,14)+c(86,35,14)+p('M17 103V78 Q17 57 42 57 Q62 57 64 78 Q66 57 86 57 Q111 57 111 78V103 M29 80V112 M54 82V112 M74 82V112 M99 80V112 M54 86Q64 96 74 86');
+const clock=c(64,68,43)+p('M64 37V70L86 84');
+const ring=c(64,80,30)+p('M46 41L39 27L53 14H75L89 27L82 41Z M39 27H89 M53 14L64 41L75 14 M46 41H82');
+const eyes=p('M7 61 Q32 24 57 61 Q32 98 7 61 M71 61 Q96 24 121 61 Q96 98 71 61')+c(32,61,9)+c(96,61,9);
+const smile=c(64,64,45)+c(47,50,2)+c(81,50,2)+p('M36 72Q64 104 92 72');
+const letter=r(15,35,98,68)+p('M17 38L64 76L111 38 M17 100L49 73 M111 100L79 73')+g(heart,'translate(46 -3) scale(.28)');
+const icons={
+ 'book':p('M64 31Q40 16 13 25V104Q41 96 64 111Q87 96 115 104V25Q88 16 64 31Z M64 31V111 M25 43Q42 37 53 44 M25 60Q42 54 53 61 M76 44Q90 38 103 43 M76 61Q90 55 103 60'),
+ 'pencil':p('M26 88L86 18Q91 12 98 18L111 30Q116 35 111 41L49 108L17 117Z M26 88L49 108 M80 25L104 47 M17 117L29 113 M88 34L36 95'),
+ 'children-duo':people,
+ 'school':p('M12 49L64 15L116 49 M24 45V112H104V45 M53 112V79H75V112 M64 16V4H88L80 12H64 M35 58H44V68H35Z M85 58H94V68H85Z M35 83H44V93H35Z M85 83H94V93H85Z'),
+ 'hourglass':p('M31 12H97 M31 116H97 M38 13V35Q38 50 64 64Q90 50 90 35V13 M38 115V93Q38 78 64 64Q90 78 90 93V115 M48 32H80L64 49Z M45 105L64 85L83 105Z'),
+ 'separated-hearts':g(heart,'translate(0 18) scale(.46)')+g(heart,'translate(70 18) scale(.46)')+p('M50 69H58 M70 69H78'),
+ 'crossing-paths':p('M13 20C21 72 92 48 109 110 M16 109C27 62 92 69 113 18 M103 101L110 113L115 99 M102 21L114 14L117 28'),
+ 'graduation-cap':p('M8 43L64 17L120 43L64 69Z M30 56V86Q63 110 97 86V56 M113 49V91 M108 102V92H118V102'),
+ 'friendship':hands,
+ 'sun':sun,
+ 'coffee':p('M24 48H86V85Q84 106 57 106Q30 106 24 85Z M87 55H100Q115 56 110 72Q105 87 88 83 M16 115H99 M42 34C23 18 56 13 40 2 M65 34C47 19 78 14 64 2'),
+ 'speech-pair':p('M12 24H77Q87 24 87 35V64Q87 75 76 75H40L22 92V75H12Q3 75 3 64V35Q3 24 12 24 M94 48H113Q124 48 124 59V88Q124 99 113 99H108V116L89 99H63 M23 43H67 M23 57H56'),
+ 'map-pin':p('M64 118C54 101 24 74 24 45C24 23 42 7 64 7C86 7 104 23 104 45C104 74 74 101 64 118Z')+c(64,46,14),
+ 'birthday-cake':p('M17 67H111V111H17Z M17 80Q29 95 41 80Q53 95 65 80Q77 95 89 80Q101 95 111 80 M35 65V44H43V65 M60 65V42H68V65 M85 65V44H93V65 M39 34Q28 26 39 12Q50 26 39 34 M64 31Q53 23 64 9Q75 23 64 31 M89 34Q78 26 89 12Q100 26 89 34 M9 119H119'),
+ 'love-letter':letter,
+ 'embrace':c(46,31,14)+c(83,31,14)+p('M18 108V79Q18 52 43 52Q60 52 69 72L91 85 M111 108V79Q111 52 86 52Q68 52 59 72L38 85 M38 85Q26 92 36 99L69 112Q79 115 87 107 M91 85Q104 92 94 99L62 112 M41 72L83 91'),
+ 'sprout':sprout,
+ 'moon':moon,
+ 'globe':c(64,64,48)+p('M16 64H112 M25 38H103 M25 90H103 M64 16C30 41 30 88 64 112C98 88 98 41 64 16Z M64 16V112'),
+ 'sun-rays':sun,
+ 'heart':heart,
+ 'smile':smile,
+ 'heart-in-hands':g(heart,'translate(29 -1) scale(.55)')+p('M8 81L25 64L51 79Q57 84 53 90Q49 95 43 91L28 83 M120 81L103 64L77 79Q71 84 75 90Q79 95 85 91L100 83 M10 87L40 115H88L118 87 M52 91L64 98L76 91'),
+ 'film-teardrop':r(10,24,94,80)+p('M28 24V104 M85 24V104 M10 43H28 M10 65H28 M10 86H28 M85 43H104 M85 65H104 M85 86H104 M47 45L72 64L47 82Z M108 77Q90 100 108 114Q126 100 108 77Z'),
+ 'speech-zigzag':p('M16 22H111V88H72L49 111V88H16Z M39 45L59 56L50 69L86 60'),
+ 'knotted-line':p('M8 69C35 29 78 20 96 45C117 74 54 119 37 91C19 64 78 20 96 45C108 62 104 87 120 103'),
+ 'heart-mended':heart+p('M66 36L56 54L72 68L59 85 M50 56L64 50 M61 74L76 67'),
+ 'growing-heart':g(heart,'translate(14 17) scale(.78)')+p('M13 33L5 23 M106 33L117 22 M63 15V3 M16 100L8 110 M110 102L119 111'),
+ 'calendar-heart':r(17,24,94,90)+p('M17 47H111 M38 13V35 M90 13V35')+g(heart,'translate(35 50) scale(.45)'),
+ 'road':p('M25 116Q59 77 36 47Q24 26 43 8 M103 116Q137 77 114 47Q102 26 121 8 M64 109L72 96 M78 79L78 65 M74 48L68 37 M68 22L73 11'),
+ 'route-map':p('M13 100V29L47 15L83 29L115 15V93L81 108L47 94Z M47 15V94 M83 29V108 M26 63C58 35 69 97 99 55')+c(27,63,4)+c(99,55,4),
+ 'palm-wave':p('M66 104Q76 61 63 32 M63 32Q30 10 13 39Q37 24 63 32 M63 32Q91 4 117 29Q88 19 63 32 M63 32Q40 36 29 63Q41 44 63 32 M63 32Q88 32 103 57Q85 39 63 32')+wave,
+ 'heart-pulse':heart+p('M13 65H41L51 48L64 82L77 55L85 65H115'),
+ 'moon-heart':g(moon,'translate(1 -2) scale(.9)')+g(heart,'translate(61 48) scale(.47)'),
+ 'bath':p('M13 65H115V84Q115 108 91 108H37Q13 108 13 84Z M23 65V25Q23 10 38 10Q53 10 53 25 M43 26H64 M22 108L17 119 M104 108L109 119 M77 31V39 M93 38V46 M76 48V55'),
+ 'clock-moon':g(clock,'translate(-1 12) scale(.78)')+g(moon,'translate(70 1) scale(.42)'),
+ 'hill':p('M7 105Q26 66 46 74Q65 12 87 45Q103 64 122 105 M7 115H122 M65 70Q78 55 94 71')+c(31,30,12),
+ 'stars':p('M64 8L73 38L103 47L73 56L64 86L55 56L25 47L55 38Z M23 76L28 92L44 97L28 102L23 118L18 102L2 97L18 92Z M106 83L110 95L122 99L110 103L106 115L102 103L90 99L102 95Z'),
+ 'ring':ring,
+ 'eyes-heart':g(eyes,'translate(0 -4) scale(1 .85)')+g(heart,'translate(43 67) scale(.35)'),
+ 'footsteps':p('M42 15Q25 14 19 36L16 58Q17 69 33 69Q48 70 48 58L51 35Q55 17 42 15Z M16 80L14 93Q13 105 28 107Q43 110 44 97L45 83Z M89 32Q106 31 112 53L115 75Q114 86 98 86Q83 87 83 75L80 52Q76 34 89 32Z M115 97L117 110Q118 122 103 124Q88 127 87 114L86 100Z'),
+ 'house':house,
+ 'house-notes':g(house,'translate(0 12) scale(.85)')+p('M93 39V9L117 4V34 M93 18L117 13')+c(87,42,6)+c(111,37,6),
+ 'confetti-spark':p('M64 22L74 49L101 59L74 69L64 96L54 69L27 59L54 49Z M16 19L23 31 M106 18L98 31 M9 91L25 87 M103 99L115 109 M66 5V12 M42 111L39 120'),
+ 'meal':p('M15 64H113Q105 108 64 108Q23 108 15 64Z M12 64H116 M44 109V118H84V109 M41 47C22 32 55 23 40 9 M65 47C46 32 79 23 64 9 M89 47C70 32 103 23 88 9'),
+ 'bed-moon':p('M12 113V59 M115 113V76H12V99H115 M24 75V47H61V75 M61 61H104Q115 61 115 76')+g(moon,'translate(77 -3) scale(.36)'),
+ 'family-shield':p('M64 8L110 25V67Q108 99 64 121Q20 99 18 67V25Z')+g(people,'translate(29 24) scale(.55)'),
+ 'anchor-wave':c(64,20,10)+p('M64 30V105 M42 46H86 M17 69Q18 104 64 105Q110 104 111 69 M17 69L11 82 M17 69L31 77 M111 69L97 77 M111 69L117 82')+g(wave,'translate(0 20) scale(1 .9)'),
+ 'holding-hands':hands,
+ 'childhood-heart':g(sprout,'translate(-2 46) scale(.45)')+g(sprout,'translate(69 46) scale(.45)')+miniHeart,
+ 'promise-knot':p('M10 65H46C62 25 98 23 105 50C112 77 60 105 46 81C29 54 75 26 91 47C104 67 83 82 65 66L118 66 M45 82L27 110 M91 48L109 21'),
+ 'infinity-hands':g(infinity,'translate(6 -5) scale(.9)')+g(hands,'translate(25 66) scale(.6)'),
+ 'rings':c(46,75,29)+c(83,75,29)+p('M32 40L26 25L40 13H55L68 25L62 40Z M26 25H68'),
+ 'sprout-heart':g(sprout,'translate(0 17) scale(.85)')+g(heart,'translate(61 1) scale(.42)'),
+ 'infinity':infinity
+};
+export function iconShapes(id){if(!icons[id])throw new Error(`Unknown icon: ${id}`);return icons[id];}
+export const ICON_IDS=Object.freeze(Object.keys(icons));
+const escapeAttr=value=>String(value).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+export function iconSVG(id,label=''){label=escapeAttr(label);return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="${label}">${iconShapes(id)}</svg>`;}

@@ -5,6 +5,13 @@ chính nhưng chưa có tag; khi phát hành, mục đó đổi tên thành số
 `pyproject.toml`, `video_studio/__init__.py` cùng ba manifest plugin (`tests/test_version_sync.py`
 kiểm).
 
+## 0.8.2 — 2026-11-08
+
+- Thêm reference `lyric-video-effects`: ba preset A/B/C, 20 họ mở rộng opt-in, icon nét vẽ và kiểm mask/font script tại peak pulse.
+- Thêm `photo-ambient-effects`: canvas xác định cho sao, đom đóm, sao băng, mặt nước và tia nắng chéo từ góc; reference GIF/clock/vùng bảo vệ. Không kèm media hoặc font riêng.
+- Router/thư viện theme chỉ nạp hai reference khi đúng tình huống; `music-to-video` vẫn sở hữu workflow.
+- Bộ lyric mặc định chỉ A/B/C; runtime họ mở rộng mặc định từ chối và cần bật rõ sau yêu cầu của người dùng. Giữ đệm ink và gỡ mask sau reveal cho B.
+
 ## 0.8.1 — 2026-11-08
 
 - **Link SKILL.md trong cây skills:** `skills/video-remix-brief/SKILL.md` không còn link `../../docs/…` ra ngoài cây `skills/` (adapter Antigravity của OpcOS từ chối, junction phẳng làm link chết); test cổng khoá link SKILL.md chỉ trỏ trong `skills/`.

@@ -1,0 +1,10 @@
+/* Apply to the word MASK, not the glyph child. Measure every actual font. */
+.lyric-style-B .line { column-gap: .42em; line-height: 1.15; }
+.lyric-style-B .word {
+  display: inline-block;
+  padding: .25em .44em .36em;
+  margin: -.25em -.44em -.36em;
+  overflow: visible;
+}
+:is(.lyric-style-A, .lyric-style-B, .lyric-style-C) :is(.word, .glyph, .char) { display: inline-block; }
+:is(.lyric-style-A, .lyric-style-B, .lyric-style-C) .line { overflow: visible; }

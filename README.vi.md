@@ -1,12 +1,17 @@
 # agent-video-studio
 
+Reference tái dùng: [chữ lyrics A/B/C, chống cắt nét script và icon nét vẽ](skills/lyric-video-effects/SKILL.md),
+và [lớp phủ cho ảnh tĩnh, có tia nắng từ góc](skills/photo-ambient-effects/SKILL.md).
+Hai bộ bổ trợ workflow nhạc; không kèm font hay media riêng. Phạm vi đã kiểm và giới hạn nằm trong
+từng skill. Bổ sung mã nguồn cục bộ chưa đồng nghĩa đã cài bản plugin mới.
+
 *[English](README.md)* · [Trang giới thiệu](https://ducnguyen.vn/agent-video-studio/)
 
 Engine dựng video cho agent: composition HTML/CSS/GSAP được
 [HyperFrames](https://github.com/heygen-com/hyperframes) render ra MP4, bọc trong một package
 Python cài được với một lệnh duy nhất, `video-studio`.
 
-> **Trạng thái: v0.2.6.** Bản này có bố cục trạm, lệnh kiểm máy, công cụ di trú,
+> **Trạng thái: v0.8.2.** Bản này có bố cục trạm, lệnh kiểm máy, công cụ di trú,
 > họ template bản tin, lồng tiếng, xem trước, chỉnh footage, và `export` / `import` để mang dữ
 > liệu trạm sang máy khác, cùng tính năng cleanup video local. Mọi lệnh trong bảng dưới đều đã có mã thật.
 

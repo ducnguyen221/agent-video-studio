@@ -82,6 +82,10 @@ Lệnh "chưa có" trả mã `2` kèm lời báo — đừng thử lại, báo n
 
 ## Bước 3 — chọn đúng việc
 
+- **Lyric video từ một bản nhạc**: workflow sở hữu là `hyperframes/music-to-video`;
+  khi cần chữ theo nhạc đọc thêm [lyric-video-effects](../lyric-video-effects/SKILL.md).
+  Khi cần ảnh tĩnh có sao, đom đóm hoặc tia nắng, đọc thêm
+  [photo-ambient-effects](../photo-ambient-effects/SKILL.md). Hai skill bổ trợ không thay workflow chính.
 - **Dựng video từ DỮ LIỆU** (bản tin, deep-dive, repo hôm nay): `render` + một spec
   `schema_version: 1`. `brand` bắt buộc; thiếu là mã 2. Khuôn spec: `docs/CONTRACT.md`.
 - **Đã có video câm, cần giọng**: `narrate`. Ghim `--profile`, đừng dùng `--instruct` cho bản

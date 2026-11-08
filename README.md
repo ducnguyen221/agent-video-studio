@@ -6,7 +6,7 @@ A video-production engine an AI agent can drive: HTML/CSS/GSAP compositions rend
 [HyperFrames](https://github.com/heygen-com/hyperframes), wrapped in an installable Python package
 with one CLI, `video-studio`.
 
-> **Status: v0.2.6.** This build ships the station layout, the machine check,
+> **Status: v0.8.2.** This build ships the station layout, the machine check,
 > the migration tool, the news template family, narration, preview, footage editing, and
 > local cleanup for existing clips, and `export` / `import` for moving station data between machines. Every command in the table
 > below is backed by real code.
@@ -20,6 +20,11 @@ The **voice** station (`agent-voice-studio`) is the same: without it, silent ren
 work, you just cannot add narration. There is no required install order and no bundle.
 
 ## What is in this build
+
+Reusable references: [lyric typography A/B/C, script ink safety and line icons](skills/lyric-video-effects/SKILL.md),
+and [still-photo ambient overlays with corner sun rays](skills/photo-ambient-effects/SKILL.md).
+These support the music workflow; font files and private media are not bundled. Coverage and limitations
+are documented inside each skill. Local source additions do not imply an installed plugin release.
 
 | Command | Does |
 |---|---|
