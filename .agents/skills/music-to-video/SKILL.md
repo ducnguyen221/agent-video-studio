@@ -1,6 +1,6 @@
 ---
 name: music-to-video
-description: Turn a music track - an audio file, a video to pull audio from, or a track generated from a mood brief - into a beat-synced video such as a lyric video, a slideshow or a kinetic promo. The music drives all pacing, any user-supplied images or videos are cut onto the same beat grid, and a complete video needs zero assets. Narrated pieces belong to the input-matched workflow instead.
+description: Turn a music track, extracted audio or a mood brief into a lyric video, slideshow or kinetic promo. Use the music to guide pacing while keeping vocal cues aligned to the recording and allowing deliberate off-beat cuts. Narrated pieces belong to the input-matched workflow instead.
 ---
 
 # music-to-video — adapter nguồn

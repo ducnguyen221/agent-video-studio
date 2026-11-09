@@ -1,9 +1,22 @@
 ---
 name: music-to-video
-description: Turn a music track - an audio file, a video to pull audio from, or a track generated from a mood brief - into a beat-synced video such as a lyric video, a slideshow or a kinetic promo. The music drives all pacing, any user-supplied images or videos are cut onto the same beat grid, and a complete video needs zero assets. Narrated pieces belong to the input-matched workflow instead.
+description: Turn a music track, extracted audio or a mood brief into a lyric video, slideshow or kinetic promo. Use the music to guide pacing while keeping vocal cues aligned to the recording and allowing deliberate off-beat cuts. Narrated pieces belong to the input-matched workflow instead.
 ---
 
 # Video cắt theo nhịp nhạc
+
+## Nhánh lyric video
+
+Với yêu cầu lyric video, đọc [references/lyric-workflow.md](references/lyric-workflow.md)
+và dùng hai mẫu storyboard ở `assets/`. Cue giọng hát lấy từ bản thu, cùng mốc thời gian
+với audio; không lượng tử hóa cue theo lưới nhịp cắt cảnh. Lời chưa xác minh phải hiện rõ
+trạng thái và không được ghi như lời đã duyệt. Nhịp là công cụ chọn điểm cắt, không phải
+điều kiện bắt buộc cho mọi lựa chọn sáng tạo của người dùng.
+
+Khi thiết kế chữ, đọc [lyric-video-effects](../../lyric-video-effects/SKILL.md): có A/B/C,
+motion mở rộng và preset `soft-rise`/`focus-in`. Với ảnh tĩnh, đọc
+[photo-ambient-effects](../../photo-ambient-effects/SKILL.md): có ambient painter, sun rays,
+`dust` và envelope. Mỗi skill ghi rõ cách dùng, giới hạn và mức đã kiểm của tài nguyên.
 
 > **Nguồn:** `heygen-com/hyperframes` · `skills/music-to-video/SKILL.md` @ **v0.8.51** ·
 > Apache-2.0 · hash manifest `190e9885dab9b11d` (169 file upstream, phần lớn là **ảnh `png` mẫu** —
@@ -12,11 +25,10 @@ description: Turn a music track - an audio file, a video to pull audio from, or 
 
 ## Hai ý chi phối mọi thứ
 
-1. **Nhạc quyết định nhịp, không phải nội dung.** Mọi điểm cắt rơi vào lưới nhịp đã phân tích. Cắt
-   "theo cảm giác" rồi mong nó trùng nhịp là cách làm ra video lệch nhẹ ở mọi chỗ — thứ người xem
-   không chỉ ra được nhưng cảm thấy.
+1. **Nhạc định hướng nhịp, không quyết định nội dung.** Dùng lưới nhịp đã phân tích để
+   chọn điểm cắt khi phù hợp; chủ đích sáng tạo và cue giọng hát có thể nằm ngoài lưới.
 2. **Không cần tài sản nào cũng ra được video hoàn chỉnh.** Chữ, hình khối, màu và chuyển động là
-   đủ. Ảnh và clip người dùng đưa vào là **thêm**, và chúng cũng phải cắt lên cùng lưới nhịp đó.
+   đủ. Ảnh và clip người dùng đưa vào là **thêm**, cắt theo kế hoạch và nhạc.
 
 ## Sáu bước
 
@@ -36,8 +48,7 @@ description: Turn a music track - an audio file, a video to pull audio from, or 
 - **Lời bài hát trên màn hình cũng là tác phẩm có bản quyền.** Video lyric cần quyền riêng, không
   chỉ quyền dùng bản ghi.
 - **Cấm `repeat: -1`** — nhạc dài, tween vô hạn ở đây là cách làm tiến trình render chết giữa chừng.
-- Mốc cắt bám **nhịp**, không bám giây tròn. Một video 90 giây có thể có hơn 100 điểm cắt; đừng đặt
-  tay từng cái, tính từ lưới nhịp.
+- Dùng lưới nhịp đã lưu để hỗ trợ chọn điểm cắt; ghi các ngoại lệ có chủ đích trong storyboard.
 
 ## Nghiệm thu
 

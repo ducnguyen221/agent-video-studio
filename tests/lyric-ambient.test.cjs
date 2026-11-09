@@ -90,3 +90,29 @@ test('20 opt-in families schedule entrance/exit; invalid family rejected; icons 
   assert.ok(iconSVG(ICON_IDS[0],'"<bad>').includes('&quot;&lt;bad&gt;'));
   assert.throws(()=>iconShapes('not-present'));
 });
+
+test('saved envelope interpolation is seek stable and rejects invalid samples', () => {
+  const {strengthAt} = require(path.join(root, 'photo-ambient-effects/assets/envelope.js'));
+  const samples = [{time: 0, value: .2}, {time: 2, value: .8}];
+  assert.equal(strengthAt(samples, 1, .5), .25);
+  strengthAt(samples, 2, .5);
+  assert.equal(strengthAt(samples, 1, .5), .25);
+  assert.throws(() => strengthAt([{time: 1, value: 2}], 1));
+  assert.throws(() => strengthAt([{time: 1, value: 0}, {time: 1, value: 1}], 1));
+});
+
+test('new lyric and dust presets are deterministic and validate parameters', () => {
+  const {schedule} = require(path.join(root, 'lyric-video-effects/assets/soft-presets.js'));
+  for (const preset of ['soft-rise', 'focus-in']) {
+    const a = recorder(), b = recorder();
+    schedule(a.tl, 'word', {preset, start: 1, duration: .3});
+    schedule(b.tl, 'word', {preset, start: 1, duration: .3});
+    assert.deepEqual(a.ops, b.ops);
+    assert.throws(() => schedule(a.tl, 'word', {preset, start: -1, duration: .3}));
+  }
+  const {createDustPainter} = require(path.join(root, 'photo-ambient-effects/assets/dust.js'));
+  const {canvas, ops} = fakeCanvas(), paint = createDustPainter(canvas);
+  paint(2, .5); const first = JSON.stringify(ops); ops.length = 0;
+  paint(3, .5); ops.length = 0; paint(2, .5); assert.equal(JSON.stringify(ops), first);
+  assert.throws(() => paint(2, 2));
+});

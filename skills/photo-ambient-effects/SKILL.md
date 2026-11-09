@@ -7,6 +7,9 @@ description: "Design and render deterministic ambient overlays and looping GIF p
 
 Đầu vào: ảnh, vùng cần bảo vệ, đồng hồ composition, nhịp/cường độ nhạc đã lưu nếu có.
 Đầu ra: lớp phủ tái lập được, GIF/MP4 demo và preset có mức opacity rõ.
+Chỉ dùng envelope đã lưu cùng mốc audio; nội suy theo thời gian composition, giới hạn
+strength và che vùng bảo vệ bằng mask thực trong composition. Không coi vị trí mặc định
+của painter là bằng chứng vùng mặt hoặc chữ đã được bảo vệ.
 Skill này bổ trợ workflow đang dựng video; không thay ảnh, sửa khuôn mặt hoặc tự sinh chuyển động nhân vật.
 
 ## Quy trình
@@ -16,13 +19,15 @@ Skill này bổ trợ workflow đang dựng video; không thay ảnh, sửa khu�
    mặt nước hoặc tia nắng. Xong khi mỗi lớp có vị trí, thời gian, cường độ; sai cảnh thì đổi preset.
 2. Nạp [assets/ambient-painter.js](assets/ambient-painter.js) và/hoặc
    [assets/sun-rays.js](assets/sun-rays.js), caller truyền canvas có sẵn và thời gian composition.
+   [assets/dust.js](assets/dust.js) là preset bụi sáng mới; cần mask vùng bảo vệ và render kiểm.
    Đọc [references/runtime-and-gif.md](references/runtime-and-gif.md) trước khi tích hợp clock/loop.
    Xong khi cùng t cho cùng ảnh và t+8 s nối vòng; lỗi thì sửa clock/seed, không thêm timer riêng.
 3. Dựng demo 8 s, nhìn ở kích thước video và GIF nhỏ. Tia nắng phải có hình quạt chéo từ góc,
    không gọi radial glow là tia nắng. Xong khi hình học thấy rõ và mặt/chữ vẫn đọc được;
    lỗi thì giảm opacity, đổi góc hoặc che vùng cần bảo vệ.
 4. Gắn các cửa sổ nắng thưa vào cấu trúc nhạc, fade .8–1.2 s. Có thể nhân strength bằng envelope
-   đã phân tích/lưu file. Không phân tích live hay dùng âm thanh hệ thống khi render.
+   đã phân tích/lưu file; [assets/envelope.js](assets/envelope.js) nội suy xác định và
+   giới hạn strength. Không phân tích live hay dùng âm thanh hệ thống khi render.
    Xong khi seek lùi/tiến giống nhau và ảnh gốc không bị transform nếu brief yêu cầu giữ nguyên.
 5. Kiểm MP4 thật, GIF loop, frame đen, thời lượng; ghi phần đã xem và phần chưa kiểm.
    Đọc [references/provenance-and-coverage.md](references/provenance-and-coverage.md) để mô tả

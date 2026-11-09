@@ -10,9 +10,9 @@ description: "Design and verify kinetic lyric typography, word highlights and li
 trên MP4. Skill này bổ trợ workflow `music-to-video`; không thay bước phân tích nhạc hay duyệt storyboard.
 Không dùng cho phụ đề người nói hoặc chép lời từ âm thanh chưa được căn thời gian.
 
-Bộ mặc định cho video về sau chỉ gồm **A — Brush + Doodles, B — Wedding Script,
-C — Flowing Letters** như demo. Không quay lại chữ thẳng cũ, kể cả tiêu đề/câu có dấu.
-Không tự thay ba style bằng họ F01–F20; chỉ mở rộng khi người dùng yêu cầu rõ.
+Ba style tương thích hiện có là **A — Brush + Doodles, B — Wedding Script,
+C — Flowing Letters**; chọn font và motion theo bài và brief, không ép font viết tay.
+Các họ motion mở rộng là mã dùng lại, không mặc định đã được render kiểm.
 Với B, luôn dùng đệm ink trên mask, pulse trên glyph con và `clipPath:'none'` sau reveal;
 kiểm cả nét nhô và dấu ở scale lớn nhất trước khi render full.
 
@@ -22,11 +22,15 @@ kiểm cả nét nhô và dấu ở scale lớn nhất trước khi render full.
    [references/abc-recipes.md](references/abc-recipes.md) để chọn A/B/C và cách đổi sau 2–3 câu.
    Xong khi mỗi cụm có start, sung_end, end, style, icon; thiếu cue thì quay lại căn lời.
 2. Kiểm glyph thực của font trước khi dựng. Không âm thầm dùng font thẳng khi thiếu dấu.
+   Đọc [references/fonts-and-glyphs.md](references/fonts-and-glyphs.md) để chọn nguồn,
+   kiểm license và phát hiện fallback trên runtime thực.
    Đọc [references/ink-and-timing.md](references/ink-and-timing.md) khi dùng script, pulse,
    mask hoặc chữ có dấu. Xong khi các từ dài và có dấu hiển thị đầy đủ; lỗi thì đổi sang font
    trong bộ đã duyệt hoặc xin đổi font nếu không font nào đáp ứng.
 3. Dùng [assets/lyric-presets.js](assets/lyric-presets.js) cho A/B/C;
    [assets/script-ink.css](assets/script-ink.css) là khoảng đệm khởi đầu cho B, cần đo lại theo font.
+   [assets/soft-presets.js](assets/soft-presets.js) bổ sung `soft-rise` và `focus-in`;
+   đây là mã dùng lại chưa chứng minh render cho từng font/tỉ lệ.
    Dùng [assets/line-icons.mjs](assets/line-icons.mjs) để lấy một icon nét vẽ mỗi cụm khi brief yêu cầu.
    Đọc [references/motion-families.md](references/motion-families.md) khi cần mở rộng cách vào/ra;
    chỉ dùng họ mở rộng nếu brief cho phép, không trộn vào video bị giới hạn A/B/C.

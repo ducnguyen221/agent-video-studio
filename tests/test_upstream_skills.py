@@ -100,10 +100,25 @@ def test_every_hash_matches_the_real_upstream_manifest():
 
 
 def test_no_binary_or_reference_tree_was_copied():
-    """Chỉ `SKILL.md`, không gì khác: không font, không nhạc, không ảnh, không references/."""
-    extra = sorted(p.relative_to(ROOT).as_posix() for p in SKILLS.rglob("*")
-                   if p.is_file() and p.name != "SKILL.md")
-    assert extra == [], f"thư mục skill distill chỉ được chứa SKILL.md: {extra}"
+    """Chỉ cho phép các tài nguyên lyric được duyệt, không chép cây upstream."""
+    allowed = {
+        "music-to-video/assets/storyboard-multishot.md",
+        "music-to-video/assets/storyboard-still.md",
+        "music-to-video/assets/write_uslt.py",
+        "music-to-video/references/lyric-workflow.md",
+    }
+    extra = set()
+    for path in SKILLS.rglob("*"):
+        if not path.is_file() or path.name == "SKILL.md":
+            continue
+        # Bytecode là sản phẩm tạm của Python, không phải tài nguyên phân phối.
+        if path.parent.name == "__pycache__" and path.suffix == ".pyc":
+            continue
+        extra.add(path.relative_to(SKILLS).as_posix())
+    assert extra == allowed, f"tài nguyên ngoài danh sách hoặc bị thiếu: {sorted(extra ^ allowed)}"
+    for name in allowed:
+        contents = (SKILLS / name).read_text(encoding="utf-8")
+        assert "\x00" not in contents, f"tài nguyên không phải văn bản: {name}"
 
 
 def test_license_apache_is_the_real_text():

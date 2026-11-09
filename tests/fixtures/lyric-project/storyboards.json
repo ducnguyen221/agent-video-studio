@@ -1,0 +1,82 @@
+{
+  "assets": [
+    {
+      "id": "A01",
+      "path": "media/still.svg",
+      "rights": "synthetic"
+    },
+    {
+      "id": "A02",
+      "path": "media/second.svg",
+      "rights": "synthetic"
+    }
+  ],
+  "cues": [
+    {
+      "id": "C01",
+      "segment": "S01",
+      "text": "Ánh sáng",
+      "text_status": "unverified",
+      "timing_status": "unverified",
+      "start": 0.0,
+      "sung_end": 0.5,
+      "end": 0.6
+    },
+    {
+      "id": "C02",
+      "segment": "S02",
+      "text": "Ánh sáng",
+      "text_status": "unverified",
+      "timing_status": "unverified",
+      "start": 0.6,
+      "sung_end": 1.1,
+      "end": 1.2
+    }
+  ],
+  "options": {
+    "still": [
+      {
+        "segment": "S01",
+        "asset": "A01",
+        "cue": "C01"
+      },
+      {
+        "segment": "S02",
+        "asset": "A01",
+        "cue": "C02"
+      }
+    ],
+    "multishot": [
+      {
+        "segment": "S01",
+        "asset": "A01",
+        "cue": "C01",
+        "source_in": 0,
+        "source_out": 2
+      },
+      {
+        "segment": "S02",
+        "asset": "A02",
+        "cue": "C02",
+        "source_in": 0,
+        "source_out": 2
+      }
+    ]
+  },
+  "missing_before_render": [
+    "matching master audio",
+    "verified text and timing",
+    "font glyph verification",
+    "GSAP runtime availability"
+  ],
+  "audio": {
+    "path": "media/synthetic.mp3.b64",
+    "duration": 0.2,
+    "role": "base64 encoded metadata test fixture only"
+  },
+  "runtime": "runtime.md",
+  "compositions": {
+    "still": "index-still.html",
+    "multishot": "index-multishot.html"
+  }
+}
