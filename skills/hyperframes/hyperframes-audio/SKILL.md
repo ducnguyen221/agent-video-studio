@@ -12,6 +12,11 @@ description: Mix audio that is already placed inside a HyperFrames composition -
 Skill này chỉ áp cho âm thanh **đã nằm trong** composition. Tìm hay sinh ra nhạc, tiếng động, giọng
 đọc là việc của `media-use`. Đặt clip vào đâu, dài bao lâu là việc của `hyperframes-core`.
 
+Với lyric video render hình trước rồi mux âm thanh sau, dùng
+[workflow sound design](../media-use/references/sound-design.md) cho cue, quyền và đường phối.
+Nếu nguồn là MP3, OGG hoặc M4A, giải mã thành PCM WAV dẫn xuất trong project; giữ nguyên file
+gốc, ghi nguồn và quan hệ giữa hai bản trong ledger, rồi hash WAV cuối trước khi duyệt cue.
+
 > **Trong pipeline tin của repo này, HyperFrames render CÂM** rồi ffmpeg mới mux tiếng vào
 > (`video_studio/render.py`, `voice.py`). Nghĩa là mọi thứ dưới đây **không ảnh hưởng** bản tin —
 > chỉ dùng khi bạn cố ý đưa audio vào trong composition.
@@ -47,3 +52,10 @@ tầng xử lý lên một vấn đề vốn chỉ cần một tầng.
 Nghe lại **bản render**, không nghe bản xem trước: đường trộn của xem trước và của render không
 nhất thiết giống nhau. Kiểm mức đỉnh và mức trung bình của file cuối bằng công cụ đo, đừng kết
 luận bằng tai trên một cặp loa.
+
+## SFX đã duyệt
+
+Với lyric project, đọc `media-use/references/sound-design.md`: chỉ cue đã duyệt và asset đã khóa
+quyền/hash mới được phối. Giữ master nguyên vẹn; phối SFX vào bản sao và mux sau render câm.
+Kiểm onset, cuối bài, mức đỉnh, vocal và nghe MP4 cuối; không xem có audio stream là bằng chứng
+SFX thực sự xuất hiện.

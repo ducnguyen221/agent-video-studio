@@ -102,6 +102,7 @@ def test_every_hash_matches_the_real_upstream_manifest():
 def test_no_binary_or_reference_tree_was_copied():
     """Chỉ cho phép các tài nguyên lyric được duyệt, không chép cây upstream."""
     allowed = {
+        "media-use/references/sound-design.md",
         "music-to-video/assets/storyboard-multishot.md",
         "music-to-video/assets/storyboard-still.md",
         "music-to-video/assets/write_uslt.py",

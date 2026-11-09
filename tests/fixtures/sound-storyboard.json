@@ -1,0 +1,11 @@
+{
+  "scenes": [
+    {"id":"scene-1", "start":0, "end":2, "action":"door closes", "lyric_cue_id":"lyric-1"},
+    {"id":"scene-2", "start":2, "end":4, "action":"quiet portrait", "lyric_cue_id":null}
+  ],
+  "sfx_cues": [
+    {"id":"sfx-1", "scene_id":"scene-1", "lyric_cue_id":"lyric-1", "purpose":"support door action", "timeline_seconds":1, "in_seconds":0, "duration_seconds":0.2, "vocal_note":"test under vocal", "asset_id":"a", "status":"proposed"},
+    {"id":"sfx-2", "scene_id":"scene-1", "lyric_cue_id":null, "purpose":"optional alternate", "timeline_seconds":1.5, "in_seconds":0, "duration_seconds":0.2, "vocal_note":"no vocal", "asset_id":"missing", "status":"rejected"}
+  ],
+  "no_sfx": [{"scene_id":"scene-2", "start":2, "end":4, "reason":"leave musical space"}]
+}
