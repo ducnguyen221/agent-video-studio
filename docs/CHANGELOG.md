@@ -5,6 +5,12 @@ chính nhưng chưa có tag; khi phát hành, mục đó đổi tên thành số
 `pyproject.toml`, `video_studio/__init__.py` cùng ba manifest plugin (`tests/test_version_sync.py`
 kiểm).
 
+## 0.8.3 — 2026-11-09
+
+- Bổ sung quy trình lyric từ MP3, kiểm lời/metadata, hai mẫu storyboard và hướng dẫn cover, thumbnail, cue và đóng gói.
+- Bổ sung tìm metadata SFX Openverse, ledger quyền, cue duyệt, phối và mux audio; kiểm asset và giữ bằng chứng riêng ngoài credit công khai.
+- Thêm preset chuyển động chữ, ambient và envelope; giữ giới hạn về quyền, kiểm glyph và nghiệm thu file cuối.
+
 ## 0.8.2 — 2026-11-08
 
 - Thêm reference `lyric-video-effects`: ba preset A/B/C, 20 họ mở rộng opt-in, icon nét vẽ và kiểm mask/font script tại peak pulse.
