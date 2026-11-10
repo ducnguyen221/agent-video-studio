@@ -28,7 +28,7 @@ làm, vì bản chuyển thể chỉ mượn cấu trúc và nhịp.
 `written_permission` (phép bằng văn bản), `license` (giấy phép). Giá trị khác bị từ chối.
 
 - `own_content`: người dùng khẳng định mình làm ra video; không bắt buộc chứng từ. Vẫn không
-  được đưa gì từ `source/` hay `evidence/` vào `assets/` dưới mọi dạng (chép, cắt, chuyển mã,
+  được đưa gì từ `source/` hay `evidence/` vào cây tài sản dựng dưới mọi dạng (chép, cắt, chuyển mã,
   chụp khung); muốn dùng footage gốc thì đưa tệp gốc của người dùng, khai riêng trong `assets[]`. Tệp gốc
   trùng byte với mẫu thì `audit` vẫn báo; dùng bản quay hay bản dựng gốc, không dùng bản đã đặt
   vào `source/`.
@@ -102,15 +102,21 @@ Khoá lạ trong hồ sơ được giữ nguyên khi ghi lại. Chi tiết khoá
   Có phát hiện thì thoát **mã 2** và liệt kê từng tệp cùng lý do.
 - Không bắt: tư liệu mẫu đã **chuyển mã, cắt, phóng, đổi màu** (băm khác); đường tệp ghi trong
   spec hay EDL (audit không đọc chúng); lời hay nhạc giống mà không trùng byte.
-- Hệ quả bắt buộc: spec/EDL chỉ trỏ vào `assets/`; sau khi dựng, người xem lại khung đại diện của
-  bản dựng rồi ghi «không có tư liệu của mẫu» vào `treatment.md`.
+- Hệ quả: với spec/EDL của `render`/`edit`, chỉ trỏ vào `assets/`. Với lyric HyperFrames, dùng
+  `composition/media/`, khai cùng các đường trong `assets[]`, chạy `audit --assets` trên cây đó,
+  rồi đối chiếu thủ công composition và audio ghép với ledger. Sau khi dựng, xem lại khung đại diện
+  và ghi nhận kết quả kiểm tư liệu mẫu vào `treatment.md`.
 
 ## Quy trình ngắn
 
 1. Đọc `provenance.json`. Chưa có thì `reference init`.
-2. `rights_status` khác `approved` → dừng ở phân tích từ mô tả hoặc tệp người dùng có quyền.
+2. `rights_status` khác `approved` → không tải; có thể phân tích mô tả hoặc tệp người dùng có quyền,
+   và chỉ dựng khi quyền riêng của các tài sản bản mới đã rõ.
 3. Cần tải: cả kế hoạch lẫn `--go` đều cần lời phép đúng URL; truyền lại URL ở `--allow-url`.
    `reference fetch` mặc định chỉ in kế hoạch (vẫn hỏi metadata qua mạng một lượt); chỉ thêm
    `--go` khi hồ sơ đủ khoá ở trên.
-4. Dựng chỉ từ `assets/`; mỗi tệp có dòng `assets[]`.
-5. `reference audit` mã 0 mới dựng; sau dựng, xem khung và ghi xác nhận.
+4. Đặt tài sản trong `assets/` cho `render`/`edit`, hoặc `composition/media/` cho lyric; mỗi tệp có
+   dòng `assets[]`. Với lyric, đối chiếu cả đường dùng thực tế và quyền theo
+   [hướng dẫn tích hợp](../../video-routing/references/lyric-reference-integration.md).
+5. `reference audit` mã 0 và `checked` > 0 mới dựng; với lyric truyền `--assets` tới cây media.
+   Sau dựng, xem khung và ghi kết quả kiểm.

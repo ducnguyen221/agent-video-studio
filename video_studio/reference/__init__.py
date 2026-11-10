@@ -12,6 +12,7 @@
 """
 import argparse
 import datetime
+import json
 import os
 import shutil
 
@@ -19,7 +20,7 @@ from .. import _env, _paths, contract
 from ..contract import ContractError
 from . import gate, media, subs
 
-ACTIONS = ("init", "frames", "tiles", "transcribe", "fetch", "audit")
+ACTIONS = ("init", "frames", "tiles", "transcribe", "fetch", "audit", "lyric-audit")
 
 TEMPLATE_FILES = ("reference-map.md", "brief.md", "treatment.md")
 PROJECT_DIRS = ("source", os.path.join("evidence", "frames"), os.path.join("evidence", "tiles"),
@@ -90,6 +91,10 @@ def build_parser(prog="video-studio reference"):
     p = sub.add_parser("audit", parents=[common], help="kiểm thư mục tài sản với hồ sơ")
     p.add_argument("--project", required=True, help="thư mục project")
     p.add_argument("--assets", help="thư mục tài sản (mặc định <project>/assets)")
+
+    p = sub.add_parser("lyric-audit", parents=[common], help="kiểm tài sản lyric khai báo; không kiểm runtime")
+    p.add_argument("--project", required=True, help="thư mục project tham chiếu")
+    p.add_argument("--manifest", required=True, help="JSON khai audio và assets")
     return ap
 
 
@@ -173,6 +178,15 @@ def do_reference(args):
                                force=args.force)
     if action == "audit":
         return gate.audit_assets(args.project, args.assets)
+    if action == "lyric-audit":
+        from . import lyric_guard
+        try:
+            with open(args.manifest, encoding="utf-8") as stream:
+                manifest = json.load(stream)
+        except (OSError, ValueError) as exc:
+            raise ContractError(f"không đọc được manifest: {exc}") from None
+        snapshot = lyric_guard.prepare(args.project, manifest)
+        return {"coverage": "declared_only", "snapshot": snapshot}
     if action == "fetch":
         from . import fetch                      # nhập lười để lõi không cần yt-dlp
         fetch.check_limits(args.max_mb, args.sub_langs)

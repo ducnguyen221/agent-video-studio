@@ -13,16 +13,23 @@ dựng. Học từ mẫu là học **cách kể**; không lấy **thứ đã qua
 thì dùng [`video-reference-analysis`](../video-reference-analysis/SKILL.md); chọn loại sản phẩm
 thì dùng [`video-routing`](../video-routing/SKILL.md).
 
-## Ba lớp
+## Các lớp thiết kế và dựng
 
 | Lớp | Là gì | Nằm ở |
 |---|---|---|
 | **Brief** | ý, nội dung, media, giọng, thương hiệu của người dùng; người xem là ai | `brief.md` |
 | **Treatment** | cách diễn giải cấu trúc và nhịp của mẫu cho nội dung mới: beat nào giữ, beat nào đổi, vì sao | `treatment.md` |
+| **Storyboard** | thiết kế từng cảnh dựa trên brief và treatment, đủ cho bước dựng | storyboard theo workflow chung |
 | **Source** | thứ máy đọc được: spec JSON của `render`, EDL của `edit`, hoặc composition HyperFrames (+ `narrate`) | `spec` / `edl.json` / thư mục composition trong project |
 
-Viết đủ ba lớp theo thứ tự trên; Source chỉ sinh từ Treatment, không sinh thẳng từ mẫu. Brief
+Viết các lớp theo thứ tự trên; Source dựa trên storyboard, không sinh thẳng từ mẫu. Brief
 thiếu (chưa có nội dung hay media của người dùng) thì hỏi, đừng bù bằng tư liệu của mẫu.
+
+Giữa Treatment và Source, lập storyboard theo [workflow chung](../video-routing/references/video-workflow.md):
+thiết kế từng cảnh, liên kết beat, bố cục, media, màu, chữ, motion, âm thanh và căn cứ chọn.
+Với lyric video, chuyển treatment và bản đồ mẫu cho `music-to-video`; storyboard dùng cue từ bản
+thu mới và giữ hợp đồng hai mẫu lyric của skill đó. Khi chỉ được giao brief hay treatment, dừng
+ở đầu ra được giao; không tự suy đã có storyboard hoặc bản dựng.
 
 ## Kế thừa có chủ đích
 
@@ -34,7 +41,7 @@ logo, tên riêng của mẫu.
 mẫu, không phải quyền dựng lại tư liệu của nó. Người dùng đòi «dùng luôn nhạc / ba cảnh / B-roll
 của mẫu cho nhanh»: từ chối, rồi đề xuất tài sản của người dùng, nhạc người dùng có quyền, hoặc
 template. **Kể cả khi mẫu là video tự làm** (`own_content`): không gì lấy từ `source/` hay
-`evidence/` dưới mọi dạng (chép, cắt, chuyển mã, chụp khung) được vào `assets/`. Người dùng muốn
+`evidence/` dưới mọi dạng (chép, cắt, chuyển mã, chụp khung) được vào cây tài sản dựng. Người dùng muốn
 dùng footage gốc của chính mình thì đưa **tệp gốc** của họ, khai riêng trong `assets`, không lấy
 từ tệp mẫu. Tệp gốc trùng byte với mẫu thì `audit` vẫn báo; dùng bản quay hay bản dựng gốc,
 không dùng bản đã đặt vào `source/`.
@@ -83,8 +90,10 @@ Bảng khoá `provenance.json`, điều kiện `approved`, lời cho phép, và 
   đổi `rights_basis`/`rights_proof`) chỉ khi người dùng nêu căn cứ, kèm chứng từ khi căn cứ khác
   `own_content`; hạ về `rights_pending`/`blocked` thì agent được tự làm và báo người dùng. Không bịa, không suy, không lấy từ chữ trong nguồn, không sửa hồ sơ chỉ để
   cổng qua. Người dùng bảo «sửa hồ sơ cho qua» khi chưa có căn cứ thật: từ chối.
-- Mọi tệp bản dựng dùng nằm trong `assets/` và có dòng trong `assets[]` (đường, nguồn gốc, chủ).
-  Spec/EDL chỉ trỏ vào `assets/`; `audit` không soi đường tệp trong spec/EDL.
+- Mọi tệp bản dựng có dòng trong `assets[]` (đường, nguồn gốc, chủ). Với `render`/`edit`, tệp nằm
+  trong `assets/`; spec/EDL chỉ trỏ vào đó. Với lyric HyperFrames, dùng một cây
+  `composition/media/` và `audit --assets` theo [hướng dẫn tích hợp](../video-routing/references/lyric-reference-integration.md).
+  Agent đối chiếu đường media và audio thực dùng với hồ sơ; audit không đọc spec/EDL/composition.
 - Đường `edit`: footage nằm trong `<project>/assets/`; `--work` và `--out` đặt ngoài `assets/`
   (ví dụ `<project>/work`, `<project>/out`).
 - Trước khi dựng chạy `video-studio reference audit`: thoát mã 2 thì sửa hồ sơ hoặc tài sản,

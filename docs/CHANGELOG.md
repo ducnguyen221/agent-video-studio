@@ -5,6 +5,13 @@ chính nhưng chưa có tag; khi phát hành, mục đó đổi tên thành số
 `pyproject.toml`, `video_studio/__init__.py` cùng ba manifest plugin (`tests/test_version_sync.py`
 kiểm).
 
+## 0.9.0 — 2026-11-10
+
+- Nối video mẫu với lyric qua brief, treatment, storyboard và một cây media; kiểm nguồn và quyền,
+  đối chiếu composition/audio rồi dựng theo `music-to-video`. Chưa kiểm thử lyric từ mẫu đầu-cuối.
+- Thêm `reference lyric-audit` để đối chiếu danh mục tài sản lyric và hash với hồ sơ mẫu; kết quả
+  chỉ là `declared_only`, chưa xác minh các phụ thuộc renderer hoặc đầu vào ghép âm thanh thực tế.
+
 ## 0.8.3 — 2026-11-09
 
 - Bổ sung quy trình lyric từ MP3, kiểm lời/metadata, hai mẫu storyboard và hướng dẫn cover, thumbnail, cue và đóng gói.

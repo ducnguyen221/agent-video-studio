@@ -13,6 +13,12 @@ và media của người dùng. Hai skill dẫn đường: [`video-reference-ana
 (`marketing-routing`). Yêu cầu nhân bản người, giọng hay khuôn mặt trong mẫu bị từ chối theo
 `video-remix-brief`.
 
+Đường điều phối đầy đủ, storyboard chung, nhánh lyric và tạo template từ mẫu nằm ở
+[workflow video chung](../skills/video-routing/references/video-workflow.md). Storyboard đặt giữa treatment và spec/EDL; với lyric,
+`music-to-video` sở hữu cue, storyboard lyric và đường dựng. Hợp đồng quyền ở tài liệu này vẫn áp dụng.
+Với lyric, dùng [hướng dẫn tích hợp](../skills/video-routing/references/lyric-reference-integration.md):
+một cây `composition/media/`, audit `--assets` trên cây đó và đối chiếu thủ công composition/audio.
+
 ## Mười bước
 
 | Bước | Đầu vào | Đầu ra | Ai / lệnh | Dừng khi |
@@ -24,10 +30,11 @@ và media của người dùng. Hai skill dẫn đường: [`video-reference-ana
 | 5. Transcript | tệp mẫu, phụ đề nhúng/cạnh tệp hoặc `--subs` | `transcripts/<tên>.json` | `reference transcribe --input <tệp> --project <dir>` | thiếu công cụ ASR khi không có phụ đề (mã 3) |
 | 6. Xem trọn + bản đồ | khung, lưới, transcript | `reference-map.md` có cột Bằng chứng | skill `video-reference-analysis` (dùng `reference frames`, `reference tiles`) | beat nào chưa có bằng chứng |
 | 7. Brief | bản đồ, nội dung và media của người dùng | `brief.md` | skill `video-remix-brief` | brief thiếu nội dung hay media của người dùng |
-| 8. Treatment + source | brief, bản đồ | `treatment.md`, spec hoặc EDL | skill `video-remix-brief` | khuôn thể loại `chưa hỗ trợ` |
-| 8b. Khai tài sản | tệp sẽ dùng trong bản dựng, đặt trong `assets/` | mỗi tệp một dòng `assets[]` trong `provenance.json`: `path` (tương đối so với project), `origin` (`user`/`generated`/`template`), `owner` | agent, theo `video-remix-brief` | tệp nào chưa rõ nguồn gốc |
-| 9. Dựng | spec/EDL, tài sản trong `assets/` (đường `edit`: footage trong `<project>/assets/`, `--work` và `--out` ngoài `assets/`, ví dụ `<project>/work`, `<project>/out`) | video ra | `video-studio render` hoặc `video-studio edit` | lệnh dựng mã khác 0 |
-| 10. Kiểm + xem lại + nhật ký | `assets/`, khai báo `assets` trong hồ sơ | báo cáo kiểm; nhật ký nguồn đầy đủ | `reference audit --project <dir>`, rồi người xem video ra | `audit` mã 2 (có phát hiện) hoặc `checked` 0 |
+| 8. Treatment + storyboard + source | brief, bản đồ | `treatment.md`, storyboard, spec hoặc EDL | `video-remix-brief` → workflow chung → skill dựng phù hợp | khuôn thể loại `chưa hỗ trợ` |
+| 8b. Khai tài sản | tệp sẽ dùng trong `assets/`, hoặc `composition/media/` cho lyric | mỗi tệp một dòng `assets[]` trong `provenance.json` | agent, theo `video-remix-brief` | tệp nào chưa rõ nguồn gốc |
+| 8c. Kiểm tài sản | cây media và hồ sơ | kết quả audit | `reference audit --project <dir>`; lyric thêm `--assets <project>/composition/media` | mã 2 hoặc `checked` 0 |
+| 9. Dựng | spec/EDL hoặc composition, tài sản đã kiểm | video ra | `video-studio render`/`edit`; lyric dùng wrapper theo `music-to-video` và ghép audio | lệnh dựng mã khác 0 |
+| 10. Xem lại + nhật ký | video đã dựng, hồ sơ | báo cáo kiểm; nhật ký nguồn đầy đủ | xem lại video và ghi nhật ký sau dựng | phát hiện tư liệu mẫu hoặc phần chưa kiểm |
 
 Bước 2 và 3 là chỗ duy nhất có rủi ro quyền: chỉ người dùng cấp phép, bằng lời của họ trong
 chat, kèm đúng URL. Agent chép nguyên văn lời đó vào `permission.quote`, không tự điền hồ sơ để

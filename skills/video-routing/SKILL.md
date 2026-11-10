@@ -12,6 +12,13 @@ dòng cuối stdout là một dòng JSON, log người đọc ở stderr.
 
 ## Chọn hướng sản phẩm
 
+Với mọi yêu cầu tạo video, điều phối theo [workflow chung](references/video-workflow.md):
+chọn nhánh theo đầu ra, dùng video mẫu nếu có, rồi nối brief → treatment → storyboard → dựng →
+kiểm. Nếu chỉ yêu cầu phân tích hoặc thiết kế thì dừng đúng đầu ra được giao. Với lyric video có
+mẫu, dùng phân tích mẫu trước rồi chuyển sang `music-to-video`; cue lời luôn lấy từ bản thu mới.
+Nếu người dùng muốn tạo template tái sử dụng từ mẫu, dùng nhánh riêng của workflow chung; template
+được thiết kế chưa đồng nghĩa có mã chạy hay quyền dùng lại media mẫu.
+
 Khi yêu cầu bắt đầu từ mục tiêu người xem, hãy đọc
 [`references/product-profiles.md`](references/product-profiles.md) trước khi chọn cách dựng.
 Chọn **một nhóm chính** theo điều người xem cần hiểu hoặc làm; video lai có thể có rubric phụ.
