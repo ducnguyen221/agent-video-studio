@@ -1,6 +1,6 @@
 ---
 name: video-edit
-description: Use when cutting real recorded footage into a finished video - talking heads, interviews, tutorials, travel or montage - through `video-studio edit`: transcribe the takes, read the packed transcript, agree a cut strategy with the user, write an EDL, then render with grade, overlays and subtitles. Not for generating a video from data or a script (that is `video-studio render` with a template), and not for writing HTML/CSS animation itself.
+description: "Use when cutting real recorded footage into a finished video - talking heads, interviews, tutorials, travel or montage - through `video-studio edit`: transcribe the takes, read the packed transcript, agree a cut strategy with the user, write an EDL, then render with grade, overlays and subtitles. Not for generating a video from data or a script (that is `video-studio render` with a template), and not for writing HTML/CSS animation itself."
 ---
 
 # video-edit — adapter nguồn

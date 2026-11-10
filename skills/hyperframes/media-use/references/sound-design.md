@@ -1,5 +1,8 @@
 # Sound design: cue và ledger
 
+Khi cần mở rộng ý tưởng cue hoặc Foley, có thể tra online [EditAtlas sound-design](https://github.com/EditAtlas/skills/blob/497724e81f381b66017f367e819a088493e226d9/skills/sound-design/SKILL.md).
+Nguồn này chỉ để tham khảo: không tự tải SFX, gửi media, chạy script hay coi giấy phép mã là quyền dùng âm thanh.
+
 Phân tích storyboard, action, cut, beat và vùng vocal. Đề xuất SFX có chủ đích và các khoảng
 không dùng SFX; tránh lặp và để nhạc/lời có không gian. Mọi mức âm và ducking là điểm bắt đầu
 để nghe chỉnh, không phải chuẩn kỹ thuật cố định. Đây là các điểm khởi đầu cần nghe kiểm theo bài.

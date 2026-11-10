@@ -1,5 +1,18 @@
 # Thẻ kỹ thuật sản xuất
 
+## Mục lục
+
+- [T1 — QA có bằng chứng](#t1--qa-có-bằng-chứng)
+- [T2 — Nguồn, fingerprint và reuse](#t2--nguồn-fingerprint-và-reuse)
+- [T3 — Chữ hiển thị và lời đọc](#t3--chữ-hiển-thị-và-lời-đọc)
+- [T4 — Anchor lời–hình](#t4--anchor-lờihình)
+- [T5 — Demo màn hình có bằng chứng](#t5--demo-màn-hình-có-bằng-chứng)
+- [T6 — B-roll và overlay theo mục đích](#t6--b-roll-và-overlay-theo-mục-đích)
+- [T7 — Continuity nhân vật và camera](#t7--continuity-nhân-vật-và-camera)
+- [T8 — Caption người nói và safe area](#t8--caption-người-nói-và-safe-area)
+- [T9 — Nhịp dựng và bàn giao âm thanh](#t9--nhịp-dựng-và-bàn-giao-âm-thanh)
+- [Nguồn Hypit đã ghim](#nguồn-hypit-đã-ghim)
+
 Chọn thẻ khi có dấu hiệu cụ thể; không áp dụng cả bộ cho mọi clip. Mỗi lựa chọn giữ lại cần có
 lý do trong brief, nơi thực hiện, fallback và bằng chứng QA. Nội dung dưới đây tự viết; liên kết
 Hypit ở cuối thẻ là nguồn ý tưởng được ghim, không phải runtime hoặc chỉ dẫn cần chép.

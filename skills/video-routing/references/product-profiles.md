@@ -1,5 +1,12 @@
 # Nhóm sản phẩm và intake
 
+## Mục lục
+
+- [Bốn nhóm](#bốn-nhóm)
+- [Bản đồ kỹ thuật sang skill thực hiện](#bản-đồ-kỹ-thuật-sang-skill-thực-hiện)
+- [Intake: trích trước, chỉ hỏi phần còn thiếu](#intake-trích-trước-chỉ-hỏi-phần-còn-thiếu)
+- [Khuyến nghị và giới hạn](#khuyến-nghị-và-giới-hạn)
+
 Chọn nhóm theo **việc người xem cần hiểu hoặc làm**. Chọn một nhóm chính; thêm rubric phụ khi
 một video lai có mục tiêu thứ hai thật sự. Engine, phong cách, nền tảng, tỷ lệ khung hình và độ
 dài không đủ để suy ra nhóm. Đây là cách chọn hướng nội dung, không phải schema hay lệnh dựng mới.

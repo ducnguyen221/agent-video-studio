@@ -1,6 +1,6 @@
 ---
 name: video-reference-analysis
-description: Use when an agent must study a reference or viral video before making something similar: read the whole transcript and frame grid first, then map each beat with evidence. Not for cutting footage, writing compositions, or deciding rights to publish.
+description: "Use when an agent must study a reference or viral video before making something similar: read the whole transcript and frame grid first, then map each beat with evidence. Not for cutting footage, writing compositions, or deciding rights to publish."
 ---
 
 # video-reference-analysis — adapter nguồn

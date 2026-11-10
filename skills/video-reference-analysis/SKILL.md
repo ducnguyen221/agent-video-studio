@@ -1,6 +1,6 @@
 ---
 name: video-reference-analysis
-description: Use when an agent must study a reference or viral video before making something similar: read the whole transcript and frame grid first, then map each beat with evidence. Not for cutting footage, writing compositions, or deciding rights to publish.
+description: "Use when an agent must study a reference or viral video before making something similar: read the whole transcript and frame grid first, then map each beat with evidence. Not for cutting footage, writing compositions, or deciding rights to publish."
 ---
 
 # Phân tích video mẫu
@@ -11,6 +11,13 @@ Skill này đi từ một video mẫu tới `reference-map.md`: bảng beat mà 
 `video-remix-brief`) dựa vào. Nó chỉ **đọc và ghi nhận**; không dựng, không cắt, không quyết có
 được đăng hay không. Danh mục yếu tố cần soi mỗi beat nằm ở
 [`references/beat-map.md`](references/beat-map.md).
+
+Khi cần thêm ý tưởng về cách gọi tên chuyển cảnh hoặc mô tả chuyển động chữ, có thể tra
+[EditAtlas video-breakdown](https://github.com/EditAtlas/skills/blob/497724e81f381b66017f367e819a088493e226d9/skills/video-breakdown/SKILL.md)
+online. Đây là nguồn tham khảo tùy chọn; quan sát frame và giới hạn bằng chứng của project vẫn là
+nguồn để kết luận, không tải thư viện hay gửi video đến dịch vụ này.
+Với typography, tham khảo cùng nguồn để tìm thêm từ khóa mô tả lớp chữ, hướng xuất hiện và thời
+gian giữ; chỉ ghi tên font là suy đoán nếu chưa xác minh bằng hình và nguồn có quyền.
 
 Mọi lệnh dưới đây là `video-studio reference <hành động>`; tên tham số lấy từ `--help` của chính
 hành động đó, đừng đoán.
@@ -44,23 +51,7 @@ hay không. Thời lượng này quyết định `--every` ở bước 4.
 
 ## Bước 3 — transcript
 
-`reference transcribe --input <video> --project <project>` ghi `transcripts/<stem>.json`.
-
-- Thứ tự nguồn: `--subs` → phụ đề cạnh video hoặc trong `<project>/source/` → luồng phụ đề nhúng
-  → ASR cục bộ → mã 3.
-- `fetch --go` lưu video vào `<project>/source/reference.<đuôi>` và phụ đề thành
-  `reference.<mã>.vtt` (mặc định `--sub-langs vi,en`); dùng tệp video đó làm `--input`. Nếu yt-dlp ghi `reference.unknown_video` (không biết đuôi), đổi tên theo định dạng thật (xem `cleanup inspect`) trước khi phân tích, vì `frames`/`tiles`/`transcribe` chỉ nhận đuôi video/âm thanh; yt-dlp chỉ ra playlist ⇒ mã 1 «không tạo tệp». Video
-  mẫu không nhất thiết là tiếng Việt: đặt `--language <mã của phụ đề đã có>` (vd `vi`, `en`) hoặc
-  đưa thẳng `--subs <project>/source/reference.<mã>.vtt` **kèm** `--language <mã>` để `language_code` đúng. `--language auto` chỉ thử
-  `<stem>.vtt` / `<stem>.srt` cạnh video, nên bỏ sót `reference.<mã>.vtt`.
-- Phụ đề nhúng chọn theo ngôn ngữ xin; không khớp thì lấy luồng chữ đầu tiên **mà không cảnh
-  báo**. Transcript **không** ghi ngôn ngữ thật của luồng: `language_code` chỉ chép lại ngôn ngữ
-  đã xin, `_source_stream` chỉ là chỉ số luồng (chỉ có khi `_source` là `subtitles:embedded`). Đọc vài
-  cue để tự xác nhận ngôn ngữ; sai thì chạy lại với `--subs <tệp>` (kèm `--force`), không thì ghi
-  vào «Chưa kiểm chứng».
-- Độ mịn `cue` là theo cụm phụ đề, **không** gọi là theo từ và không dùng làm mốc chính xác từng chữ.
-- Lệnh thoát mã 3 (không có phụ đề, không có ASR): **dừng**, báo người dùng cách bổ sung (đưa tệp
-  phụ đề, hoặc cài công cụ ASR). Không đoán lời từ hình hay từ tiêu đề.
+Đọc đầy đủ [quy trình transcript](references/transcript.md) trước khi chọn nguồn và chạy lệnh.
 
 ## Bước 4 — xem trọn
 
@@ -109,7 +100,7 @@ giải mã; khi nhúng vào HTML phải escape.
 ## Thẻ liên quan
 
 Thẻ `T1` (QA có bằng chứng) và `T4` (anchor lời–hình) ở
-[`production-techniques.md`](../video-routing/references/production-techniques.md): bằng chứng
+tài liệu `production-techniques.md` của skill `video-routing`: bằng chứng
 phải là kết quả lệnh vừa chạy, và mốc theo lời được gắn nhãn đúng độ chính xác (quan sát, ước
 lượng), không gọi ước lượng là chính xác từng từ. Định tuyến loại sản phẩm: skill
-[`video-routing`](../video-routing/SKILL.md).
+skill `video-routing`.

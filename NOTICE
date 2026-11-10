@@ -43,6 +43,13 @@ Phần CHƯNG CẤT từ nguồn ngoài (mã và tài liệu viết lại, khôn
 
 Nguồn ý tưởng/nghiên cứu cho đợt mở rộng sản phẩm và kỹ thuật:
 
+- EditAtlas/skills, commit 497724e81f381b66017f367e819a088493e226d9, Apache-2.0:
+  liên kết tham khảo tùy chọn cho phân tích, typography, transcript và sound design. Không
+  phân phối lại mã, thư viện âm thanh hay asset của nguồn. https://github.com/EditAtlas/skills
+- kajisho5/ffmpeg-skill, commit 6e42a79247909659b3d80833120b272fb5e46aba, MIT:
+  tham khảo tên và nhóm chức năng trong danh mục; không cài hoặc sao chép mã upstream.
+  https://github.com/kajisho5/ffmpeg-skill
+
 - FlowKit (crisng95/flowkit), commit b09e783481d20bfeaf46f2fbcde08bf2b54c0a2a,
   MIT, Copyright (c) 2026 tuannguyenhoangit-droid. Nguồn nghiên cứu cho roadmap về
   lập cảnh, continuity, camera, âm thanh và review; chưa nhập code, skill hoặc asset FlowKit.

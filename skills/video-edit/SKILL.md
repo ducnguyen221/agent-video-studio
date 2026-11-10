@@ -1,13 +1,17 @@
 ---
 name: video-edit
-description: Use when cutting real recorded footage into a finished video - talking heads, interviews, tutorials, travel or montage - through `video-studio edit`: transcribe the takes, read the packed transcript, agree a cut strategy with the user, write an EDL, then render with grade, overlays and subtitles. Not for generating a video from data or a script (that is `video-studio render` with a template), and not for writing HTML/CSS animation itself.
+description: "Use when cutting real recorded footage into a finished video - talking heads, interviews, tutorials, travel or montage - through `video-studio edit`: transcribe the takes, read the packed transcript, agree a cut strategy with the user, write an EDL, then render with grade, overlays and subtitles. Not for generating a video from data or a script (that is `video-studio render` with a template), and not for writing HTML/CSS animation itself."
 ---
 
 # Chỉnh footage quay thật — quy trình qua `video-studio edit`
 
 Khi cần chọn cấu trúc sản phẩm hoặc checklist QA theo tình huống, bắt đầu ở
-[`video-routing`](../video-routing/SKILL.md) và chỉ mở thẻ liên quan trong
-[`production-techniques.md`](../video-routing/references/production-techniques.md).
+skill `video-routing` và chỉ mở thẻ liên quan trong
+tài liệu `production-techniques.md` của skill đó.
+
+Tra [danh mục FFmpeg](references/ffmpeg-tool-index.md) để chọn công cụ. Khi cần ý tưởng rà
+transcript, tùy chọn tra online [EditAtlas transcribe](https://github.com/EditAtlas/skills/blob/497724e81f381b66017f367e819a088493e226d9/skills/transcribe/SKILL.md);
+không gửi audio hay cài engine.
 
 Phỏng theo `SKILL.md` của `browser-use/video-use` (MIT, © 2026 Browser Use), đọc tại bản vendored
 `92c2b34` — **đã dịch, biên tập và nối vào CLI của repo này**. Giấy phép: xem `NOTICE`.

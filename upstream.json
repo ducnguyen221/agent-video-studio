@@ -3,6 +3,24 @@
   "note": "Ban ghi nguon upstream cua tung thanh phan chung cat trong repo nay. `video-studio doctor` doi chieu muc `hyperframes-skills.skills` voi cay `skills/` tren dia; `--check-updates` in ra ban da ghim de nguoi dung so voi upstream.",
   "checked": "2026-09-20",
   "sources": {
+    "editatlas-skills-reference": {
+      "repo": "EditAtlas/skills",
+      "ref": "497724e81f381b66017f367e819a088493e226d9",
+      "license": "Apache-2.0",
+      "relationship": "optional_online_reference",
+      "code_copied": false,
+      "assets_copied": false,
+      "how": "Liên kết tham khảo tùy chọn cho phân tích video, typography, transcript và sound design; không yêu cầu API hay tài sản nguồn để vận hành."
+    },
+    "ffmpeg-skill-reference": {
+      "repo": "kajisho5/ffmpeg-skill",
+      "ref": "6e42a79247909659b3d80833120b272fb5e46aba",
+      "license": "MIT",
+      "relationship": "capability_reference",
+      "code_copied": false,
+      "assets_copied": false,
+      "how": "Danh mục nhóm tên chức năng upstream làm từ khóa nghiên cứu; không cài, sao chép hay chạy script upstream."
+    },
     "prompt-motion-reference": {
       "url": "https://prompt-motion.com/",
       "sitemap_url": "https://prompt-motion.com/sitemap.xml",

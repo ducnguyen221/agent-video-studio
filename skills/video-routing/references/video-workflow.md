@@ -36,6 +36,12 @@ chung. `reference init` hiện không tự sinh storyboard: agent tạo tài li�
    nhịp. Khi chuyển thể mẫu, `video-remix-brief` sở hữu giới hạn, hoán đổi vai và nguồn gốc;
    treatment trỏ tới beat và evidence thay vì chép nội dung nguồn. Cần ý tưởng chiến dịch hay lịch
    đăng thì chuyển `agent-marketing-team` theo nhu cầu.
+   Khi nghiên cứu concept, style hoặc kỹ thuật, tra `video-theme-library` ngay ở brief/treatment,
+   kể cả không có mẫu. Dùng catalog trạm nếu có; nếu không thì dùng catalog repo. Sau đó tra Prompt
+   Motion như reference bổ sung, không trộn hai catalog. Có thể tham khảo EditAtlas qua
+   `video-reference-analysis`, `video-edit` hoặc `media-use` nếu cần mở rộng ý tưởng. Truy cập
+   nguồn là tùy chọn; không tự gửi media, tải asset, cài MCP hay ghi catalog. Ghi nguồn, phân biệt
+   điều đã kiểm với gợi ý và dừng ở đầu ra người dùng yêu cầu.
 4. **Storyboard:** chọn mẫu theo nhánh bên dưới, tạo từng cảnh từ brief và treatment. Tra
    `video-theme-library`: catalog trạm trước, nếu không có thì catalog repo; chọn layout theo việc
    của cảnh và tỷ lệ, sau đó tra Prompt Motion theo vai trò/vùng/tỷ lệ. Ghi ID và link tham chiếu,
