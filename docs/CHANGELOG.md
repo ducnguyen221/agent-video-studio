@@ -5,6 +5,11 @@ chính nhưng chưa có tag; khi phát hành, mục đó đổi tên thành số
 `pyproject.toml`, `video_studio/__init__.py` cùng ba manifest plugin (`tests/test_version_sync.py`
 kiểm).
 
+## 0.9.3 — 2026-11-11
+
+- Bổ sung ghi chú bản quyền theo thông tin đã xác nhận trong bản nháp nội dung social cho lyric video.
+- Lưu nội dung YouTube, Facebook và kênh social theo từng file Markdown, kèm thông tin media, trạng thái và ranh giới đăng tải; chưa xác minh tự động đăng bằng công cụ cụ thể.
+
 ## 0.9.2 — 2026-11-10
 
 - Cập nhật danh mục FFmpeg: mô tả điểm dùng ffprobe hiện có và ghi rõ chưa có lệnh Media QC tổng quát.
