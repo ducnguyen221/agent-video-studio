@@ -5,6 +5,11 @@ chính nhưng chưa có tag; khi phát hành, mục đó đổi tên thành số
 `pyproject.toml`, `video_studio/__init__.py` cùng ba manifest plugin (`tests/test_version_sync.py`
 kiểm).
 
+## 0.9.2 — 2026-11-10
+
+- Cập nhật danh mục FFmpeg: mô tả điểm dùng ffprobe hiện có và ghi rõ chưa có lệnh Media QC tổng quát.
+- Giữ tham khảo EditAtlas theo nhu cầu; không cài upstream hay phụ thuộc dịch vụ ngoài. Kiểm tự kích hoạt và offline trên từng host chưa được thực hiện.
+
 ## 0.9.1 — 2026-11-10
 
 - Khi chốt hoặc kết phiên lyric video, chủ động tư vấn tổ chức project, dọn file thử trong phạm vi được giao, nội dung YouTube/Facebook và thumbnail từ ảnh mở đầu cùng tên bài.

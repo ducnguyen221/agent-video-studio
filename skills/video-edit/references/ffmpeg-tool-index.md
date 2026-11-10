@@ -6,7 +6,7 @@ kiểm công cụ nhưng không chứng minh đã render. Chỉ dùng lệnh có
 
 | Nhóm / tình huống | Kích hoạt | Năng lực hiện có / điểm vào | Giới hạn |
 |---|---|---|---|
-| Kiểm media / thông số, decode | «kiểm video», «file lỗi», «QC» | `video-studio media-check` mới là prototype, chưa có trong bản phát hành | Không coi là sẵn dùng hay thay xem/nghe. |
+| Kiểm media / thông số | «kiểm video», «file lỗi», «QC» | FFprobe hiện có được dùng trong luồng `video-studio edit`, `reference` và `cleanup` | Chưa có lệnh QC tổng quát; metadata không thay kiểm decode toàn bộ hoặc xem/nghe. |
 | Xem video mẫu / lưới, khung | «phân tích video mẫu», «tìm khung» | `video-studio reference frames`, `reference tiles`; `video-reference-analysis` | Phải có quyền với file; ô lưới là mốc gần đúng. |
 | Bóc lời / cắt theo lời | «transcribe», «cắt talking head» | `video-studio edit` + `video-edit` | ASR local tùy chọn cần đã cài; duyệt chiến lược cắt. |
 | Cắt, nối, grade | «cắt đoạn», «nối take», «chỉnh màu» | `video-studio edit --edl …`; pipeline `video_studio/edit/render.py` | Cắt đang mã hóa đoạn rồi nối copy; không tuyên bố cắt gốc lossless. |
