@@ -42,6 +42,18 @@ Wrapper tự đặt cwd là `project_root`; không tự gọi HyperFrames trực
 
 Khi tổ chức lại project có sẵn, lập bảng đường cũ → mới, hash và các tham chiếu script/composition/link đã bàn giao. Tạo bản sao không ghi đè, sửa đường dẫn trong bản sao, kiểm hash, resolve media và chạy thử thích hợp trước khi chọn bản chính. Ghi rõ đường cũ còn tương thích thế nào và cách hoàn tác; không xóa bản gốc khi chưa xác minh và được phép. Tách audio nguồn, brief, lời/cue, ảnh/cover, composition/analysis, preview, output và QA; cấu trúc cụ thể phải giữ được hợp đồng `composition/` ở trên.
 
+## Chốt bản cuối và bàn giao
+
+Khi người dùng chốt phiên bản cuối, yêu cầu finalize, **hoặc trước khi kết thúc phiên lyric video**, chủ động trình đủ năm mục dưới đây để người dùng chọn việc muốn làm. Nếu video còn là bản nháp hoặc chưa nghiệm thu, ghi đúng trạng thái và phần chưa kiểm; không gọi là bản cuối chỉ vì đang kết phiên.
+
+1. **Chuẩn hóa project:** đề xuất bố cục cho nhạc nguồn, ảnh, lời/cue, dữ liệu dựng, video được chọn và bản cũ; khi thực hiện, theo quy trình đường cũ → mới, hash và kiểm tham chiếu ở trên.
+2. **Dọn file thừa:** kiểm kê demo, bản thử và file trung gian; phân biệt với nguồn, bản duy nhất, bản cũ cần giữ và file cần để dựng lại. Nêu file và dung lượng dự kiến, chỉ xóa hoặc chuyển thùng rác trong phạm vi người dùng đã giao; kiểm lại sau khi dọn.
+3. **YouTube:** đề xuất soạn tiêu đề và mô tả cho đúng bài, phiên bản và kênh; hỏi thông tin thiếu ảnh hưởng nội dung, không bịa credit, quyền hay link.
+4. **Facebook:** đề xuất soạn bài giới thiệu phù hợp bài hát và giọng người dùng; làm rõ kênh, hình thức và link nếu cần, không tự bịa.
+5. **Thumbnail:** đề xuất tạo ảnh đại diện video từ ảnh mở đầu đã chọn cùng tiêu đề bài đã xác nhận; theo kích thước/tỉ lệ nơi dùng và kiểm dấu, độ đọc khi thu nhỏ, kích thước file như mục storyboard. Nếu người dùng chọn ảnh khác thì theo lựa chọn đó. Trình mẫu để duyệt, lưu file và nguồn; tạo thumbnail không đồng nghĩa đăng video.
+
+Phân biệt **tư vấn · soạn nháp · đăng/gửi**: tư vấn đủ năm mục trước khi kết thúc; làm ngay các mục đã được giao, không hỏi lại quyết định đã có. Chưa được giao thì để người dùng chọn; chỉ đăng, gửi hay công bố khi người dùng đã giao rõ. Trong bàn giao, nêu mục đã làm, chưa làm và quyền/kiểm tra còn mở; không coi nháp nội dung là bài đã đăng.
+
 ## Cue SFX tùy chọn
 
 Sau storyboard và trước dựng chi tiết, tạo `sfx-cues.json` và bổ sung ledger theo

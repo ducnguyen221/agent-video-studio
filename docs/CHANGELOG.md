@@ -5,6 +5,11 @@ chính nhưng chưa có tag; khi phát hành, mục đó đổi tên thành số
 `pyproject.toml`, `video_studio/__init__.py` cùng ba manifest plugin (`tests/test_version_sync.py`
 kiểm).
 
+## 0.9.1 — 2026-11-10
+
+- Khi chốt hoặc kết phiên lyric video, chủ động tư vấn tổ chức project, dọn file thử trong phạm vi được giao, nội dung YouTube/Facebook và thumbnail từ ảnh mở đầu cùng tên bài.
+- Giữ rõ trạng thái kiểm chứng, để người dùng chọn việc thực hiện và chỉ đăng khi được giao.
+
 ## 0.9.0 — 2026-11-10
 
 - Nối video mẫu với lyric qua brief, treatment, storyboard và một cây media; kiểm nguồn và quyền,

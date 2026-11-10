@@ -1,6 +1,6 @@
 ---
 name: music-to-video
-description: Turn a music track, extracted audio or a mood brief into a lyric video, slideshow or kinetic promo. Use the music to guide pacing while keeping vocal cues aligned to the recording and allowing deliberate off-beat cuts. Narrated pieces belong to the input-matched workflow instead.
+description: Use when turning a music track, extracted audio or mood brief into a lyric video, slideshow or kinetic promo, or when finalizing, handing off or ending a lyric-video session. Narrated pieces belong to the input-matched workflow instead.
 ---
 
 # music-to-video — adapter nguồn

@@ -1,6 +1,6 @@
 ---
 name: music-to-video
-description: Turn a music track, extracted audio or a mood brief into a lyric video, slideshow or kinetic promo. Use the music to guide pacing while keeping vocal cues aligned to the recording and allowing deliberate off-beat cuts. Narrated pieces belong to the input-matched workflow instead.
+description: Use when turning a music track, extracted audio or mood brief into a lyric video, slideshow or kinetic promo, or when finalizing, handing off or ending a lyric-video session. Narrated pieces belong to the input-matched workflow instead.
 ---
 
 # Video cắt theo nhịp nhạc
@@ -12,6 +12,10 @@ và dùng hai mẫu storyboard ở `assets/`. Cue giọng hát lấy từ bản 
 với audio; không lượng tử hóa cue theo lưới nhịp cắt cảnh. Lời chưa xác minh phải hiện rõ
 trạng thái và không được ghi như lời đã duyệt. Nhịp là công cụ chọn điểm cắt, không phải
 điều kiện bắt buộc cho mọi lựa chọn sáng tạo của người dùng.
+
+Khi người dùng chốt bản cuối / yêu cầu finalize, **hoặc trước khi kết thúc phiên lyric video**,
+bắt buộc tư vấn năm việc ở mục “Chốt bản cuối và bàn giao” trong workflow; ghi rõ trạng thái
+video hiện tại và để người dùng chọn việc thực hiện. Đã có quyết định thì áp dụng, không hỏi lại.
 
 Khi thiết kế chữ, đọc [lyric-video-effects](../../lyric-video-effects/SKILL.md): có A/B/C,
 motion mở rộng và preset `soft-rise`/`focus-in`. Với ảnh tĩnh, đọc
