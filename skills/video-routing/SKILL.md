@@ -21,7 +21,14 @@ Nếu người dùng muốn tạo template tái sử dụng từ mẫu, dùng nh
 
 Khi chỉ nghiên cứu hoặc mở rộng concept, phong cách hay kỹ thuật video, vẫn tra thư viện theo
 [workflow chung](references/video-workflow.md) ở bước brief → treatment. Đây là nghiên cứu video;
-ý tưởng chiến dịch hay lịch đăng thuộc marketing. Chỉ tra, không tự ghi catalog hay tải asset.
+ý tưởng chiến dịch hay lịch đăng thuộc marketing. Nếu chỉ được giao tra cứu, không ghi catalog
+hay tải asset. Trong công việc dựng video có quyền ghi trạm, nguồn mới hữu ích để tái dùng được
+lập thẻ liên kết theo `video-theme-library` và kiểm tìm lại qua chỉ mục chung; link không cấp
+quyền sao chép nội dung.
+
+Khi cần tìm hiệu ứng hoặc đóng gói pattern dùng lại, chuyển sang `video-theme-library`: phân biệt
+thẻ tham chiếu, mã có sẵn và mức kiểm; trong phạm vi đã giao, chủ động lưu dữ liệu đã tách khỏi
+project và có quyền vào trạm được chọn. Thao tác tìm không tự ghi và không tự phát hành vào repo.
 
 Khi yêu cầu bắt đầu từ mục tiêu người xem, hãy đọc
 [`references/product-profiles.md`](references/product-profiles.md) trước khi chọn cách dựng.

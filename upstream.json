@@ -74,13 +74,15 @@
           "path": "skills/hyperframes/general-video",
           "upstream_path": "skills/general-video",
           "upstream_hash": "079d3479295e27b4",
-          "upstream_files": 4
+          "upstream_files": 4,
+          "local_skill_sha256": "8528b6f854f724030f2406e145e22c8a1de12245cd663b577adccd821af1c1a9"
         },
         "hyperframes": {
           "path": "skills/hyperframes/hyperframes",
           "upstream_path": "skills/hyperframes",
           "upstream_hash": "05525e9c53582e4b",
-          "upstream_files": 26
+          "upstream_files": 26,
+          "local_skill_sha256": "be257c3dc35917d8a39f17fbb05bda3c97bf87f80787b8c1ef4c86e0bd8c3992"
         },
         "hyperframes-animation": {
           "path": "skills/hyperframes/hyperframes-animation",
@@ -134,17 +136,20 @@
           "path": "skills/hyperframes/media-use",
           "upstream_path": "skills/media-use",
           "upstream_hash": "8f21655cd07a62ea",
-          "upstream_files": 158
+          "upstream_files": 158,
+          "local_skill_sha256": "3579722b2ce492a04129f27b4f7f33fde76d82fb310f01f46d6d9f430946234d"
         },
         "motion-graphics": {
           "path": "skills/hyperframes/motion-graphics",
           "upstream_path": "skills/motion-graphics",
           "upstream_hash": "32641ae2b94c4a8f",
-          "upstream_files": 23
+          "upstream_files": 23,
+          "local_skill_sha256": "f9081d335cb7c81df973e91a395ec075cdb918f8cfbcbe648ffb66ad4791b32c"
         },
         "music-to-video": {
           "path": "skills/hyperframes/music-to-video",
           "upstream_path": "skills/music-to-video",
+          "local_skill_sha256": "f7723b88fe23658b35c65c77694eddad21cfdeacd9590003af59a666ba0260bc",
           "upstream_hash": "190e9885dab9b11d",
           "upstream_files": 169
         },

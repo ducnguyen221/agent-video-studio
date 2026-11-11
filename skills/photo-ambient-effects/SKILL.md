@@ -12,6 +12,14 @@ strength và che vùng bảo vệ bằng mask thực trong composition. Không c
 của painter là bằng chứng vùng mặt hoặc chữ đã được bảo vệ.
 Skill này bổ trợ workflow đang dựng video; không thay ảnh, sửa khuôn mặt hoặc tự sinh chuyển động nhân vật.
 
+Trước khi tạo hiệu ứng mới, tra `video-theme-library` để tìm component, prompt, asset hoặc nguồn
+tham khảo phù hợp. Khi dựng trong project có trạm đã được phép ghi, chủ động lưu và lập chỉ mục
+component, prompt, asset hoặc liên kết hữu ích có thể tái dùng theo skill đó, kèm provenance,
+quyền và mức kiểm; kiểm tìm lại sau khi lưu.
+Nguồn chưa rõ quyền chỉ lưu metadata/liên kết `reference_only`, không chép nội dung. Chưa có trạm
+hoặc quyền ghi thì báo chưa lưu, không tự chọn đường; chỉ tra cứu thì không ghi. Không coi bundle
+nhiều file đã materialize được.
+
 ## Quy trình
 
 1. Khoá ảnh và vùng mặt/chữ, chọn hiệu ứng theo ánh sáng/cảnh. Đọc

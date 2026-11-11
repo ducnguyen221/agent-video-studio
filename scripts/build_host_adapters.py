@@ -55,9 +55,9 @@ def adapter(skill: Path) -> str:
     return (
         f"---\n{fields['name']}\n{fields['description']}\n---\n\n"
         f"# {name} {MARK}\n\n"
-        f"Đọc toàn bộ [SKILL.md](../../../{src}) gốc trong repo trước khi làm. "
+        f"Đọc toàn bộ [SKILL.md](../../../{src}) gốc trong chính plugin chứa adapter trước khi làm. "
         "Mọi reference, script và template của skill phải mở trực tiếp từ thư mục gốc đó; "
-        "không dùng bản chép trong trạm video hay trong cache. "
+        "không dùng bản chép trong trạm video. Bản plugin do host cài có thể nằm trong cache. "
         "Nếu không mở được file gốc, báo thiếu source và dừng tác vụ này.\n"
     )
 

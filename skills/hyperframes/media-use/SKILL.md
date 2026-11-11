@@ -29,6 +29,15 @@ sáu tháng sau không ai trả lời được câu "ảnh này có được dù
 > dẫn tải** trong `docs/`, để người cài tự lấy về trạm của họ. Nhạc nền của trạm nằm ở
 > `<trạm>/assets/`, không nằm trong repo.
 
+Khi tìm hoặc lưu media dùng cùng một hiệu ứng, giữ ledger và quyền sử dụng của từng file; tra
+`video-theme-library` để tìm pattern. Khi dựng project có trạm đã chọn và được phép ghi, chủ động
+lưu/index component, prompt, asset hoặc link có thể tái sử dụng, kèm nguồn, quyền, trạng thái kiểm,
+rồi tìm lại entry qua chỉ mục. Quyền chưa rõ chỉ lưu metadata/link, không chép nội dung nguồn;
+không đưa footage riêng chưa có quyền hoặc dữ liệu project riêng tư vào catalog/plugin. Chỉ tra cứu thì không
+ghi; thiếu trạm hoặc quyền ghi thì báo chưa lưu, không tự chọn trạm. Bundle nhiều file chưa thể
+materialize vào project; xem `video-theme-library` để biết hợp đồng và giới hạn. Một thẻ tham chiếu
+không cấp quyền sao chép media nguồn.
+
 ## Phản hồi mơ hồ về hình ảnh cũng là yêu cầu media
 
 "Trông tối quá", "phẳng quá", "chán quá", "muốn kiểu máy quay cũ", "cần che mặt người đi ngang" —

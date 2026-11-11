@@ -22,6 +22,7 @@ RAM/handle lúc long chưa giải phóng hết — hỏng THOÁNG QUA, chạy l�
 để lại traceback Python rỗng không chẩn được).
 """
 import argparse
+import hashlib
 import os
 import subprocess
 import time
@@ -36,12 +37,16 @@ RETRIES = 3
 RETRY_SLEEP = 20
 # Mức chất lượng khai tường minh cho `hyperframes render` — xem render_project().
 QUALITY = "standard"
+# GSAP 3.15.0, dist/gsap.min.js from the official npm tarball. No floating script.
+PREVIEW_GSAP_SHA256 = "92bb9a96476f983d212a2bc4f54c889039c1696dd4461d40a736860938570fbb"
+PREVIEW_GSAP_MAX_BYTES = 1024 * 1024
 # Tiền tố lỗi khi môi trường render kẹt — cùng chữ với `probe.STUCK`; bên gọi (runner marketing,
 # triage) tìm đúng chuỗi này để nói "khởi động lại máy" thay vì "sửa project".
 STUCK_PREFIX = "RENDER_STUCK"
 
 # tên project ở dòng lệnh -> (module template, hàm, mô tả)
 TEMPLATES = {
+    "effect-preview": ("effect_preview", "render_preview", "xem trước hiệu ứng 16:9, không âm thanh"),
     "news":        ("news", "render_daily", "bản tin ngày: recap 16:9 + short 9:16"),
     "news-weekly": ("news", "render_weekly", "recap tuần 16:9 + short 9:16"),
     "topstory":    ("news", "render_topstory", "deep-dive một tin: long 16:9 + short 9:16"),
@@ -101,7 +106,7 @@ def write_index(proj_dir, html):
 
 
 def render_project(proj_dir, out_file, timeout=DEFAULT_TIMEOUT, retries=RETRIES, label="",
-                   version=None, sleep=time.sleep):
+                   version=None, sleep=time.sleep, offline=False):
     """Render `index.html` của project thành video câm `out_file`. -> out_file.
 
     `out_file` tương đối được hiểu là tương đối với thư mục project (HyperFrames chạy `cwd`
@@ -115,6 +120,8 @@ def render_project(proj_dir, out_file, timeout=DEFAULT_TIMEOUT, retries=RETRIES,
     """
     argv = hyperframes_argv("render", "-o", out_file, "-q", QUALITY, version=version)
     env = render_env()
+    if offline:
+        env["npm_config_offline"] = "true"
     tag = f"[{label}] " if label else ""
     last = None
     nav = 0                     # số lần thử hỏng vì `Navigation timeout` (không mở được trang)
@@ -246,8 +253,42 @@ def _template(project):
         raise missing_dependency(e, project) from e
 
 
+def _read_preview_gsap(path):
+    """Read pinned GSAP via handle-relative Windows no-recall primitives only."""
+    if os.name != "nt":
+        raise ContractError("effect-preview chưa hỗ trợ đọc GSAP an toàn trên hệ điều hành này")
+    from .effect_library import _native_windows as native
+    full = os.path.abspath(path)
+    parent, name = os.path.split(full)
+    root = handle = None
+    try:
+        try:
+            root = native.open_root(parent)
+            handle = native.open_file(root, name)
+            gsap_bytes = native.read_all(handle, PREVIEW_GSAP_MAX_BYTES)
+        finally:
+            try:
+                if handle is not None:
+                    native.close(handle)
+            finally:
+                if root is not None:
+                    native.close(root)
+    except (OSError, ValueError) as exc:
+        raise ContractError(f"Không đọc được GSAP cục bộ: {exc}") from exc
+    if hashlib.sha256(gsap_bytes).hexdigest() != PREVIEW_GSAP_SHA256:
+        raise ContractError("GSAP SHA-256 không khớp bản 3.15.0 đã ghim")
+    return gsap_bytes
+
+
 def do_render(args):
     data = spec_mod.load(args.input, brand_file=args.brand or None)
+    gsap_file = getattr(args, "gsap_file", "")
+    if gsap_file and args.project != "effect-preview":
+        raise ContractError("--gsap-file chỉ hỗ trợ effect-preview")
+    if args.project == "effect-preview":
+        if not gsap_file:
+            raise ContractError("effect-preview cần --gsap-file trỏ tới GSAP JavaScript cục bộ")
+        data["_gsap_bytes"] = _read_preview_gsap(gsap_file)
     if args.voice_profile:
         data["voice"] = {**spec_mod.voice_of(data), "profile": args.voice_profile}
     # Đường dẫn tương đối trong spec (ảnh, clip) neo vào THƯ MỤC CHỨA SPEC, không vào cwd.
@@ -284,6 +325,7 @@ def main(argv=None):
     ap.add_argument("--out", required=True, help="thư mục nhận file ra")
     ap.add_argument("--brand", default="", help="file brand.json đè khối brand của spec")
     ap.add_argument("--voice-profile", default="", help="đè voice.profile của spec")
+    ap.add_argument("--gsap-file", default="", help="file GSAP cục bộ cho effect-preview")
     ap.add_argument("--images", default="",
                     help="images.json: ghép ảnh của người dùng vào đúng cảnh/đoạn/phần "
                          "(repo-today, news, news-weekly, topstory), một ảnh mỗi cảnh (cục bộ hoặc URL), "

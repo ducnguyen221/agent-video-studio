@@ -4,6 +4,13 @@
 yêu cầu, nội dung và media; video mẫu là tùy chọn. Agent chọn đúng skill sở hữu từng bước, giữ
 bằng chứng và dừng ở đầu ra người dùng giao. Không cần người dùng gọi tên từng skill.
 
+## Mục lục
+
+- [Hợp đồng đầu ra](#hợp-đồng-đầu-ra)
+- [Quy trình toàn diện](#quy-trình-toàn-diện)
+- [Các nhánh rút gọn](#các-nhánh-rút-gọn)
+- [Từ URL mẫu sang template tái sử dụng](#từ-url-mẫu-sang-template-tái-sử-dụng)
+
 ## Hợp đồng đầu ra
 
 | Đầu ra | Câu hỏi | Nội dung tối thiểu và bên nhận |
@@ -37,14 +44,18 @@ chung. `reference init` hiện không tự sinh storyboard: agent tạo tài li�
    treatment trỏ tới beat và evidence thay vì chép nội dung nguồn. Cần ý tưởng chiến dịch hay lịch
    đăng thì chuyển `agent-marketing-team` theo nhu cầu.
    Khi nghiên cứu concept, style hoặc kỹ thuật, tra `video-theme-library` ngay ở brief/treatment,
-   kể cả không có mẫu. Dùng catalog trạm nếu có; nếu không thì dùng catalog repo. Sau đó tra Prompt
-   Motion như reference bổ sung, không trộn hai catalog. Có thể tham khảo EditAtlas qua
+   kể cả không có mẫu. Tra chỉ mục chung của repo và Prompt Motion; thêm trạm bằng đường dẫn tường
+   minh khi cần tra trạm. Nếu trạm được chỉ định không hợp lệ hoặc không tồn tại, báo lỗi, không
+   âm thầm bỏ qua. Gắn nguồn và trạng thái quyền cho từng kết quả. Có thể tham khảo EditAtlas qua
    `video-reference-analysis`, `video-edit` hoặc `media-use` nếu cần mở rộng ý tưởng. Truy cập
-   nguồn là tùy chọn; không tự gửi media, tải asset, cài MCP hay ghi catalog. Ghi nguồn, phân biệt
-   điều đã kiểm với gợi ý và dừng ở đầu ra người dùng yêu cầu.
+   nguồn là tùy chọn; không tự gửi media, tải asset hay cài MCP. Nếu chỉ được giao tra cứu, không
+   ghi catalog. Trong công việc dựng video có quyền ghi trạm, nguồn mới hữu ích để tái dùng được
+   lập thẻ liên kết kèm provenance theo `video-theme-library` và kiểm tìm lại qua chỉ mục chung;
+   không chép nội dung chưa rõ quyền.
+   Phân biệt điều đã kiểm với gợi ý và dừng ở đầu ra người dùng yêu cầu.
 4. **Storyboard:** chọn mẫu theo nhánh bên dưới, tạo từng cảnh từ brief và treatment. Tra
-   `video-theme-library`: catalog trạm trước, nếu không có thì catalog repo; chọn layout theo việc
-   của cảnh và tỷ lệ, sau đó tra Prompt Motion theo vai trò/vùng/tỷ lệ. Ghi ID và link tham chiếu,
+   `video-theme-library` qua chỉ mục chung repo, Prompt Motion và trạm được chỉ định tường minh;
+   chọn layout và motion theo vai trò/vùng/tỷ lệ. Ghi ID và link tham chiếu,
    mô tả thích nghi, trạng thái đã/chưa kiểm, quyền media/font/nhạc. Chọn audio qua `media-use` và
    `hyperframes-audio` khi phù hợp; không suy quyền từ một link. Với lyric dùng thêm skill chữ và
    ambient được chọn. Không tuyên bố entry Prompt Motion là template runtime đã kiểm.
@@ -58,6 +69,17 @@ chung. `reference init` hiện không tự sinh storyboard: agent tạo tài li�
 7. **Finalize:** xuất theo yêu cầu, xem/nghe bản cuối theo phạm vi khả dụng, lưu QA và các quyết
    định, ghi rõ phần chưa kiểm, đường output và cách tái dựng. Không coi chưa kiểm là đạt. Khi người
    dùng chỉ giao đến một bước, bàn giao ở bước đó; không tự đăng hay xuất bản.
+
+**Lưu pattern để dùng lại:** sau QA, chủ động lưu pattern hữu ích trong phạm vi project được giao;
+tách code và dữ liệu
+trung tính khỏi project; ghi nguồn, quyền, phụ thuộc, giới hạn và từng kiểm chứng thực tế. Lưu vào
+trạm đã chọn theo hợp đồng thư viện của `video-theme-library`, tìm lại và thử trong project thứ hai.
+Capture và materialize cho một file có CLI và API Python thử nghiệm trên Windows; truyền project
+và trạm tường minh, đọc điều kiện và giới hạn trong `video-theme-library`. Nếu CLI trả mã 3, kiểm
+trạm hoặc file đích trước khi thử lại vì nội dung có thể đã được công bố. Bundle nhiều file chưa
+materialize thành thư mục project; không tuyên bố đã lưu khi thao tác trả lỗi.
+Không chuyển ảnh, nhạc, font, tên hay lời riêng vào repo; đề xuất đưa vào plugin cần review riêng.
+Một preview hoặc thẻ tham chiếu không chứng minh component có thể render hay đã tái dùng.
 
 ## Các nhánh rút gọn
 
@@ -88,7 +110,7 @@ composition và audio như [lyric-reference-integration.md](lyric-reference-inte
 4. Đánh dấu **draft / đã kiểm tài liệu / đã dựng thử** theo bằng chứng. Thử áp vào một brief mới
    không dùng media nguồn, kiểm các slot và link; chỉ gọi là template chạy được sau khi triển khai
    và kiểm đúng runtime. Cập nhật catalog được phép khi có pattern tái sử dụng và đủ bằng chứng;
-   catalog layout và Prompt Motion vẫn là hai lớp khác nhau.
+   khi tra chung, giữ rõ nguồn và quyền của từng kết quả.
 
 Nhánh này là quy trình thiết kế, không có lệnh một bước tự tạo template hay kiểm quyền pháp lý.
 Không cài skill, thêm asset bên ngoài, phát hành hoặc ghi vào catalog ngoài phạm vi được giao.

@@ -17,10 +17,13 @@ Khi người dùng chốt bản cuối / yêu cầu finalize, **hoặc trước 
 bắt buộc tư vấn năm việc ở mục “Chốt bản cuối và bàn giao” trong workflow; ghi rõ trạng thái
 video hiện tại và để người dùng chọn việc thực hiện. Đã có quyết định thì áp dụng, không hỏi lại.
 
-Khi thiết kế chữ, đọc [lyric-video-effects](../../lyric-video-effects/SKILL.md): có A/B/C,
+Khi thiết kế chữ, đọc skill `lyric-video-effects`: có A/B/C,
 motion mở rộng và preset `soft-rise`/`focus-in`. Với ảnh tĩnh, đọc
-[photo-ambient-effects](../../photo-ambient-effects/SKILL.md): có ambient painter, sun rays,
+skill `photo-ambient-effects`: có ambient painter, sun rays,
 `dust` và envelope. Mỗi skill ghi rõ cách dùng, giới hạn và mức đã kiểm của tài nguyên.
+Trước khi tự tạo hiệu ứng, tra `video-theme-library`. Khi tạo pattern mới có thể tái dùng trong
+project đã được giao quyền ghi trạm, chủ động lưu và kiểm tìm lại theo skill đó; tách lời, nhạc,
+hình và font riêng khỏi phần dùng lại, ghi nguồn, quyền và kết quả kiểm từng bước.
 
 > **Nguồn:** `heygen-com/hyperframes` · `skills/music-to-video/SKILL.md` @ **v0.8.51** ·
 > Apache-2.0 · hash manifest `190e9885dab9b11d` (169 file upstream, phần lớn là **ảnh `png` mẫu** —

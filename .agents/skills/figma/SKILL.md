@@ -5,4 +5,4 @@ description: Import Figma content into a HyperFrames composition - rendered asse
 
 # figma — adapter nguồn
 
-Đọc toàn bộ [SKILL.md](../../../skills/hyperframes/figma/SKILL.md) gốc trong repo trước khi làm. Mọi reference, script và template của skill phải mở trực tiếp từ thư mục gốc đó; không dùng bản chép trong trạm video hay trong cache. Nếu không mở được file gốc, báo thiếu source và dừng tác vụ này.
+Đọc toàn bộ [SKILL.md](../../../skills/hyperframes/figma/SKILL.md) gốc trong chính plugin chứa adapter trước khi làm. Mọi reference, script và template của skill phải mở trực tiếp từ thư mục gốc đó; không dùng bản chép trong trạm video. Bản plugin do host cài có thể nằm trong cache. Nếu không mở được file gốc, báo thiếu source và dừng tác vụ này.

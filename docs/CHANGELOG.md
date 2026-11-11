@@ -5,6 +5,11 @@ chính nhưng chưa có tag; khi phát hành, mục đó đổi tên thành số
 `pyproject.toml`, `video_studio/__init__.py` cùng ba manifest plugin (`tests/test_version_sync.py`
 kiểm).
 
+## 0.9.4 — 2026-11-11
+
+- Bổ sung thư viện component video tái sử dụng, chỉ mục tra cứu và hướng dẫn lưu, tham chiếu các nguồn hiệu ứng.
+- Bản ứng viên cục bộ tập trung vào Codex trên Windows; khả năng tự kích hoạt trong phiên mới và đóng gói nhiều file chưa được xác nhận trong mục này.
+
 ## 0.9.3 — 2026-11-11
 
 - Bổ sung ghi chú bản quyền theo thông tin đã xác nhận trong bản nháp nội dung social cho lyric video.

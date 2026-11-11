@@ -1,6 +1,6 @@
 ---
 name: video-theme-library
-description: Use BEFORE inventing a layout for any video or slide built with this studio - news recaps, deep dives, shorts, teaching decks, review videos, infographic video. Mandatory lookup - read the station's theme catalog first (THEME-LIBRARY.md at the station root), else the repo's docs/THEME-LIBRARY.md; classify each beat of the script, take the highest-tier template that matches the job and aspect ratio, and only compose something new when nothing fits (then add it back to the catalog in use). Not for rendering, narration or footage editing.
+description: Use when creating a video and looking for, selecting, advising on, reusing or preserving video layouts, motion references, prompts, components, media or online library links. Look up the station layout catalog first, otherwise the repo catalog; check provenance, permissions and evidence. Record eligible reusable patterns only within the authorized project scope; requests for advice only remain read-only. Not for rendering, narration or footage editing.
 ---
 
 # Chọn template trước, sáng tác sau
@@ -31,16 +31,37 @@ Không loại mọi mẫu ngang chỉ vì cần dựng dọc. Mở file theo mã
 phân cảnh cho người dùng. Kích thước và thời lượng khuyến nghị là phân tích, tách khỏi dữ kiện
 nguồn; mọi bản chuyển thể vẫn cần dựng và kiểm hình ảnh.
 
+Khi cần prompt, asset, liên kết tham khảo, thư viện online hoặc component mới, tra thêm
+[bản đồ nguồn](references/effect-sources.md). Đây là điểm vào chung: catalog layout vẫn thuộc
+trạm hoặc repo theo thứ tự trên; mỗi nguồn chuyên đề giữ dữ liệu gốc và quyền riêng. Nêu ID hoặc
+đường nguồn, quyền, mức kiểm và giới hạn trong tư vấn. Không nhầm link với quyền sao chép.
+
+Tra hợp nhất offline bằng `python -m video_studio.effect_library --q "tu khoa"` từ gốc plugin
+chứa skill đang nạp (có thể ở cache); xác định gốc và đường project/station theo
+[hướng dẫn chạy](references/effect-sources.md). Nếu thiếu plugin, báo và dừng; không tự cài.
+thêm `--station <đường-trạm>` nếu muốn tra trạm đã chọn. Lọc bằng `--kind`, `--role`, `--ratio`,
+`--runtime`, `--technique`, `--rights`, `--maturity` và `--check render=pass` (có thể lặp `--check`);
+kết quả JSON rỗng có mã thoát 1, lỗi dữ liệu mã 2. CLI trả envelope; đọc `row["entry"]` và
+xem cách lấy đủ tại [effect-sources.md](references/effect-sources.md).
+`pass` chỉ là khai báo kèm bằng chứng,
+không thay việc kiểm chứng bằng chứng đó.
+Khi muốn xem thêm reference chưa rõ tỷ lệ, kết hợp `--ratio 16:9 --include-unknown-ratio`;
+chưa rõ không có nghĩa là đã tương thích. `--runtime` lọc metadata, không chứng minh engine đã cài.
+CLI không tự suy trạm. Kết quả chỉ là metadata; kiểm quyền, hash và runtime trước khi dùng.
+Windows hỗ trợ `capture`, `materialize` và `materialize-repo` một file. Mã 3 có thể đã công bố:
+kiểm trạm/đích trước khi thử lại. Xem [nguồn và giới hạn](references/effect-sources.md).
+Bundle nhiều file chưa materialize được; metadata không tự chứng minh bản quyền.
+
 ## Quy trình bốn bước
 
-Với lyric video, sau layout hãy tra [lyric-video-effects](../lyric-video-effects/SKILL.md)
+Với lyric video, sau layout hãy tra skill `lyric-video-effects`
 cho preset chữ A/B/C và kiểm nét script. Với ảnh tĩnh có lớp phủ chuyển động, tra
-[photo-ambient-effects](../photo-ambient-effects/SKILL.md). Đây là reference chuyên đề,
+skill `photo-ambient-effects`. Đây là reference chuyên đề,
 không tự thêm style ngoài bộ người dùng đã duyệt.
 
-1. **Phân loại TỪNG đoạn nội dung theo việc nó làm**: mở màn/hook · con số chủ đạo · N điểm ·
-   quy trình/chuỗi sự kiện · so sánh A-B · xếp hạng · phát ngôn · demo sản phẩm/clip nguồn · mặt
-   trái/cảnh báo · chốt hạ · kết + kêu gọi.
+1. **Phân loại TỪNG đoạn nội dung theo việc nó làm**. Các loại gồm mở màn/hook · con số chủ đạo ·
+   N điểm · quy trình/chuỗi sự kiện · so sánh A-B · xếp hạng. Các loại khác gồm phát ngôn ·
+   demo sản phẩm/clip nguồn · mặt trái/cảnh báo · chốt hạ · kết + kêu gọi.
 2. **Tra bảng chọn nhanh** (§1 của catalog) → lấy template **tier cao nhất** khớp việc đó VÀ khớp
    tỉ lệ khung (16:9 hay 9:16 — hai cột khác nhau, đừng lấy nhầm). Template tier `NEW` mới có mô
    tả giải phẫu, chưa có code: dựng theo mô tả rồi ghi nguồn code vào catalog.
@@ -50,13 +71,21 @@ không tự thêm style ngoài bộ người dùng đã duyệt.
 
 ## Nghĩa vụ giữ thư viện còn sống
 
-Áp cho catalog **đang dùng** (của trạm nếu có, không thì của repo):
+Áp cho catalog **đang dùng**, trong phạm vi người dùng đã giao quyền ghi:
 
-- Chế một pattern chưa có trong thư viện → **thêm entry vào catalog ngay trong cùng lượt việc**
-  (id · giải phẫu · chuyển động · nguồn code · tier). Không có bước này thì lần sau người khác —
-  hoặc chính bạn — lại chế lại từ đầu.
-- Dựng xong một pattern đang ở tier `NEW` → đổi tier (S/A) và trỏ tới nguồn code.
-- Học thêm một nguồn ngoài thì chưng cất vào catalog và **ghi rõ nguồn gốc** (provenance).
+- Khi tạo được pattern hoặc tìm được tài nguyên hữu ích có thể dùng lại, chủ động bổ sung entry và
+  index vào thư viện phù hợp trong phạm vi project được giao, kèm nguồn và trạng thái kiểm. Lưu tại
+  trạm được chọn khi có quyền ghi và đủ quyền sử dụng; không cần hỏi lại chỉ vì thao tác capture.
+  Đưa vào repo phải qua kiểm quyền, dữ liệu riêng và review. Chỉ tra cứu thì không ghi.
+- Capture component hoặc prompt mới: điền `description` ngắn về mục đích, đầu vào/đầu ra, tham số,
+  cách dùng và giới hạn; ghi “chưa biết” nếu chưa xác minh. Giữ nguồn và trạng thái kiểm riêng;
+  thẻ cũ thiếu `description` vẫn hợp lệ.
+- Dựng xong một pattern đang ở tier `NEW` → đề xuất đổi tier (S/A), trỏ tới nguồn code và ghi
+  bằng chứng; chỉ cập nhật catalog khi được giao quyền ghi.
+- Khi đang dựng video trong phạm vi được ghi trạm và phát hiện nguồn online mới hữu ích để tái dùng,
+  lập thẻ liên kết `reference_only` kèm nguồn, quyền và trạng thái kiểm; kiểm tìm lại qua chỉ mục
+  chung. Nếu chưa rõ quyền, giữ `unknown` và chỉ lưu metadata liên kết, không chép nội dung nguồn.
+  Việc chưng cất, đóng gói hoặc phân phối nội dung vẫn cần kiểm quyền và phạm vi riêng.
 - Sửa một template theo yêu cầu riêng của một số báo thì **đừng** sửa vào thư viện: thư viện là
   cái dùng lại được, không phải nhật ký của một số báo.
 

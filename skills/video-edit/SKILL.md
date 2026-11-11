@@ -9,6 +9,11 @@ Khi cần chọn cấu trúc sản phẩm hoặc checklist QA theo tình huống
 skill `video-routing` và chỉ mở thẻ liên quan trong
 tài liệu `production-techniques.md` của skill đó.
 
+Tra `video-theme-library`. Trạm được phép ghi: chủ động lưu/index component, prompt, asset, link
+tái dùng kèm nguồn/quyền/kiểm, tra lại. Tách dữ liệu riêng/đặc thù project; quyền dựng footage
+không mặc nhiên cho dùng chung. Quyền chưa rõ chỉ lưu metadata/link. Chỉ tra không ghi; thiếu trạm/
+quyền báo chưa lưu. Bundle đa file chưa materialize.
+
 Tra [danh mục FFmpeg](references/ffmpeg-tool-index.md) để chọn công cụ. Khi cần ý tưởng rà
 transcript, tùy chọn tra online [EditAtlas transcribe](https://github.com/EditAtlas/skills/blob/497724e81f381b66017f367e819a088493e226d9/skills/transcribe/SKILL.md);
 không gửi audio hay cài engine.

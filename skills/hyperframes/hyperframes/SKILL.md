@@ -51,8 +51,17 @@ không thay catalog của trạm. Lọc theo việc cảnh cần làm và vùng 
 theo `ratio_fit` của khung cần giao; tỷ lệ ưu tiên là gợi ý, không phải bộ lọc loại bỏ mọi mẫu
 ngang khi dựng dọc. Chỉ mở file của các mã `PM-<slug>` phù hợp. Trong đề xuất phân cảnh, ghi mã, tên, link xem nguồn,
 mục đích, tỷ lệ và vùng màn hình; nếu không có mẫu khớp thì thiết kế mới và nói rõ lý do.
-Các entry là prompt chuyển thể và tài liệu tham chiếu, chưa phải template đã render. Sau đó
-tiếp tục đúng một workflow đã chọn trong bảng trên.
+Các entry là prompt chuyển thể và tài liệu tham chiếu, chưa phải template đã render. Tra thêm
+bản đồ nguồn của skill `video-theme-library` để tư vấn
+component, prompt, asset và nguồn online theo quyền, runtime và bằng chứng; việc này bổ sung,
+không thay catalog layout, Prompt Motion hay registry. Sau đó chuyển đúng một workflow đã chọn.
+
+Workflow nhận việc dựng phải theo nghĩa vụ lưu/index của `video-theme-library`. Khi project có
+trạm đã chọn và được cấp quyền ghi, chủ động lưu candidate tái dùng sạch cùng prompt, asset hoặc
+link tham khảo hữu ích. Ghi nguồn, quyền, trạng thái kiểm rồi tìm lại trong chỉ mục. Quyền nguồn chưa rõ:
+chỉ lưu metadata và link với `unknown`, không chép nội dung. Chỉ tra cứu thì không ghi; chưa có
+trạm hoặc quyền thì báo chưa lưu, không tự chọn trạm. Bundle nhiều file chưa materialize được;
+xem giới hạn và cách lưu tại bản đồ thư viện.
 
 ## Kỹ năng theo chủ đề (nạp khi cần, không nạp sẵn)
 

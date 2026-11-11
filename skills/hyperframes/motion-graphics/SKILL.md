@@ -35,6 +35,15 @@ storyboard, nêu mã, tên, link xem nguồn, mục đích cảnh, tỷ lệ đ�
 được chọn. Cách chuyển sang timeline tua được ở
 [`../../video-theme-library/assets/prompt-motion/USAGE.md`](../../video-theme-library/assets/prompt-motion/USAGE.md).
 
+Tra thêm bản đồ nguồn của skill `video-theme-library` để tư vấn
+component, prompt, asset và nguồn online theo quyền, runtime và bằng chứng; vẫn tra Prompt Motion
+và `hyperframes-registry` theo vai trò riêng. Khi dựng project có trạm đã chọn và được cấp quyền ghi,
+chủ động lưu/index candidate tái dùng sạch và prompt, asset, link hữu ích theo nghĩa vụ của
+`video-theme-library`, ghi nguồn/quyền/trạng thái kiểm rồi tìm lại.
+Nguồn chưa rõ quyền: chỉ lưu metadata và link `reference_only` với quyền `unknown`, không chép nội dung.
+Chỉ tra cứu thì không ghi; chưa có trạm hoặc quyền thì báo chưa lưu, không tự chọn trạm. Bundle nhiều file
+chưa materialize được; xem giới hạn và hướng dẫn tại thư viện chung.
+
 ## Bảy bước
 
 0. **Dựng project**, chốt khung hình và định dạng đầu ra (MP4 hay lớp trong suốt — quyết ngay, vì

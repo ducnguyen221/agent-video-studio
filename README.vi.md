@@ -24,11 +24,33 @@ câm vẫn chạy, chỉ là không lồng tiếng được. Không có thứ t�
 
 ## Bản này có gì
 
+Thư viện hiệu ứng local có thể tra cứu reference và, trên Windows, lưu hoặc đưa lại một file vào
+project qua `python -m video_studio.effect_library` với trạm được chọn tường minh. Trên Windows,
+`materialize-repo --id <VE-id> --project <project-đích> --name <tên-file-mới>` lấy một
+component hoặc preset một file từ repo có quyền khai báo `owned`/`licensed`, kiểm hash và không
+ghi đè file có sẵn; lệnh không tự chuyển sang trạm. Mã 3 nghĩa là file có thể đã được công bố
+nhưng bước kết thúc hoặc báo kết quả thất bại: kiểm đích trước khi thử lại. Xem
+[hướng dẫn nguồn hiệu ứng](skills/video-theme-library/references/effect-sources.md) để biết
+manifest, quyền và mã thoát. Bundle nhiều file đã lưu và đọc được, nhưng chưa đưa lại được thành
+thư mục project.
+
+CLI tìm kiếm trả danh sách JSON gồm các envelope: đọc thẻ qua `row["entry"]` (ví dụ
+`row["entry"]["id"]`); `truncated_fields` và `omitted_fields` báo phần bị rút hoặc ẩn,
+`retrieve` hướng dẫn lấy đầy đủ. Đây là thay đổi so với JSON CLI cũ đặt thẻ trực tiếp
+trong row. `--full-prompt` trả nguyên `prompt_text` nhưng vẫn tóm tắt trường khác;
+`--full-record` trả đầy đủ mọi trường. Khi lấy một mục, tìm theo ID với `--limit 1` và
+kiểm ID trả về vì tìm kiếm dựa trên từ khóa. Bản tóm tắt giới hạn 8.192 byte mỗi envelope
+theo phép tính JSON escape bảo thủ. ID dài hơn 240 ký tự làm tìm tóm tắt trả mã 2; dùng
+`--full-record`. Hai cờ lấy đủ có thể tạo output lớn. API Python `search()` vẫn trả record gốc.
+Trên Windows, CLI còn tìm từng tên tham khảo FFmpeg và kỹ thuật lấy ý tưởng từ Hypit ngay từ tài
+liệu gốc; không suy các công cụ đó đã cài. Hệ khác cảnh báo hai nguồn này bị bỏ khỏi kết quả cho
+đến khi đường đọc an toàn được kiểm chứng.
+
 | Lệnh | Làm gì |
 |---|---|
 | `video-studio doctor` | Kiểm Node ≥ 22, npx, bản HyperFrames đang ghim, Chromium headless của nó, ffmpeg/ffprobe, font Inter, trạm và `station.json`. `--check-updates` chỉ *báo* bản HyperFrames mới. |
 | `video-studio init` | Dựng trạm (`embedded` trong repo, hoặc `separate` ngoài repo), ghi `station.json`. `--migrate` nhận một trạm bố cục cũ (và gỡ bản skill bản cũ đã chép vào đó), `--dry-run` in kế hoạch không ghi gì, `--undo` đảo lần chạy gần nhất theo nhật ký. |
-| `video-studio render` | spec JSON (`schema_version: 1`) → MP4 theo template: `news`, `news-weekly`, `topstory`, `repo-today`. Cần phần phụ `[voice]`. |
+| `video-studio render` | spec JSON (`schema_version: 1`) → MP4 theo template: `news`, `news-weekly`, `topstory`, `repo-today`, hoặc `effect-preview`. Template tin cần phần phụ `[voice]`; `effect-preview` hiện cần Windows và file `dist/gsap.min.js` của GSAP 3.15.0 có SHA-256 đã ghim qua `--gsap-file`, dựng lớp hiệu ứng tổng hợp 16:9 không âm thanh. Preview đặt npm ở chế độ offline; đây không phải sandbox mạng cho engine. |
 | `video-studio probe` | Render thử một trang 320×180 dài 0,5 s, không tài nguyên ngoài (vài giây trên máy khoẻ). Môi trường render kẹt (quá giờ hoặc `Navigation timeout`) ⇒ mã 1, lỗi mở đầu `RENDER_STUCK:` — khởi động lại máy. `--heal` chụp gói chẩn đoán, giết Chrome/HyperFrames mồ côi, xoá profile tạm cũ rồi thử lại (60 s, rồi 600 s) trước khi chịu thua. Pipeline chạy lệnh này trước các bước tốn kém. |
 | `video-studio narrate` | video câm (hoặc cả một project, render trước) + lời dẫn → một MP4 hoàn chỉnh có giọng và nhạc nền tuỳ chọn, qua trạm giọng. |
 | `video-studio preview` | Mở studio xem trước của HyperFrames cho một project — bằng **đúng bản đã ghim**, nên thứ bạn soi chính là thứ sẽ render. |

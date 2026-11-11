@@ -13,6 +13,13 @@ description: Author or edit a custom HyperFrames composition when no specialised
 chắc rằng không có workflow chuyên biệt nào khớp — workflow chuyên biệt mang theo cả bảng phân cảnh
 lẫn bộ luật của thể loại, tự dựng lại là tự bỏ cả hai.
 
+Trước khi tự tạo layout hoặc motion, tra `video-theme-library`; giữ ID, nguồn và mức kiểm của
+thành phần được chọn. Khi dựng trong project có trạm đã được phép ghi, chủ động lưu và lập chỉ mục
+pattern, prompt, asset hoặc liên kết hữu ích có thể tái dùng theo `video-theme-library`, rồi kiểm
+tìm lại. Ghi provenance, quyền và mức kiểm; quyền nguồn chưa rõ thì chỉ lưu metadata/liên kết
+`reference_only`, không chép nội dung. Chưa có trạm hoặc quyền ghi thì báo chưa lưu, không tự
+chọn đường; chỉ tra cứu thì không ghi. Không coi bundle nhiều file đã materialize được.
+
 ## Sáu bước
 
 1. **Áp bộ chuyển nguồn chung** — có URL, có PR, có nhạc, có footage thì xử lý đầu vào đúng cách

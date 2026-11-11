@@ -1,0 +1,12 @@
+{
+  "schema": "effect-distribution-rights/1",
+  "files": {
+    "skills/lyric-video-effects/assets/line-icons.mjs": {"license": "MIT", "provenance": "skills/lyric-video-effects/references/provenance-and-coverage.md", "notices": ["LICENSE"]},
+    "skills/lyric-video-effects/assets/motion-families.mjs": {"license": "MIT", "provenance": "skills/lyric-video-effects/references/provenance-and-coverage.md", "notices": ["LICENSE"]},
+    "skills/lyric-video-effects/assets/script-ink.css": {"license": "MIT", "provenance": "skills/lyric-video-effects/references/provenance-and-coverage.md", "notices": ["LICENSE"]},
+    "skills/lyric-video-effects/assets/soft-presets.js": {"license": "MIT", "provenance": "skills/lyric-video-effects/references/provenance-and-coverage.md", "notices": ["LICENSE"]},
+    "skills/photo-ambient-effects/assets/ambient-painter.js": {"license": "MIT; idea informed by Apache-2.0 HyperFrames registry", "provenance": "skills/photo-ambient-effects/references/provenance-and-coverage.md", "notices": ["LICENSE", "LICENSE-APACHE", "NOTICE"]},
+    "skills/photo-ambient-effects/assets/dust.js": {"license": "MIT", "provenance": "skills/photo-ambient-effects/references/provenance-and-coverage.md", "notices": ["LICENSE"]},
+    "skills/photo-ambient-effects/assets/envelope.js": {"license": "MIT", "provenance": "skills/photo-ambient-effects/references/provenance-and-coverage.md", "notices": ["LICENSE"]}
+  }
+}

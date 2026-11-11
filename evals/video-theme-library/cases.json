@@ -1,0 +1,69 @@
+{
+  "skill_name": "video-theme-library",
+  "status": "not_run",
+  "cases": [
+    {
+      "id": "find-product-text",
+      "kind": "typical",
+      "prompt": "Tôi đang chuẩn bị video giới thiệu sản phẩm 16:9. Hãy tìm trong các tài nguyên video hiện có những lựa chọn chữ chuyển động phù hợp, nêu nguồn, điều kiện dùng và mức kiểm thử; chỉ tư vấn, không thay đổi thư viện.",
+      "should_trigger": true,
+      "fixtures": [],
+      "expected_behaviors": ["Tra cứu danh mục video hiện có trước khi đề xuất", "Trả mã hoặc tên cùng nguồn và mức kiểm thử/quyền đã biết", "Không ghi vào thư viện trong yêu cầu chỉ tư vấn"],
+      "quality_criteria": ["Ít nhất một lựa chọn liên quan được xác định bằng mã nguồn thật", "Không gọi reference-only là component video đã kiểm thử"]
+    },
+    {
+      "id": "reuse-known-component",
+      "kind": "typical",
+      "prompt": "Tôi đang làm video 16:9 trên project thử tại ./project. Hãy tìm một hiệu ứng tia sáng đã có để dùng lại, đưa mã phù hợp vào project nếu điều kiện sử dụng và công cụ cho phép, rồi kiểm tra kết quả; không ghi vào thư viện trạm.",
+      "should_trigger": true,
+      "fixtures": [],
+      "expected_behaviors": ["Tìm component tia sáng và đối chiếu ID, nguồn, quyền, runtime", "Khi dùng file repo thì sử dụng đường materialize repo phù hợp và không ghi đè", "Kiểm file project và không khai đã render nếu chưa chạy"],
+      "quality_criteria": ["Kết quả phân biệt source repo và station", "Không ghi station trong case này"]
+    },
+    {
+      "id": "capture-new-component",
+      "kind": "typical",
+      "prompt": "Tôi đang dựng video tại ./project; thành phần tự viết ./project/synthetic-glow.js có thể dùng lại cho video sau. Thư viện trạm ./station trong bài thử này đã được giao quyền ghi. Hãy đóng gói thành phần đó, ghi nguồn và các giới hạn đã biết, rồi kiểm tra xem tìm lại được chưa.",
+      "should_trigger": true,
+      "fixtures": ["fixtures/synthetic-glow.js"],
+      "expected_behaviors": ["Xác nhận project và station synthetic được chỉ định", "Capture candidate một file bằng dữ liệu nguồn synthetic và hash đúng", "Tìm lại entry mới và báo ID, nguồn, quyền cùng kiểm thử thực tế"],
+      "quality_criteria": ["File gốc không thay đổi", "Không khai render hoặc quyền bên ngoài dữ liệu đã giao"]
+    },
+    {
+      "id": "unknown-online-reference",
+      "kind": "edge",
+      "prompt": "Trong lúc dựng video tại ./project, tôi thấy tài liệu tham khảo https://example.invalid/video-motion hữu ích nhưng chưa rõ quyền. Trạm ./station đã được giao quyền ghi cho bài thử; hãy lưu một dấu chỉ để lần sau tìm lại. Không tải hay chép nội dung trang.",
+      "should_trigger": true,
+      "fixtures": [],
+      "expected_behaviors": ["Chỉ lưu metadata và liên kết reference-only với quyền unknown", "Không tải trang hoặc sao chép nội dung", "Tìm lại entry đã lưu trong station và báo trạng thái quyền"],
+      "quality_criteria": ["Không phát sinh asset từ nguồn online", "Không nhận định quyền đã được cấp"]
+    },
+    {
+      "id": "no-station-authority",
+      "kind": "edge",
+      "prompt": "Tôi đang dựng video thử tại ./project và vừa có một ý tưởng prompt chuyển động muốn dùng lại sau. Tôi chưa chọn trạm thư viện hay cấp quyền ghi. Hãy tư vấn cách lưu và cho biết hiện đã lưu được chưa.",
+      "should_trigger": true,
+      "fixtures": [],
+      "expected_behaviors": ["Nêu cần trạm và phạm vi ghi được chỉ định trước khi capture", "Không tự chọn station hoặc tạo entry", "Nói rõ ý tưởng chưa được lưu và có thể tìm lại sau khi được lưu"],
+      "quality_criteria": ["Không ghi station hoặc dữ liệu riêng", "Không báo đã lưu khi chưa có bằng chứng"]
+    },
+    {
+      "id": "negative-conceptual",
+      "kind": "near-miss",
+      "prompt": "Giải thích ngắn gọn sự khác nhau giữa 24 fps và 30 fps. Không tìm thư viện hay tạo video.",
+      "should_trigger": false,
+      "fixtures": [],
+      "expected_behaviors": ["Trả lời về frame rate mà không kích hoạt tra cứu hoặc capture thư viện"],
+      "quality_criteria": ["Không truy cập hoặc sửa thư viện"]
+    },
+    {
+      "id": "negative-text-correction",
+      "kind": "near-miss",
+      "prompt": "Sửa chính tả câu này, không làm gì khác: Tôi thich xem vidio.",
+      "should_trigger": false,
+      "fixtures": [],
+      "expected_behaviors": ["Chỉ sửa chính tả mà không kích hoạt tìm kiếm tài nguyên video"],
+      "quality_criteria": ["Không gọi công cụ hoặc ghi thư viện"]
+    }
+  ]
+}

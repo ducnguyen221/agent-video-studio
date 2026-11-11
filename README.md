@@ -26,11 +26,35 @@ and [still-photo ambient overlays with corner sun rays](skills/photo-ambient-eff
 These support the music workflow; font files and private media are not bundled. Coverage and limitations
 are documented inside each skill. Local source additions do not imply an installed plugin release.
 
+The local effect library can search references and, on Windows, capture or materialize a single
+file from an explicitly selected station with `python -m video_studio.effect_library`. On Windows,
+`materialize-repo --id <VE-id> --project <destination> --name <new-file>` also copies one
+repository component or preset with declared `owned`/`licensed` rights after verifying its hash,
+without replacing an existing file; it does not read or fall back to a station. Exit 3 means the
+file may have been published but finalization/reporting failed: check the destination before retrying.
+See the [effect source guide](skills/video-theme-library/references/effect-sources.md) for the manifest,
+permissions and action exit codes. Multi-file bundles can be captured and read but cannot yet be
+materialized as a project directory.
+
+The search CLI returns a JSON list of envelopes. Read each result from `row["entry"]`
+(for example, `row["entry"]["id"]`); `truncated_fields` and `omitted_fields` disclose
+the summary limits, and `retrieve` explains how to request the full content. This is a
+change from earlier CLI output where the entry was the row itself. `--full-prompt`
+restores the complete `prompt_text` only; `--full-record` returns all fields. To retrieve
+a particular item, search its ID with `--limit 1` and verify the returned ID: search is
+token-based. Compact output is limited to 8,192 bytes per envelope using a conservative
+JSON-escape estimate. An ID over 240 characters causes exit 2 in compact mode; use
+`--full-record`. Both full flags can produce large output. The Python `search()` API still
+returns original records.
+On Windows, the search CLI also indexes individual FFmpeg reference names and Hypit-inspired
+techniques from their canonical documents; those names do not imply installed tools. Other platforms
+warn that these two sources are omitted until a safe reader is verified.
+
 | Command | Does |
 |---|---|
 | `video-studio doctor` | Checks Node ≥ 22, npx, the pinned HyperFrames build, its headless Chromium, ffmpeg/ffprobe, the Inter font, the station and `station.json`. `--check-updates` only *reports* a newer HyperFrames. |
 | `video-studio init` | Lays out a station (`embedded` inside the repo, or `separate` outside it), writes `station.json`. `--migrate` adopts an older station layout (and removes skill copies an older version left there), `--dry-run` prints the plan without writing, `--undo` reverses the last run from its journal. |
-| `video-studio render` | A JSON spec (`schema_version: 1`) → MP4s from a template: `news`, `news-weekly`, `topstory`, `repo-today`. Needs the `[voice]` extra. |
+| `video-studio render` | A JSON spec (`schema_version: 1`) → MP4s from a template: `news`, `news-weekly`, `topstory`, `repo-today`, or `effect-preview`. News templates need the `[voice]` extra; `effect-preview` currently requires Windows and the SHA-256-pinned GSAP 3.15.0 `dist/gsap.min.js` via `--gsap-file`, and renders a silent 16:9 synthetic overlay. npm is set offline for this preview; that is not a network sandbox for the engine. |
 | `video-studio probe` | Renders a tiny 320×180, 0.5 s page with no external assets (seconds on a healthy machine). Exits 1 with `RENDER_STUCK:` when the render environment is wedged (timeout or `Navigation timeout`) — restart the machine. `--heal` first snapshots a diagnostic bundle, kills orphaned Chrome/HyperFrames processes, clears stale temp profiles and retries (60 s, then 600 s) before giving up. Pipelines run it before their expensive steps. |
 | `video-studio narrate` | A silent MP4 (or a whole project, rendered first) + narration text → one finished MP4 with voice and optional background music, through the voice studio. |
 | `video-studio preview` | Opens the HyperFrames preview studio for a project — with the *pinned* build, so what you inspect is what will render. |

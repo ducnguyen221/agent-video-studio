@@ -1,0 +1,652 @@
+[
+  {
+    "id": "VE-design-studio-motion-patterns",
+    "name": "Design Studio motion patterns MP01–MP06",
+    "kind": "reference",
+    "maturity": "reference_only",
+    "rights": "unknown",
+    "source": "skills/video-theme-library/references/effect-sources.md",
+    "runtime": "Reference only; design-studio plugin required for canonical recipes; not video components",
+    "description": "Design-studio decision recipes MP01–MP06; see source map for canonical plugin path and availability. No video execution verified.",
+    "tags": [
+      "design studio",
+      "motion patterns",
+      "MP01",
+      "MP02",
+      "MP03",
+      "MP04",
+      "MP05",
+      "MP06",
+      "encounter cue",
+      "press acknowledgement",
+      "card to detail continuity",
+      "completion confirmation",
+      "bounded wait progress",
+      "pausable ambient texture"
+    ],
+    "roles": [
+      "research"
+    ],
+    "techniques": [
+      "motion",
+      "design"
+    ],
+    "ratios": [],
+    "asset": null,
+    "checks": {
+      "static_check": "not_run",
+      "preview": "not_run",
+      "render": "not_run",
+      "audio": "not_run",
+      "ratio_test": "not_run",
+      "reuse_evidence": "not_run"
+    }
+  },
+  {
+    "id": "VE-design-studio-motion-spec",
+    "name": "Design Studio motion spec template",
+    "kind": "reference",
+    "maturity": "reference_only",
+    "rights": "unknown",
+    "source": "skills/video-theme-library/references/effect-sources.md",
+    "runtime": "Reference only; design-studio plugin required for canonical template; not a video component",
+    "description": "Motion decision template; see source map for canonical plugin path and availability. No video execution verified.",
+    "tags": [
+      "design studio",
+      "motion spec",
+      "motion template"
+    ],
+    "roles": [
+      "research"
+    ],
+    "techniques": [
+      "motion",
+      "design"
+    ],
+    "ratios": [],
+    "asset": null,
+    "checks": {
+      "static_check": "not_run",
+      "preview": "not_run",
+      "render": "not_run",
+      "audio": "not_run",
+      "ratio_test": "not_run",
+      "reuse_evidence": "not_run"
+    }
+  },
+  {
+    "id": "VE-earshot-sound",
+    "name": "Earshot launch video sound research",
+    "kind": "reference",
+    "maturity": "reference_only",
+    "rights": "unknown",
+    "source": "skills/hyperframes/media-use/references/sound-design.md",
+    "runtime": "Reference only; Earshot not installed or run",
+    "tags": [
+      "earshot",
+      "sound",
+      "cue",
+      "sfx",
+      "am thanh"
+    ],
+    "roles": [
+      "sound"
+    ],
+    "techniques": [
+      "foley",
+      "sound design"
+    ],
+    "ratios": [],
+    "asset": null,
+    "checks": {
+      "static_check": "not_run",
+      "preview": "not_run",
+      "render": "not_run",
+      "audio": "not_run",
+      "ratio_test": "not_run",
+      "reuse_evidence": "not_run"
+    }
+  },
+  {
+    "id": "VE-vtake-cards",
+    "name": "vtake-skills video graphic cards reference",
+    "kind": "reference",
+    "maturity": "reference_only",
+    "rights": "unknown",
+    "source": "upstream.json",
+    "runtime": "Reference only; adapted skill requires HyperFrames, Node and ffmpeg",
+    "tags": [
+      "vtake",
+      "graphic cards",
+      "lower thirds",
+      "talking head"
+    ],
+    "roles": [
+      "graphics"
+    ],
+    "techniques": [
+      "overlay",
+      "cards"
+    ],
+    "ratios": [],
+    "asset": null,
+    "checks": {
+      "static_check": "not_run",
+      "preview": "not_run",
+      "render": "not_run",
+      "audio": "not_run",
+      "ratio_test": "not_run",
+      "reuse_evidence": "not_run"
+    }
+  },
+  {
+    "id": "VE-video-use-editing",
+    "name": "video-use editing upstream reference",
+    "kind": "reference",
+    "maturity": "reference_only",
+    "rights": "unknown",
+    "source": "skills/video-edit/SKILL.md",
+    "runtime": "Reference only; vendored backend requires separate installation and dependencies",
+    "tags": [
+      "video-use",
+      "edit",
+      "transcribe",
+      "chinh sua video"
+    ],
+    "roles": [
+      "editing"
+    ],
+    "techniques": [
+      "cut",
+      "transcript"
+    ],
+    "ratios": [],
+    "asset": null,
+    "checks": {
+      "static_check": "not_run",
+      "preview": "not_run",
+      "render": "not_run",
+      "audio": "not_run",
+      "ratio_test": "not_run",
+      "reuse_evidence": "not_run"
+    }
+  },
+  {
+    "id": "VE-lens-flare",
+    "name": "Lens flare tổng hợp",
+    "kind": "component",
+    "maturity": "candidate",
+    "rights": "licensed",
+    "source": "skills/photo-ambient-effects/assets/lens-flare.js",
+    "runtime": "Canvas 2D; caller supplies composition time; preview uses local GSAP and HyperFrames",
+    "tags": [
+      "lens flare",
+      "loang sang",
+      "refraction",
+      "overlay"
+    ],
+    "roles": [
+      "ambient"
+    ],
+    "techniques": [
+      "canvas",
+      "gradient"
+    ],
+    "ratios": [
+      "16:9"
+    ],
+    "asset": {
+      "path": "skills/photo-ambient-effects/assets/lens-flare.js",
+      "sha256": "99d91c590ad3d9eea0ef58bdb848a4ca1f5d14843a416cbbd8e20f7fdf43740f"
+    },
+    "checks": {
+      "static_check": "not_run",
+      "preview": "pass",
+      "render": "pass",
+      "audio": "not_run",
+      "ratio_test": "pass",
+      "reuse_evidence": "not_run"
+    },
+    "evidence": {
+      "preview": "Chromium synthetic seek at 0.5 and 1.5 seconds, including reverse seek; not a project reuse",
+      "render": "Synthetic 16:9 MP4 via video-studio effect-preview with HyperFrames 0.8.54 and local GSAP 3.15.0; Windows",
+      "ratio_test": "ffprobe reports 1920x1080, 30 fps, 60 frames, 2 seconds; Windows"
+    },
+    "license": {
+      "id": "MIT",
+      "source": "LICENSE",
+      "terms": "Original synthetic repository code; retain MIT notice."
+    }
+  },
+  {
+    "id": "VE-sun-rays",
+    "name": "Tia nắng xiên Sun Rays",
+    "kind": "component",
+    "maturity": "implemented",
+    "rights": "licensed",
+    "source": "skills/photo-ambient-effects/references/provenance-and-coverage.md",
+    "runtime": "Canvas 2D; composition clock",
+    "tags": [
+      "nang",
+      "sun rays",
+      "overlay"
+    ],
+    "roles": [
+      "ambient"
+    ],
+    "techniques": [
+      "canvas",
+      "gradient"
+    ],
+    "ratios": [
+      "16:9"
+    ],
+    "asset": {
+      "path": "skills/photo-ambient-effects/assets/sun-rays.js",
+      "sha256": "8f7a84510161277342da0b5d11b8e6341705bb35d95f5d89a64f40d8de01e3c8"
+    },
+    "checks": {
+      "static_check": "not_run",
+      "preview": "not_run",
+      "render": "not_run",
+      "audio": "not_run",
+      "ratio_test": "not_run",
+      "reuse_evidence": "not_run"
+    },
+    "license": {
+      "id": "MIT",
+      "source": "LICENSE",
+      "terms": "Repository code; retain MIT notice."
+    }
+  },
+  {
+    "id": "VE-lyric-presets",
+    "name": "Lyric A B C presets",
+    "kind": "preset",
+    "maturity": "implemented",
+    "rights": "licensed",
+    "source": "skills/lyric-video-effects/references/provenance-and-coverage.md",
+    "runtime": "JavaScript; composition timeline",
+    "tags": [
+      "lyric",
+      "chu",
+      "typography"
+    ],
+    "roles": [
+      "lyrics"
+    ],
+    "techniques": [
+      "text",
+      "mask"
+    ],
+    "ratios": [
+      "16:9"
+    ],
+    "asset": {
+      "path": "skills/lyric-video-effects/assets/lyric-presets.js",
+      "sha256": "d14e96811f8524552e6bb312a855668a19add329dbd584eef6611caeb74dd383"
+    },
+    "checks": {
+      "static_check": "not_run",
+      "preview": "not_run",
+      "render": "not_run",
+      "audio": "not_run",
+      "ratio_test": "not_run",
+      "reuse_evidence": "not_run"
+    },
+    "license": {
+      "id": "MIT",
+      "source": "LICENSE",
+      "terms": "Repository code; retain MIT notice."
+    }
+  },
+  {
+    "id": "VE-editatlas-breakdown",
+    "name": "EditAtlas video breakdown",
+    "kind": "reference",
+    "maturity": "reference_only",
+    "rights": "unknown",
+    "source": "skills/video-reference-analysis/SKILL.md",
+    "runtime": "reference only",
+    "tags": [
+      "editatlas",
+      "video",
+      "phan tich",
+      "reference"
+    ],
+    "roles": [
+      "analysis"
+    ],
+    "techniques": [
+      "breakdown"
+    ],
+    "ratios": [],
+    "asset": null,
+    "checks": {
+      "static_check": "not_run",
+      "preview": "not_run",
+      "render": "not_run",
+      "audio": "not_run",
+      "ratio_test": "not_run",
+      "reuse_evidence": "not_run"
+    }
+  },
+  {
+    "id": "VE-editatlas-sound",
+    "name": "EditAtlas sound design",
+    "kind": "reference",
+    "maturity": "reference_only",
+    "rights": "unknown",
+    "source": "skills/hyperframes/media-use/references/sound-design.md",
+    "runtime": "reference only",
+    "tags": [
+      "editatlas",
+      "sound",
+      "sfx",
+      "am thanh"
+    ],
+    "roles": [
+      "sound"
+    ],
+    "techniques": [
+      "foley"
+    ],
+    "ratios": [],
+    "asset": null,
+    "checks": {
+      "static_check": "not_run",
+      "preview": "not_run",
+      "render": "not_run",
+      "audio": "not_run",
+      "ratio_test": "not_run",
+      "reuse_evidence": "not_run"
+    }
+  },
+  {
+    "id": "VE-editatlas-transcribe",
+    "name": "EditAtlas transcribe",
+    "kind": "reference",
+    "maturity": "reference_only",
+    "rights": "unknown",
+    "source": "skills/video-edit/SKILL.md",
+    "runtime": "reference only",
+    "tags": [
+      "editatlas",
+      "transcribe",
+      "transcript"
+    ],
+    "roles": [
+      "editing"
+    ],
+    "techniques": [
+      "transcription"
+    ],
+    "ratios": [],
+    "asset": null,
+    "checks": {
+      "static_check": "not_run",
+      "preview": "not_run",
+      "render": "not_run",
+      "audio": "not_run",
+      "ratio_test": "not_run",
+      "reuse_evidence": "not_run"
+    }
+  },
+  {
+    "id": "VE-ffmpeg-index",
+    "name": "FFmpeg tool index",
+    "kind": "reference",
+    "maturity": "reference_only",
+    "rights": "unknown",
+    "source": "skills/video-edit/references/ffmpeg-tool-index.md",
+    "runtime": "reference only",
+    "tags": [
+      "ffmpeg",
+      "video edit",
+      "tool"
+    ],
+    "roles": [
+      "editing"
+    ],
+    "techniques": [
+      "ffmpeg"
+    ],
+    "ratios": [],
+    "asset": null,
+    "checks": {
+      "static_check": "not_run",
+      "preview": "not_run",
+      "render": "not_run",
+      "audio": "not_run",
+      "ratio_test": "not_run",
+      "reuse_evidence": "not_run"
+    }
+  },
+  {
+    "id": "VE-hypit-techniques",
+    "name": "Hypit production techniques",
+    "kind": "reference",
+    "maturity": "reference_only",
+    "rights": "unknown",
+    "source": "skills/video-routing/references/production-techniques.md",
+    "runtime": "reference only",
+    "tags": [
+      "hypit",
+      "production",
+      "ky thuat"
+    ],
+    "roles": [
+      "production"
+    ],
+    "techniques": [
+      "video"
+    ],
+    "ratios": [],
+    "asset": null,
+    "checks": {
+      "static_check": "not_run",
+      "preview": "not_run",
+      "render": "not_run",
+      "audio": "not_run",
+      "ratio_test": "not_run",
+      "reuse_evidence": "not_run"
+    }
+  },
+  {
+    "id": "VE-hyperframes-skills",
+    "name": "HyperFrames skill entry",
+    "kind": "reference",
+    "maturity": "reference_only",
+    "rights": "licensed",
+    "source": "skills/hyperframes/hyperframes/SKILL.md",
+    "runtime": "HyperFrames; see pinned version",
+    "tags": [
+      "hyperframes",
+      "composition",
+      "animation"
+    ],
+    "roles": [
+      "production"
+    ],
+    "techniques": [
+      "html",
+      "animation"
+    ],
+    "ratios": [],
+    "asset": null,
+    "checks": {
+      "static_check": "not_run",
+      "preview": "not_run",
+      "render": "not_run",
+      "audio": "not_run",
+      "ratio_test": "not_run",
+      "reuse_evidence": "not_run"
+    },
+    "license": {
+      "id": "Apache-2.0",
+      "source": "upstream.json",
+      "terms": "Consult upstream notice and license; reference only."
+    }
+  },
+  {
+    "id": "VE-flowkit-research",
+    "name": "FlowKit research provenance",
+    "kind": "reference",
+    "maturity": "reference_only",
+    "rights": "unknown",
+    "source": "upstream.json",
+    "runtime": "reference only",
+    "tags": [
+      "flowkit",
+      "camera",
+      "continuity"
+    ],
+    "roles": [
+      "research"
+    ],
+    "techniques": [
+      "storyboard"
+    ],
+    "ratios": [],
+    "asset": null,
+    "checks": {
+      "static_check": "not_run",
+      "preview": "not_run",
+      "render": "not_run",
+      "audio": "not_run",
+      "ratio_test": "not_run",
+      "reuse_evidence": "not_run"
+    }
+  },
+  {
+    "id": "VE-react-bits",
+    "name": "React Bits — animated text and visual effects",
+    "kind": "reference",
+    "maturity": "reference_only",
+    "rights": "unknown",
+    "source": "https://reactbits.dev/",
+    "runtime": "Reference online; code is React; GSAP, Motion, Three.js or OGL may be required depending on the component.",
+    "tags": [
+      "react",
+      "bits",
+      "reactbits",
+      "chữ chuyển động",
+      "chu",
+      "hieu",
+      "ung",
+      "background",
+      "particle",
+      "hiệu ứng hạt",
+      "gradient"
+    ],
+    "roles": [
+      "typography",
+      "background"
+    ],
+    "techniques": [
+      "text",
+      "animation",
+      "particles"
+    ],
+    "ratios": [],
+    "asset": null,
+    "checks": {
+      "static_check": "not_run",
+      "preview": "not_run",
+      "render": "not_run",
+      "audio": "not_run",
+      "ratio_test": "not_run",
+      "reuse_evidence": "not_run"
+    },
+    "repository": "https://github.com/DavidHDev/react-bits",
+    "license_note": "MIT plus Commons Clause: do not sell, sublicense, or redistribute the components themselves, whether standalone, bundled, or ported. Use as part of an application is permitted under stated conditions; verify the current license and separate terms for tools, exports, assets, and Pro items.",
+    "details": "skills/video-theme-library/references/effect-sources.md",
+    "license_url": "https://github.com/DavidHDev/react-bits/blob/main/LICENSE.md"
+  },
+  {
+    "id": "VE-magic-ui",
+    "name": "Magic UI — product animation and effects",
+    "kind": "reference",
+    "maturity": "reference_only",
+    "rights": "unknown",
+    "source": "https://magicui.design/docs",
+    "runtime": "Reference online; code is React; Tailwind CSS and Motion may be required depending on the component.",
+    "tags": [
+      "magic",
+      "ui",
+      "magicui",
+      "chữ chuyển động",
+      "hiệu ứng chữ sản phẩm",
+      "san",
+      "pham",
+      "text",
+      "reveal",
+      "marquee",
+      "beam"
+    ],
+    "roles": [
+      "product",
+      "typography"
+    ],
+    "techniques": [
+      "marquee",
+      "beam",
+      "text"
+    ],
+    "ratios": [],
+    "asset": null,
+    "checks": {
+      "static_check": "not_run",
+      "preview": "not_run",
+      "render": "not_run",
+      "audio": "not_run",
+      "ratio_test": "not_run",
+      "reuse_evidence": "not_run"
+    },
+    "repository": "https://github.com/magicuidesign/magicui",
+    "license_note": "Repository code is MIT; Pro templates and third-party assets can have different terms. Verify each item before use.",
+    "details": "skills/video-theme-library/references/effect-sources.md"
+  },
+  {
+    "id": "VE-motion-primitives",
+    "name": "Motion Primitives — subtle interface motion",
+    "kind": "reference",
+    "maturity": "reference_only",
+    "rights": "unknown",
+    "source": "https://motion-primitives.com/docs",
+    "runtime": "Reference online; React, Motion and Tailwind CSS may be required depending on the component.",
+    "tags": [
+      "motion",
+      "primitives",
+      "chữ chuyển động",
+      "chuyen",
+      "dong",
+      "tinh",
+      "te",
+      "transition",
+      "text",
+      "animation"
+    ],
+    "roles": [
+      "product",
+      "typography"
+    ],
+    "techniques": [
+      "transition",
+      "animation"
+    ],
+    "ratios": [],
+    "asset": null,
+    "checks": {
+      "static_check": "not_run",
+      "preview": "not_run",
+      "render": "not_run",
+      "audio": "not_run",
+      "ratio_test": "not_run",
+      "reuse_evidence": "not_run"
+    },
+    "repository": "https://github.com/ibelick/motion-primitives",
+    "license_note": "Repository code is MIT; verify the license and dependencies of the particular item before use.",
+    "details": "skills/video-theme-library/references/effect-sources.md"
+  }
+]

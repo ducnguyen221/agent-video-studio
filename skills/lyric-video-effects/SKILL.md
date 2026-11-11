@@ -10,6 +10,14 @@ description: "Design and verify kinetic lyric typography, word highlights and li
 trên MP4. Skill này bổ trợ workflow `music-to-video`; không thay bước phân tích nhạc hay duyệt storyboard.
 Không dùng cho phụ đề người nói hoặc chép lời từ âm thanh chưa được căn thời gian.
 
+Trước khi tạo motion mới, tra `video-theme-library` để tìm component, prompt, asset hoặc nguồn
+tham khảo phù hợp. Khi dựng trong project có trạm đã được phép ghi, chủ động lưu và lập chỉ mục
+component, prompt, asset hoặc liên kết hữu ích có thể tái dùng theo skill đó, kèm provenance,
+quyền và mức kiểm; kiểm tìm lại sau khi lưu.
+Nguồn chưa rõ quyền chỉ lưu metadata/liên kết `reference_only`, không chép nội dung. Chưa có trạm
+hoặc quyền ghi thì báo chưa lưu, không tự chọn đường; chỉ tra cứu thì không ghi. Không coi bundle
+nhiều file đã materialize được.
+
 Ba style tương thích hiện có là **A — Brush + Doodles, B — Wedding Script,
 C — Flowing Letters**; chọn font và motion theo bài và brief, không ép font viết tay.
 Các họ motion mở rộng là mã dùng lại, không mặc định đã được render kiểm.
