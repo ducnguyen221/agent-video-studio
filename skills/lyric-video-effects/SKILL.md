@@ -24,6 +24,11 @@ Các họ motion mở rộng là mã dùng lại, không mặc định đã đư
 Với B, luôn dùng đệm ink trên mask, pulse trên glyph con và `clipPath:'none'` sau reveal;
 kiểm cả nét nhô và dấu ở scale lớn nhất trước khi render full.
 
+Khi brief cần phổ tròn hoặc nốt bay theo giọng, dùng
+[audio-visualizer.js](assets/audio-visualizer.js) với phổ đã phân tích và cue từ;
+xem [hợp đồng đầu vào, offset và kiểm chứng](references/audio-visualizer.md). Đây là
+thành phần tùy chọn, không tự phân tích nhạc hoặc xác minh lời; không mặc định bật ở mọi bài.
+
 ## Quy trình
 
 1. Khoá lời và tên riêng, nguồn audio, cue và các font/style được phép. Đọc

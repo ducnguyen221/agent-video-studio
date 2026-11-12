@@ -149,7 +149,7 @@
         "music-to-video": {
           "path": "skills/hyperframes/music-to-video",
           "upstream_path": "skills/music-to-video",
-          "local_skill_sha256": "f7723b88fe23658b35c65c77694eddad21cfdeacd9590003af59a666ba0260bc",
+          "local_skill_sha256": "c7e2a2ccfc3814c938166a2d1d9daebc13e8df6e760f7e38cbd6c125e6a4dffa",
           "upstream_hash": "190e9885dab9b11d",
           "upstream_files": 169
         },

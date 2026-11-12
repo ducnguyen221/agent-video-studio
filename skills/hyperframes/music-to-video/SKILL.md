@@ -8,7 +8,8 @@ description: Use when turning a music track, extracted audio or mood brief into 
 ## Nhánh lyric video
 
 Với yêu cầu lyric video, đọc [references/lyric-workflow.md](references/lyric-workflow.md)
-và dùng hai mẫu storyboard ở `assets/`. Cue giọng hát lấy từ bản thu, cùng mốc thời gian
+và dùng mẫu storyboard phù hợp ở `assets/`; khi chưa chọn hướng hình thì chuẩn bị cả hai.
+Cue giọng hát lấy từ bản thu, cùng mốc thời gian
 với audio; không lượng tử hóa cue theo lưới nhịp cắt cảnh. Lời chưa xác minh phải hiện rõ
 trạng thái và không được ghi như lời đã duyệt. Nhịp là công cụ chọn điểm cắt, không phải
 điều kiện bắt buộc cho mọi lựa chọn sáng tạo của người dùng.

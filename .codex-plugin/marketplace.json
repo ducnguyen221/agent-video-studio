@@ -1,0 +1,13 @@
+{
+  "name": "agent-video-studio",
+  "owner": {
+    "name": "agent-video-studio"
+  },
+  "plugins": [
+    {
+      "name": "agent-video-studio",
+      "source": "./",
+      "version": "0.10.0"
+    }
+  ]
+}

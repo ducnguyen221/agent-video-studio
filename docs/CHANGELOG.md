@@ -5,6 +5,11 @@ chính nhưng chưa có tag; khi phát hành, mục đó đổi tên thành số
 `pyproject.toml`, `video_studio/__init__.py` cùng ba manifest plugin (`tests/test_version_sync.py`
 kiểm).
 
+## 0.10.0 — 2026-11-13
+
+- Mở rộng quy trình lyric video: lập số ảnh và lượt cảnh theo thời lượng, nội dung lời; đề xuất hiệu ứng theo cảnh và demo có hình, nhạc, chữ.
+- Thêm thành phần phổ âm thanh hình tròn và nốt bay theo cue từ, dùng dữ liệu đã phân tích và đồng hồ composition; cue nhận dạng tự động vẫn cần đối chiếu trước khi xác nhận.
+
 ## 0.9.4 — 2026-11-11
 
 - Bổ sung thư viện component video tái sử dụng, chỉ mục tra cứu và hướng dẫn lưu, tham chiếu các nguồn hiệu ứng.
