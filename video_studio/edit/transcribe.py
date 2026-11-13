@@ -286,6 +286,10 @@ def _transcript_dir(work_dir):
     work_path = os.path.abspath(work_dir)
     output_dir = os.path.join(work_path, "transcripts")
     effective_work = os.path.normcase(os.path.realpath(work_path))
+    if not os.path.lexists(output_dir):
+        # Chưa có thư mục thì không thể là symlink/junction; realpath trên đường đang được tạo dở
+        # (hai luồng cùng tạo lần đầu) có thể trả dạng khác nhau trên Windows và làm commonpath lỗi.
+        return output_dir
     effective_output = os.path.normcase(os.path.realpath(output_dir))
     try:
         common = os.path.normcase(os.path.realpath(os.path.commonpath(
