@@ -50,6 +50,12 @@ On Windows, the search CLI also indexes individual FFmpeg reference names and Hy
 techniques from their canonical documents; those names do not imply installed tools. Other platforms
 warn that these two sources are omitted until a safe reader is verified.
 
+The theme library also ships a **Prompt Motion** reference library: 240 motion references with scene
+role, aspect-ratio fit and original HyperFrames adaptation briefs. Start from the compact
+[index](skills/video-theme-library/assets/prompt-motion/INDEX.md) (visual-metaphor axes) or filter by
+scene role and ratio with `python scripts/motion_find.py --role explain --ratio 16:9`.
+Entries are references to adapt, not templates that were render-tested.
+
 | Command | Does |
 |---|---|
 | `video-studio doctor` | Checks Node ≥ 22, npx, the pinned HyperFrames build, its headless Chromium, ffmpeg/ffprobe, the Inter font, the station and `station.json`. `--check-updates` only *reports* a newer HyperFrames. |
@@ -60,7 +66,7 @@ warn that these two sources are omitted until a safe reader is verified.
 | `video-studio preview` | Opens the HyperFrames preview studio for a project — with the *pinned* build, so what you inspect is what will render. |
 | `video-studio edit` | Cuts real footage: transcribe locally, pack the transcript into phrase-level markdown, then render an EDL with grade, overlays, subtitles and loudness normalisation. Transcript reuse checks a temporary source snapshot and ASR settings; each invocation copies the source to temp storage, including cache hits, so reuse adds disk I/O. Snapshotting stops with a clear error if the source is larger than half the free temp-volume space. Custom model paths are treated as unknown and bypass cache; a batch with colliding transcript names is rejected before outputs change. Legacy transcripts without cache metadata are transcribed again. Helpers distilled from `video-use` (MIT); can also drive a vendored upstream copy. |
 | `video-studio cleanup` | Inspects a local MP4, previews and applies a time-bounded ROI edit (`delogo`, blur, solid cover or full-frame crop), then verifies hashes, frame timing, audio payloads and geometry from a sidecar manifest. Runs on FFmpeg without HyperFrames or a station. |
-| `video-studio reference` | A reference video → frames with true PTS, contact sheets, a transcript from the original subtitles or local speech recognition, a rights record (`provenance.json`) and an asset audit; downloading is gated (by default it only prints the plan). |
+| `video-studio reference` | A reference video → frames with true PTS, contact sheets, a transcript from the original subtitles or local speech recognition, a rights record (`provenance.json`) and an asset audit; downloading is gated (by default it only prints the plan). The gate is procedural as well as a flag: a download only proceeds when the exact URL is named, a valid provenance record exists with approved rights and a written basis, and the target file is not already there. |
 | `video-studio export` / `import` | Zip a station and unpack it on another machine. `--personal` takes only project assets (`projects/*/assets`) plus the top-level folders you name with `--include`; scratch, cache, virtualenvs and git trees never enter the pack. `import` never overwrites unless you ask, and has `--dry-run`. |
 | `video-studio backup` / `migrate` / `update` | Zip the station; move an `embedded` station out of the repo; fast-forward the clone (never cleans). |
 | `video-studio uninstall` | Removes only what the installer put in place — the repo → station link, skills an older version copied (if unmodified), an unfilled `.env`, its own pre-commit hook — and moves them into the station journal instead of deleting. The station and every project stay. `--dry-run` shows the plan. |
