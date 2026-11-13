@@ -309,19 +309,29 @@ _URL_RE = re.compile(r"^https?://", re.I)
 #: ảnh cũ trong `img/`. Chỉ sống trong bộ nhớ giữa CLI và template — không bao giờ là một phần của spec ghi ra.
 USER_IMAGE_KEY = "_user_image"
 
+#: Số ảnh tối đa một cảnh `news`/`news-weekly`/`topstory` khai trong `images.json` (quá thì mã 2, không bỏ im lặng).
+MAX_SCENE_IMAGES = 6
+
 
 def _scene_image(images_path, key, value, base, project):
-    """Chuẩn hoá giá trị của MỘT cảnh thành đúng một ảnh: đường tuyệt đối hoặc URL `http(s)://`."""
+    """Chuẩn hoá giá trị của MỘT cảnh thành danh sách ảnh (đường tuyệt đối hoặc URL `http(s)://`).
+
+    `repo-today` chỉ nhận đúng một ảnh; `news`/`news-weekly`/`topstory` nhận 1..`MAX_SCENE_IMAGES`."""
     where = f"{images_path}: cảnh {key}"
     items = [value] if isinstance(value, str) else value
     if not isinstance(items, list):
-        raise ContractError(f"{where}: giá trị phải là chuỗi hoặc danh sách một chuỗi")
+        raise ContractError(f"{where}: giá trị phải là chuỗi hoặc danh sách chuỗi")
     if not items:
         raise ContractError(f"{where}: danh sách ảnh rỗng")
-    if len(items) > 1:
-        raise ContractError(f"{where}: template chỉ hiện một ảnh mỗi cảnh (nhận {len(items)}); "
+    if project == "repo-today" and len(items) > 1:
+        raise ContractError(f"{where}: repo-today chỉ hiện một ảnh mỗi cảnh (nhận {len(items)}); "
                             "chưa hỗ trợ nhiều ảnh mỗi cảnh")
-    rel = items[0]
+    if len(items) > MAX_SCENE_IMAGES:
+        raise ContractError(f"{where}: tối đa {MAX_SCENE_IMAGES} ảnh mỗi cảnh (nhận {len(items)})")
+    return [_one_image(where, rel, base, project) for rel in items]
+
+
+def _one_image(where, rel, base, project):
     if not isinstance(rel, str) or not rel.strip():
         raise ContractError(f"{where}: ảnh phải là chuỗi đường dẫn hoặc URL")
     if _URL_RE.match(rel):
@@ -341,7 +351,7 @@ def apply_images(data, images_path, project):
 
     Định dạng: `{"schema_version": 1, "scenes": {"1": "anh/a.png"}}` — khoá là số cảnh 1-based
     (chỉ chữ số ASCII, không số 0 đầu) trong danh sách cảnh của project (`scene_list_of`); giá trị là
-    MỘT ảnh, viết dạng chuỗi hoặc danh sách một chuỗi: ảnh cục bộ (đường tương đối neo vào thư mục
+    MỘT ảnh (chuỗi) hoặc danh sách ảnh (nhiều ảnh: không phải `repo-today`; hiện lần lượt theo thứ tự): ảnh cục bộ (đường tương đối neo vào thư mục
     chứa images.json, đường tuyệt đối và `..` được chấp nhận) hoặc URL `http(s)://` (trừ `repo-today`).
     Ảnh người dùng THAY toàn bộ ảnh/clip spec khai cho cảnh đó; cảnh không có trong file giữ nguyên.
     `repo-today`: `scene["hero_image"] = "img/s<n>_<tên>"` + `data["_image_files"]` (bước dựng chép
@@ -361,17 +371,19 @@ def apply_images(data, images_path, project):
         n = int(key)
         if n > len(targets):
             raise ContractError(f"{images_path}: cảnh {n} vượt số cảnh của spec ({len(targets)})")
-        img = _scene_image(images_path, n, value, base, project)
+        imgs = _scene_image(images_path, n, value, base, project)
         if not isinstance(targets[n - 1], dict):
             raise ContractError(f"spec: cảnh {n} phải là object")
         if project == "repo-today":
-            dst = f"img/s{n}_{os.path.basename(img)}"
-            files[dst] = img
+            dst = f"img/s{n}_{os.path.basename(imgs[0])}"
+            files[dst] = imgs[0]
             targets[n - 1]["hero_image"] = dst
         elif project == "topstory":
-            targets[n - 1]["media"] = [{"type": "image", "src": img}]
+            targets[n - 1]["media"] = [{"type": "image", "src": i} for i in imgs]
+            if len(imgs) > 1:
+                targets[n - 1][USER_IMAGE_KEY] = True      # template hiện đủ danh sách thay vì ảnh đầu
         else:
-            targets[n - 1]["images"] = [img]
+            targets[n - 1]["images"] = list(imgs)
             targets[n - 1][USER_IMAGE_KEY] = True
     if project == "repo-today":
         data["_image_files"] = files

@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="vi" data-resolution="landscape">
+<head><meta charset="UTF-8"/>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+<style>
+  :root{--ac1:#00f0ff;--ac2:#bd00ff;--ac3:#39ff7a;--ac4:#ffd166;
+        --tx:#eef3fb;--mut:#9db2d4;--bd:rgba(255,255,255,.14);--pan:#0e1730}
+  html,body{margin:0;width:1920px;height:1080px;overflow:hidden;font-family:__FONT__}
+  #master-root{width:1920px;height:1080px;position:relative;color:#eef3fb;
+    background:radial-gradient(1300px 760px at 75% 12%,#101a33 0%,#070d1c 55%,#04060a 100%)}
+  #master-root::before{content:"";position:absolute;inset:0;opacity:.5;pointer-events:none;
+    background-image:linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px),
+      linear-gradient(90deg,rgba(255,255,255,.05) 1px,transparent 1px);background-size:90px 90px}
+  .brand{position:absolute;top:54px;left:90px;display:flex;align-items:center;gap:16px;z-index:5}
+  .brand .mark{width:50px;height:50px;border-radius:50%;display:grid;place-items:center;
+    border:2px solid rgba(0,240,255,.5);
+    background:radial-gradient(circle,rgba(0,240,255,.22),rgba(189,0,255,.08) 55%,rgba(4,6,10,.95) 78%);
+    box-shadow:0 0 20px rgba(0,240,255,.4)}
+  .brand .n{font-size:30px;font-weight:800}.brand .n span{color:#00f0ff}
+  .epi{position:absolute;top:60px;right:90px;color:#8aa0c0;font-size:26px;z-index:5}
+  .seg{position:absolute;inset:0;opacity:0}
+  .cover{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+  .cover .big{font-size:192px;font-weight:800;letter-spacing:-1px;line-height:1.02}
+  .cover .big span{color:#00f0ff}
+  .cover .sub{font-size:52px;color:#9db2d4;margin-top:30px}
+  .cover .sub2{font-size:64px;color:#8aa6cc;font-weight:600;margin-top:24px}
+  .story .txt{position:absolute;left:90px;top:200px;width:860px;z-index:4}
+  .story .rank{display:inline-block;font-size:30px;font-weight:800;color:#04060a;background:linear-gradient(90deg,#00f0ff,#39ff7a);
+    border-radius:10px;padding:6px 22px;margin-bottom:28px}
+  .story .hl{font-size:62px;font-weight:800;line-height:1.16}
+  .story .bul{margin:36px 0 0;padding:0;list-style:none;font-size:31px;line-height:1.45;color:#c3d0e4}
+  .story .bul li{position:relative;margin-top:18px;padding-left:36px;opacity:0}
+  .story .bul li::before{content:"▸";position:absolute;left:0;color:#00f0ff}
+  .story .imgs{position:absolute;right:90px;top:200px;width:840px;height:680px;border-radius:24px;overflow:hidden;
+    box-shadow:0 30px 80px rgba(0,0,0,.55);background:#0a1122}
+  .story .imgs img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;opacity:0}
+  .story.noimg .txt{left:50%;transform:translateX(-50%);text-align:center;top:330px;width:1400px}
+  .wave{position:absolute;left:90px;bottom:120px;display:flex;gap:10px;z-index:4}
+  .wave i{width:10px;border-radius:6px;background:#00f0ff;opacity:.85;animation:eq 1.1s ease-in-out infinite}
+  .wave i:nth-child(2n){animation-delay:.2s;background:#bd00ff}.wave i:nth-child(3n){animation-delay:.45s}
+  @keyframes eq{0%,100%{height:18px}50%{height:64px}}
+  #prog{position:absolute;bottom:0;left:0;height:10px;width:0%;background:linear-gradient(90deg,#00f0ff,#bd00ff);z-index:9}
+
+  .imgs .diag{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    padding:34px;box-sizing:border-box;background:#0a1122}
+  .dtitle{font-size:30px;font-weight:800;color:var(--mut);margin:0 0 26px;text-align:center}
+  .dflow{display:flex;flex-direction:column;align-items:center;width:100%}
+  .dstep{width:92%;background:var(--pan);border:1px solid var(--bd);border-left:4px solid var(--ac1);
+    border-radius:16px;padding:16px 22px;font-size:27px;font-weight:700;text-align:left;color:var(--tx);opacity:0}
+  .dstep .dd{display:block;font-size:20px;font-weight:400;color:var(--mut);margin-top:4px}
+  .darr{font-size:24px;color:var(--ac1);line-height:1.15;margin:5px 0}
+  .dvs{display:flex;align-items:stretch;gap:18px;width:100%}
+  .dvsb{align-self:center;font-size:28px;font-weight:900;color:var(--ac4)}
+  .dcol{flex:1;border-radius:18px;padding:20px 22px;opacity:0;background:var(--pan);border:1px solid var(--bd)}
+  .dcol.dl{border-top:3px solid var(--ac1)}.dcol.dr{border-top:3px solid var(--ac2)}
+  .dcol h4{margin:0 0 12px;font-size:27px;color:var(--tx)}
+  .dcol ul{margin:0;padding-left:22px;font-size:23px;line-height:1.5;color:var(--mut)}
+  .dstack{display:flex;flex-direction:column-reverse;gap:13px;width:90%}
+  .dlayer{border-radius:14px;padding:15px 20px;font-size:25px;font-weight:700;text-align:center;color:var(--tx);
+    background:var(--pan);border:1px solid var(--bd);border-left:4px solid var(--ac1);opacity:0}
+  .dlayer:nth-child(2n){border-left-color:var(--ac2)}
+  .dlayer .dd{display:block;font-size:19px;font-weight:400;color:var(--mut)}
+  .dstats{display:grid;grid-template-columns:repeat(2,1fr);gap:20px;width:94%}
+  .dstat{border:1px solid var(--bd);border-radius:18px;padding:22px 16px;text-align:center;background:var(--pan);opacity:0}
+  .dstat b{display:block;font-size:52px;font-weight:900;color:var(--ac1);font-variant-numeric:tabular-nums}
+  .dstat span{font-size:21px;color:var(--mut)}
+
+</style></head>
+<body>
+<div id="master-root" data-composition-id="master" data-width="1920" data-height="1080" data-start="0" data-duration="5.4">
+  <div class="brand"><span class="mark"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#00f0ff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h12v14H6a2 2 0 0 1-2-2z"/><path d="M16 8h2.5a1.5 1.5 0 0 1 1.5 1.5V17a2 2 0 0 1-2 2"/><path d="M7 9h6M7 12.5h6M7 16h4"/></svg></span><div class="n">Tin <span>Ngay</span></div></div>
+  <div class="epi">Tuần 1 · r</div>
+  <div class="wave"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+  <section class="seg" id="seg-intro"><div class="cover"><div class="big">Tin <span>Ngay</span></div><div class="sub">Tin Ngay · Tuần 1</div><div class="sub2">r</div></div></section>
+  <section class="seg story" id="seg-1"><div class="txt"><span class="rank">TOP 1 TUẦN NÀY</span><div class="hl">Tin A</div><ul class="bul"><li id="seg-1-b0">Câu một</li><li id="seg-1-b1">Câu hai</li></ul></div><div class="imgs"><img id="seg-1-im0" src="img/s1_0.png"></div></section>
+  <section class="seg" id="seg-outro"><div class="cover"><div class="big">Hẹn gặp tuần sau!</div><div class="sub">Đọc bản tin đầy đủ kèm audio tại</div><div class="sub2">vi-du.example</div></div></section>
+  <div id="prog"></div>
+  <script>
+    window.__timelines=window.__timelines||{};
+    var m=gsap.timeline({paused:true});
+    m.fromTo("#prog",{width:"0%"},{width:"100%",duration:5.4,ease:"none"},0);
+    m.to("#seg-intro",{opacity:1,duration:0.45},0.00);
+    m.to("#seg-intro",{opacity:0,duration:0.45},1.35);
+    m.to("#seg-1-b0",{opacity:1,duration:0.45},2.80);
+    m.to("#seg-1-b1",{opacity:1,duration:0.45},3.20);
+    m.to("#seg-1-im0",{opacity:1,duration:0.6},2.10);
+    m.fromTo("#seg-1-im0",{scale:1.0},{scale:1.06,duration:1.20,ease:"none"},2.10);
+    m.to("#seg-1",{opacity:1,duration:0.45},1.80);
+    m.to("#seg-1",{opacity:0,duration:0.45},3.15);
+    m.to("#seg-outro",{opacity:1,duration:0.45},3.60);
+    window.__timelines["master"]=m;
+  </script>
+</div>
+</body></html>

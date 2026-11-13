@@ -291,8 +291,9 @@ def test_repo_today_single_local_image_is_unchanged_from_0_5_0(tmp_path, monkeyp
 
 
 @pytest.mark.parametrize("project,segments,sections,mapping,needle", [
-    ("repo-today", None, None, {"1": ["a.png", "b.png"]}, "một ảnh mỗi cảnh"),
-    ("news", [{}] * 3, None, {"1": ["a.png", "b.png"]}, "một ảnh mỗi cảnh"),
+    ("repo-today", None, None, {"1": ["a.png", "b.png"]}, "chỉ hiện một ảnh mỗi cảnh"),
+    ("news", [{}] * 3, None, {"1": ["a.png"] * 7}, "tối đa 6 ảnh"),
+    ("topstory", None, [{}] * 2, {"1": ["a.png", ""]}, "chuỗi"),
     ("repo-today", None, None, {"1": "https://x/y.png"}, "không nhận URL"),
     ("news", [{}] * 3, None, {"1": []}, "rỗng"),
     ("news", [{}] * 3, None, {"1": [1]}, "chuỗi"),
@@ -317,7 +318,7 @@ def test_render_help_describes_images_for_four_projects(capsys):
     assert render.main(["--help"]) == contract.OK
     out = " ".join(capsys.readouterr().out.split())
     assert "chỉ project repo-today" not in out
-    for w in ("news-weekly", "topstory", "một ảnh", "URL", "thay ảnh/clip"):
+    for w in ("news-weekly", "topstory", "ảnh", "URL", "thay ảnh/clip"):
         assert w in out
 
 
@@ -340,8 +341,31 @@ def test_the_segments_error_names_the_real_project(tmp_path):
 def test_the_many_images_error_does_not_cite_an_internal_ledger_code(tmp_path, monkeypatch, capsys):
     _png(tmp_path / "a.png")
     _png(tmp_path / "b.png")
-    rc, _ = _run(tmp_path, monkeypatch, "news", _spec(tmp_path, segments=[{}] * 2),
+    rc, _ = _run(tmp_path, monkeypatch, "repo-today", _spec(tmp_path),
                  _images(tmp_path, {"1": ["a.png", "b.png"]}))
     assert rc == contract.CONTRACT_ERROR
     err = last_json(capsys.readouterr().out)["error"]
     assert "chưa hỗ trợ nhiều ảnh mỗi cảnh" in err and "RQ-" not in err
+
+
+def test_news_scene_accepts_a_list_of_images_in_order(tmp_path, monkeypatch):
+    _png(tmp_path / "a.png")
+    _png(tmp_path / "b.jpg")
+    rc, seen = _run(tmp_path, monkeypatch, "news", _spec(tmp_path, segments=[{}] * 2),
+                    _images(tmp_path, {"1": ["a.png", "b.jpg", "https://x/y.png"]}))
+    assert rc == contract.OK
+    seg = seen["spec"]["daily_video"]["segments"][0]
+    assert seg["images"] == [_norm(tmp_path / "a.png"), _norm(tmp_path / "b.jpg"), "https://x/y.png"]
+    assert seg[spec_mod.USER_IMAGE_KEY] is True
+
+
+def test_topstory_section_gets_every_image_and_is_marked_only_when_many(tmp_path, monkeypatch):
+    _png(tmp_path / "a.png")
+    _png(tmp_path / "b.png")
+    rc, seen = _run(tmp_path, monkeypatch, "topstory", _spec(tmp_path, sections=[{}, {}]),
+                    _images(tmp_path, {"1": ["a.png", "b.png"], "2": "a.png"}))
+    assert rc == contract.OK
+    s1, s2 = seen["spec"]["top_story"]["sections"]
+    assert [m["src"] for m in s1["media"]] == [_norm(tmp_path / "a.png"), _norm(tmp_path / "b.png")]
+    assert s1[spec_mod.USER_IMAGE_KEY] is True
+    assert len(s2["media"]) == 1 and spec_mod.USER_IMAGE_KEY not in s2
