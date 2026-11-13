@@ -57,7 +57,7 @@ import soundfile as sf
 from voice_studio import av, engine, profiles
 
 from ... import _env, projects, render
-from ...contract import StationMissing
+from ...contract import ContractError, StationMissing
 from . import news_video as nv
 
 PROJECT = "topstory"
@@ -480,6 +480,60 @@ _SHORT_HEAD = """<!doctype html>
 
 # ------------------------------ build core --------------------------------
 
+#: Đuôi clip nhận ở `sec.media` (ảnh: `nv._LOCAL_EXTS`).
+_CLIP_EXTS = (".mp4", ".mov", ".webm", ".m4v", ".mkv", ".gif")
+
+
+def _media_items(sec):
+    items = sec.get("media") or []
+    if isinstance(items, (dict, str)):   # schema drift: object đơn/chuỗi -> bọc list
+        items = [items]
+    return items
+
+
+def _item_src(it):
+    if isinstance(it, str):
+        return it
+    if isinstance(it, dict):
+        return it.get("src") or it.get("path") or it.get("source") or it.get("url") or ""
+    return ""
+
+
+def _local_media(src, json_dir, exts, label):
+    """Đường file cục bộ AN TOÀN cho một mục `sec.media`, hoặc None (kèm `[warn]`).
+
+    Đuôi phải thuộc `exts`; không symlink/junction; đường TƯƠNG ĐỐI phải nằm trong thư mục spec (sau realpath,
+    chặn `../` và thành phần là symlink). Đường TUYỆT ĐỐI là lựa chọn rõ ràng của bên gọi nên được nhận."""
+    ext = os.path.splitext(src)[1].lower()
+    if ext not in exts:
+        print(f"    [warn] {label} bỏ: đuôi {ext or '(không đuôi)'} không nằm trong {'/'.join(exts)}")
+        return None
+    absolute = os.path.isabs(src)
+    p = src if absolute else os.path.join(json_dir, src)
+    if nv.is_link(p):
+        print(f"    [warn] {label} bỏ: symlink không được nhận")
+        return None
+    if not absolute and not nv.inside(p, json_dir):
+        print(f"    [warn] {label} bỏ: nằm ngoài thư mục spec")
+        return None
+    return p if os.path.isfile(p) else None
+
+
+def guard_media_sources(sections, json_dir, media_dir):
+    """Mã 2 nếu ảnh/clip người dùng nằm trong `<project>/media/` — bước dựng xoá/ghi đè thư mục này."""
+    for i, sec in enumerate(sections or [], 1):
+        if not isinstance(sec, dict):
+            continue
+        for it in _media_items(sec):
+            src = _item_src(it)
+            if not src or src.lower().startswith("http"):
+                continue
+            p = src if os.path.isabs(src) else os.path.join(json_dir, src)
+            if nv.inside(p, media_dir):
+                raise ContractError(
+                    f"media của phần {i} nằm trong thư mục media tạm của bước dựng (media/ của project): {p}. "
+                    "Bước dựng xoá và ghi lại thư mục này — chép sang nơi khác rồi trỏ tới đó")
+
 def _prep_media(sec, sec_i, json_dir, full_dur, tag):
     """Materialize one section's images/clips into the project folder.
     Returns [{"kind": "image"|"clip", "src": rel}]. Clips are ffmpeg-fit to the
@@ -511,17 +565,17 @@ def _prep_media(sec, sec_i, json_dir, full_dur, tag):
                         continue
                     out.append({"kind": "image", "src": "media/" + os.path.basename(got[0])})
                 else:
-                    p = src if os.path.isabs(src) else os.path.join(json_dir, src)
-                    if not os.path.isfile(p):
+                    p = _local_media(src, json_dir, nv._LOCAL_EXTS, f"ảnh s{sec_i}/{j}")
+                    if p is None:
                         continue
                     dst = os.path.join(media_dir, f"{tag}{sec_i}_{j}{os.path.splitext(p)[1]}")
-                    shutil.copy2(p, dst)
+                    shutil.copy2(p, dst, follow_symlinks=False)
                     out.append({"kind": "image", "src": "media/" + os.path.basename(dst)})
             else:  # clip / gif -> exact-fit muted mp4
                 src = it.get("src") or ""
-                p = src if os.path.isabs(src) else os.path.join(json_dir, src)
-                if not os.path.isfile(p):
-                    print(f"    [warn] clip missing: {src}")
+                p = _local_media(src, json_dir, _CLIP_EXTS, f"clip s{sec_i}/{j}")
+                if p is None:
+                    print(f"    [warn] clip missing or refused: {src}")
                     continue
                 dst = os.path.join(media_dir, f"{tag}{sec_i}_{j}.mp4")
                 _fit_clip(p, dst, full_dur)
@@ -782,9 +836,14 @@ def _build(story, blocks, total, head, json_dir, tag):
                     bd = _bullets_diagram(sec, max_n=3, max_len=56)
                     items = [_it(x) for x in (bd or {}).get("items", [])]
                 sa_div, n_children = nv.short_card_block(styp, items, sid)
-                smedia = _prep_media(sec, sec_i, json_dir, dur, tag)[:1]
+                smedia = _prep_media(sec, sec_i, json_dir, dur, tag)[:nv.image_limit(sec)]
+                if len(smedia) > 1 and any(m["kind"] != "image" for m in smedia):
+                    smedia = smedia[:1]
+                multi_img = len(smedia) > 1
                 img_div = ""
-                if smedia:
+                if multi_img:
+                    img_div = nv.hero_html(sid, [m["src"] for m in smedia])
+                elif smedia:
                     m0 = smedia[0]
                     if m0["kind"] == "clip":
                         img_div = (f'<div class="heroimg"><video id="{sid}-im" data-start="{t + 0.2:.2f}" '
@@ -810,7 +869,9 @@ def _build(story, blocks, total, head, json_dir, tag):
                 for j in range(n_children):
                     rt = t + 0.45 + j / n_it * wspan * 0.55   # thẻ đầu hiện SỚM, các thẻ sau rải theo nhịp
                     anim.append(f'    m.fromTo("#{sid}-b{j}",{{opacity:0,y:26}},{{opacity:1,y:0,duration:0.4,ease:"power2.out"}},{rt:.2f});')
-                if img_div and smedia[0]["kind"] == "image":
+                if multi_img:
+                    anim.extend(nv.hero_anim(sid, len(smedia), t, dur))
+                elif img_div and smedia[0]["kind"] == "image":
                     anim.append(f'    m.to("#{sid}-im",{{opacity:1,duration:0.45}},{t + 0.25:.2f});')
                     anim.append(f'    m.fromTo("#{sid}-im",{{scale:1.0}},{{scale:1.06,duration:{max(1.0, dur):.2f},ease:"none"}},{t + 0.45:.2f});')
                 if t + dur < total - 0.1:
@@ -818,7 +879,7 @@ def _build(story, blocks, total, head, json_dir, tag):
                 _short_caps(blk, sec, t, dur, kcaps_html, anim, f"{sid}cap")
                 t += dur
                 continue
-            media = _prep_media(sec, sec_i, json_dir, dur, tag)[:1]  # v2: 1 ảnh hero liên quan nhất
+            media = _prep_media(sec, sec_i, json_dir, dur, tag)[:nv.image_limit(sec)]  # v2: 1 ảnh hero; phần ghép nhiều ảnh hiện đủ
             diag = sec.get("diagram")
             if tag == "S" and not diag:
                 diag = _bullets_diagram(sec)   # SHORT: ý chính -> fill-bullet SmartArt (thay bullet text trơn)
@@ -1014,6 +1075,7 @@ def make_long(story, out_path, model, prompt, json_dir):
     if not sections:
         raise ValueError("top_story.sections is empty")
     media_dir = os.path.join(_proj(), "media")
+    guard_media_sources(sections, json_dir, media_dir)     # TRƯỚC rmtree: nguồn trong media/ sẽ bị xoá
     if os.path.isdir(media_dir):
         shutil.rmtree(media_dir, ignore_errors=True)
 
@@ -1070,6 +1132,7 @@ def make_short(story, out_path, model, prompt, json_dir):
     print("  [short] synthesizing narration ...", flush=True)
     blocks = []
     media_dir = os.path.join(_proj(), "media")
+    guard_media_sources(sections, json_dir, media_dir)
     os.makedirs(media_dir, exist_ok=True)
     headline_kw = (story.get("image_query") or story.get("headline") or "technology").strip()
     intro = story.get("intro_short") or f"{story.get('headline', '')}. Đây là tin AI nóng nhất hôm nay."
@@ -1085,7 +1148,7 @@ def make_short(story, out_path, model, prompt, json_dir):
         med = sec.get("media") or []
         if isinstance(med, (dict, str)):  # schema drift: object đơn/chuỗi -> bọc list
             med = [med]
-        slim["media"] = med[:1]
+        slim["media"] = med[:nv.image_limit(sec)]
         # GIỮ diagram: section `stats` -> stat-card số to (escbase); type khác -> fill-bullet từ points.
         # FRAME-FILL: section KHÔNG có ảnh -> tải 1 ảnh B-ROLL (Openverse) lấp khung, tránh ô trống.
         # Openverse tìm theo TIẾNG ANH: rút token latin (entity) từ headline/title + fallback generic.
