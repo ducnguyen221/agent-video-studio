@@ -166,5 +166,5 @@ def test_url_branch_keeps_the_12_megabyte_read_cap(news, tmp_path, monkeypatch):
             return False
 
     monkeypatch.setattr(news.urllib.request, "urlopen", lambda req, timeout=0: R())
-    assert news._download_images(["http://127.0.0.1/x.png"], str(tmp_path / "d"), 1) == ["img/s1_0.png"]
+    assert news._download_images(["https://img.example.invalid/x.png"], str(tmp_path / "d"), 1) == ["img/s1_0.png"]
     assert seen["n"] == 12_000_000

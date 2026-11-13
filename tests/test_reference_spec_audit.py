@@ -199,3 +199,22 @@ def test_cli_project_and_spec_together_merge_findings(tmp_path, capsys):
     rc, payload, _ = _run(["audit", "--project", str(proj), "--spec", spec, "--json"], capsys)
     paths = [f["path"] for f in payload["findings"]]
     assert rc == 2 and "assets/hero.png" in paths and "proj/source/reference.mp4" in paths
+
+
+def test_unc_path_is_never_probed(tmp_path, monkeypatch):
+    """Bảo mật: chuỗi UNC không được đưa vào `os.path.isfile` (SMB kết nối ra ngoài, lộ NTLM)."""
+    proj = _project(tmp_path)
+    probed = []
+    real = os.path.isfile
+    monkeypatch.setattr(os.path, "isfile", lambda p: probed.append(p) or real(p))
+    spec = _spec(tmp_path, {"a": chr(92) * 2 + "host" + chr(92) + "share" + chr(92) + "a.png", "b": "//host/share/a.png"})
+    spec_audit.audit_spec(spec, str(proj))
+    assert not any(str(p).startswith((chr(92) * 2, "//")) for p in probed)
+
+
+def test_deeply_nested_json_is_a_contract_error_not_a_traceback(tmp_path):
+    proj = _project(tmp_path)
+    p = tmp_path / "deep.json"
+    p.write_text("[" * 100000 + "]" * 100000, encoding="utf-8")
+    with pytest.raises(ContractError):
+        spec_audit.audit_spec(str(p), str(proj))

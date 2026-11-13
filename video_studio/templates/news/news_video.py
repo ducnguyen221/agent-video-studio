@@ -22,7 +22,9 @@ import difflib
 import json
 import os
 import re
+import ipaddress
 import shutil
+import socket
 import urllib.parse
 import urllib.request
 
@@ -779,6 +781,29 @@ def guard_user_images(segments, img_dir):
                     "Bước dựng xoá và ghi lại thư mục này — chép ảnh sang nơi khác rồi trỏ images.json tới đó")
 
 
+def _public_http_url(u):
+    """True nếu `u` là URL http(s) tới máy công khai. Chặn `file:`, loopback, mạng riêng, link-local (SSRF).
+
+    Tên máy không phân giải được thì cho qua (để `urlopen` tự báo lỗi); chưa chống DNS rebinding."""
+    try:
+        parts = urllib.parse.urlsplit(u)
+        host = (parts.hostname or "").strip().lower()
+    except ValueError:
+        return False
+    if parts.scheme not in ("http", "https") or not host:
+        return False
+    if host == "localhost" or host.endswith((".localhost", ".local", ".internal")):
+        return False
+    try:
+        addrs = [ipaddress.ip_address(host)]
+    except ValueError:
+        try:
+            addrs = [ipaddress.ip_address(i[4][0]) for i in socket.getaddrinfo(host, None)]
+        except (OSError, ValueError):
+            return True
+    return all(a.is_global for a in addrs)
+
+
 def _download_images(urls, dest_dir, seg_idx, max_n=3):
     """Best-effort download of segment images. Returns project-relative paths.
 
@@ -808,10 +833,17 @@ def _download_images(urls, dest_dir, seg_idx, max_n=3):
                 out.append(f"img/{os.path.basename(fp)}")
                 print(f"    image s{seg_idx}_{j} ok (cục bộ)")
                 continue
+            if not (isinstance(u, str) and _public_http_url(u)):
+                print(f"    [warn] image {seg_idx}/{j} bỏ: chỉ nhận URL http(s) tới máy công khai")
+                continue
             req = urllib.request.Request(u, headers={
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
                 "Accept": "image/*,*/*;q=0.8"})
             with urllib.request.urlopen(req, timeout=20) as r:
+                final = getattr(r, "geturl", lambda: u)()
+                if isinstance(final, str) and not _public_http_url(final):
+                    print(f"    [warn] image {seg_idx}/{j} bỏ: chuyển hướng tới máy không công khai")
+                    continue
                 ct = (r.headers.get("Content-Type") or "").lower()
                 data = r.read(IMAGE_MAX_BYTES)
             if len(data) < 4000:

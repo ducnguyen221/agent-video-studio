@@ -62,7 +62,7 @@ def audit_spec(spec_path, project_dir, assets_dir=None):
     try:
         with open(spec_path, encoding="utf-8-sig") as f:
             data = json.load(f)
-    except (OSError, ValueError) as exc:
+    except (OSError, ValueError, RecursionError) as exc:
         raise ContractError(f"--spec không đọc được như JSON: {exc}") from None
 
     roots = [os.path.realpath(assets), *(os.path.realpath(d) for d in REPO_TEMPLATE_DIRS)]
@@ -71,7 +71,7 @@ def audit_spec(spec_path, project_dir, assets_dir=None):
     for n, (value, ptr) in enumerate(_strings(data)):
         if n >= MAX_STRINGS:
             raise ContractError(f"spec có hơn {MAX_STRINGS} chuỗi")
-        if not value.strip() or len(value) > MAX_STRING or "\x00" in value or "\n" in value or "://" in value \
+        if not value.strip() or len(value) > MAX_STRING or "\x00" in value or "\n" in value or "://" in value or value.startswith((chr(92) * 2, "//")) \
                 or value.lower().startswith("data:"):
             continue
         hit = None
