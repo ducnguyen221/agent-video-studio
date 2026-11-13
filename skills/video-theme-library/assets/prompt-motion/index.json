@@ -344,8 +344,7 @@
         "recommended_occupancy": 0.6048,
         "recommended_ratios": [
           "1:1",
-          "16:9",
-          "9:16"
+          "16:9"
         ],
         "recommended_duration_seconds": [
           6,
@@ -941,8 +940,7 @@
         "recommended_occupancy": 0.6048,
         "recommended_ratios": [
           "1:1",
-          "16:9",
-          "9:16"
+          "16:9"
         ],
         "recommended_duration_seconds": [
           6,
@@ -1132,7 +1130,6 @@
         "recommended_occupancy": 0.6048,
         "recommended_ratios": [
           "16:9",
-          "9:16",
           "1:1"
         ],
         "recommended_duration_seconds": [
@@ -1529,7 +1526,6 @@
         "recommended_occupancy": 0.6048,
         "recommended_ratios": [
           "16:9",
-          "9:16",
           "1:1"
         ],
         "recommended_duration_seconds": [
@@ -2093,8 +2089,7 @@
         "recommended_occupancy": 0.6048,
         "recommended_ratios": [
           "1:1",
-          "16:9",
-          "9:16"
+          "16:9"
         ],
         "recommended_duration_seconds": [
           6,
@@ -2293,7 +2288,6 @@
         "recommended_occupancy": 0.6048,
         "recommended_ratios": [
           "16:9",
-          "9:16",
           "1:1"
         ],
         "recommended_duration_seconds": [
@@ -2475,7 +2469,6 @@
         "recommended_occupancy": 0.6048,
         "recommended_ratios": [
           "16:9",
-          "9:16",
           "1:1"
         ],
         "recommended_duration_seconds": [
@@ -2653,7 +2646,6 @@
         "recommended_occupancy": 0.6048,
         "recommended_ratios": [
           "16:9",
-          "9:16",
           "1:1"
         ],
         "recommended_duration_seconds": [
@@ -2835,7 +2827,6 @@
         "recommended_occupancy": 0.6048,
         "recommended_ratios": [
           "16:9",
-          "9:16",
           "1:1"
         ],
         "recommended_duration_seconds": [
@@ -3039,7 +3030,6 @@
         "recommended_occupancy": 0.6048,
         "recommended_ratios": [
           "16:9",
-          "9:16",
           "1:1"
         ],
         "recommended_duration_seconds": [
@@ -3236,7 +3226,6 @@
         "recommended_occupancy": 0.6048,
         "recommended_ratios": [
           "16:9",
-          "9:16",
           "1:1"
         ],
         "recommended_duration_seconds": [
@@ -3603,7 +3592,6 @@
         "recommended_occupancy": 0.6048,
         "recommended_ratios": [
           "16:9",
-          "9:16",
           "1:1"
         ],
         "recommended_duration_seconds": [
@@ -3795,7 +3783,6 @@
         "recommended_occupancy": 0.6048,
         "recommended_ratios": [
           "16:9",
-          "9:16",
           "1:1"
         ],
         "recommended_duration_seconds": [
@@ -4526,7 +4513,6 @@
         "recommended_occupancy": 0.6048,
         "recommended_ratios": [
           "16:9",
-          "9:16",
           "1:1"
         ],
         "recommended_duration_seconds": [
@@ -4894,7 +4880,6 @@
         "recommended_occupancy": 0.6048,
         "recommended_ratios": [
           "16:9",
-          "9:16",
           "1:1"
         ],
         "recommended_duration_seconds": [
@@ -5660,7 +5645,6 @@
         "recommended_occupancy": 0.6048,
         "recommended_ratios": [
           "16:9",
-          "9:16",
           "1:1"
         ],
         "recommended_duration_seconds": [
@@ -6207,7 +6191,6 @@
         "recommended_occupancy": 0.6048,
         "recommended_ratios": [
           "16:9",
-          "9:16",
           "1:1"
         ],
         "recommended_duration_seconds": [
@@ -6972,7 +6955,6 @@
         "recommended_occupancy": 0.6048,
         "recommended_ratios": [
           "16:9",
-          "9:16",
           "1:1"
         ],
         "recommended_duration_seconds": [
@@ -7162,7 +7144,6 @@
         "recommended_occupancy": 0.6048,
         "recommended_ratios": [
           "16:9",
-          "9:16",
           "1:1"
         ],
         "recommended_duration_seconds": [
@@ -7362,7 +7343,6 @@
         "recommended_occupancy": 0.6048,
         "recommended_ratios": [
           "16:9",
-          "9:16",
           "1:1"
         ],
         "recommended_duration_seconds": [
@@ -7554,8 +7534,7 @@
         "recommended_occupancy": 0.6048,
         "recommended_ratios": [
           "1:1",
-          "16:9",
-          "9:16"
+          "16:9"
         ],
         "recommended_duration_seconds": [
           6,
@@ -7741,7 +7720,6 @@
         "recommended_occupancy": 0.6048,
         "recommended_ratios": [
           "16:9",
-          "9:16",
           "1:1"
         ],
         "recommended_duration_seconds": [
@@ -8114,7 +8092,6 @@
         "recommended_occupancy": 0.6048,
         "recommended_ratios": [
           "16:9",
-          "9:16",
           "1:1"
         ],
         "recommended_duration_seconds": [
@@ -8314,8 +8291,7 @@
         "recommended_occupancy": 0.6048,
         "recommended_ratios": [
           "1:1",
-          "16:9",
-          "9:16"
+          "16:9"
         ],
         "recommended_duration_seconds": [
           6,
@@ -10208,7 +10184,6 @@
         "recommended_occupancy": 0.6048,
         "recommended_ratios": [
           "16:9",
-          "9:16",
           "1:1"
         ],
         "recommended_duration_seconds": [
@@ -11003,7 +10978,6 @@
         "recommended_occupancy": 0.6048,
         "recommended_ratios": [
           "16:9",
-          "9:16",
           "1:1"
         ],
         "recommended_duration_seconds": [
@@ -12292,7 +12266,6 @@
         "recommended_occupancy": 0.6048,
         "recommended_ratios": [
           "16:9",
-          "9:16",
           "1:1"
         ],
         "recommended_duration_seconds": [
@@ -13658,7 +13631,6 @@
         "recommended_occupancy": 0.6048,
         "recommended_ratios": [
           "16:9",
-          "9:16",
           "1:1"
         ],
         "recommended_duration_seconds": [
@@ -14034,7 +14006,6 @@
         "recommended_occupancy": 0.6048,
         "recommended_ratios": [
           "16:9",
-          "9:16",
           "1:1"
         ],
         "recommended_duration_seconds": [
@@ -14588,7 +14559,6 @@
         "recommended_occupancy": 0.6048,
         "recommended_ratios": [
           "16:9",
-          "9:16",
           "1:1"
         ],
         "recommended_duration_seconds": [
@@ -14966,7 +14936,6 @@
         "recommended_occupancy": 0.6048,
         "recommended_ratios": [
           "16:9",
-          "9:16",
           "1:1"
         ],
         "recommended_duration_seconds": [
@@ -15155,7 +15124,6 @@
         "recommended_occupancy": 0.6048,
         "recommended_ratios": [
           "16:9",
-          "9:16",
           "1:1"
         ],
         "recommended_duration_seconds": [
@@ -15526,7 +15494,6 @@
         "recommended_occupancy": 0.6048,
         "recommended_ratios": [
           "16:9",
-          "9:16",
           "1:1"
         ],
         "recommended_duration_seconds": [
@@ -15726,7 +15693,6 @@
         "recommended_occupancy": 0.6048,
         "recommended_ratios": [
           "16:9",
-          "9:16",
           "1:1"
         ],
         "recommended_duration_seconds": [
@@ -16278,7 +16244,6 @@
         "recommended_occupancy": 0.6048,
         "recommended_ratios": [
           "16:9",
-          "9:16",
           "1:1"
         ],
         "recommended_duration_seconds": [
@@ -17014,7 +16979,6 @@
         "recommended_occupancy": 0.6048,
         "recommended_ratios": [
           "16:9",
-          "9:16",
           "1:1"
         ],
         "recommended_duration_seconds": [
@@ -17205,7 +17169,6 @@
         "recommended_occupancy": 0.6048,
         "recommended_ratios": [
           "16:9",
-          "9:16",
           "1:1"
         ],
         "recommended_duration_seconds": [
@@ -17569,7 +17532,6 @@
         "recommended_occupancy": 0.6048,
         "recommended_ratios": [
           "16:9",
-          "9:16",
           "1:1"
         ],
         "recommended_duration_seconds": [
@@ -18118,7 +18080,6 @@
         "recommended_occupancy": 0.6048,
         "recommended_ratios": [
           "16:9",
-          "9:16",
           "1:1"
         ],
         "recommended_duration_seconds": [
@@ -18486,7 +18447,6 @@
         "recommended_occupancy": 0.6048,
         "recommended_ratios": [
           "16:9",
-          "9:16",
           "1:1"
         ],
         "recommended_duration_seconds": [
@@ -18679,7 +18639,6 @@
         "recommended_occupancy": 0.6048,
         "recommended_ratios": [
           "16:9",
-          "9:16",
           "1:1"
         ],
         "recommended_duration_seconds": [
@@ -18865,7 +18824,6 @@
         "recommended_occupancy": 0.6048,
         "recommended_ratios": [
           "16:9",
-          "9:16",
           "1:1"
         ],
         "recommended_duration_seconds": [
@@ -19233,7 +19191,6 @@
         "recommended_occupancy": 0.6048,
         "recommended_ratios": [
           "16:9",
-          "9:16",
           "1:1"
         ],
         "recommended_duration_seconds": [
@@ -19433,8 +19390,7 @@
         "recommended_occupancy": 0.6048,
         "recommended_ratios": [
           "1:1",
-          "16:9",
-          "9:16"
+          "16:9"
         ],
         "recommended_duration_seconds": [
           6,
@@ -19631,7 +19587,6 @@
         "recommended_occupancy": 0.6048,
         "recommended_ratios": [
           "16:9",
-          "9:16",
           "1:1"
         ],
         "recommended_duration_seconds": [
@@ -19809,7 +19764,6 @@
         "recommended_occupancy": 0.6048,
         "recommended_ratios": [
           "16:9",
-          "9:16",
           "1:1"
         ],
         "recommended_duration_seconds": [
@@ -20184,7 +20138,6 @@
         "recommended_occupancy": 0.6048,
         "recommended_ratios": [
           "16:9",
-          "9:16",
           "1:1"
         ],
         "recommended_duration_seconds": [
@@ -20561,7 +20514,6 @@
         "recommended_occupancy": 0.6048,
         "recommended_ratios": [
           "16:9",
-          "9:16",
           "1:1"
         ],
         "recommended_duration_seconds": [
@@ -20770,7 +20722,6 @@
         "recommended_occupancy": 0.6048,
         "recommended_ratios": [
           "16:9",
-          "9:16",
           "1:1"
         ],
         "recommended_duration_seconds": [
@@ -20963,7 +20914,6 @@
         "recommended_occupancy": 0.6048,
         "recommended_ratios": [
           "16:9",
-          "9:16",
           "1:1"
         ],
         "recommended_duration_seconds": [
@@ -21904,7 +21854,6 @@
         "recommended_occupancy": 0.6048,
         "recommended_ratios": [
           "16:9",
-          "9:16",
           "1:1"
         ],
         "recommended_duration_seconds": [
@@ -22088,8 +22037,7 @@
         "recommended_occupancy": 0.6048,
         "recommended_ratios": [
           "1:1",
-          "16:9",
-          "9:16"
+          "16:9"
         ],
         "recommended_duration_seconds": [
           6,
@@ -22295,7 +22243,6 @@
         "recommended_occupancy": 0.6048,
         "recommended_ratios": [
           "16:9",
-          "9:16",
           "1:1"
         ],
         "recommended_duration_seconds": [
@@ -22489,7 +22436,6 @@
         "recommended_occupancy": 0.6048,
         "recommended_ratios": [
           "16:9",
-          "9:16",
           "1:1"
         ],
         "recommended_duration_seconds": [
@@ -22672,7 +22618,6 @@
         "recommended_occupancy": 0.6048,
         "recommended_ratios": [
           "16:9",
-          "9:16",
           "1:1"
         ],
         "recommended_duration_seconds": [
@@ -23058,7 +23003,6 @@
         "recommended_occupancy": 0.6048,
         "recommended_ratios": [
           "16:9",
-          "9:16",
           "1:1"
         ],
         "recommended_duration_seconds": [
@@ -23998,7 +23942,6 @@
         "recommended_occupancy": 0.6048,
         "recommended_ratios": [
           "16:9",
-          "9:16",
           "1:1"
         ],
         "recommended_duration_seconds": [
@@ -24378,7 +24321,6 @@
         "recommended_occupancy": 0.6048,
         "recommended_ratios": [
           "16:9",
-          "9:16",
           "1:1"
         ],
         "recommended_duration_seconds": [
@@ -25148,7 +25090,6 @@
         "recommended_occupancy": 0.6048,
         "recommended_ratios": [
           "16:9",
-          "9:16",
           "1:1"
         ],
         "recommended_duration_seconds": [
@@ -25885,7 +25826,6 @@
         "recommended_occupancy": 0.6048,
         "recommended_ratios": [
           "16:9",
-          "9:16",
           "1:1"
         ],
         "recommended_duration_seconds": [
@@ -26079,7 +26019,6 @@
         "recommended_occupancy": 0.6048,
         "recommended_ratios": [
           "16:9",
-          "9:16",
           "1:1"
         ],
         "recommended_duration_seconds": [
@@ -26272,7 +26211,6 @@
         "recommended_occupancy": 0.6048,
         "recommended_ratios": [
           "16:9",
-          "9:16",
           "1:1"
         ],
         "recommended_duration_seconds": [
@@ -26451,7 +26389,6 @@
         "recommended_occupancy": 0.6048,
         "recommended_ratios": [
           "16:9",
-          "9:16",
           "1:1"
         ],
         "recommended_duration_seconds": [
@@ -27028,7 +26965,6 @@
         "recommended_occupancy": 0.6048,
         "recommended_ratios": [
           "16:9",
-          "9:16",
           "1:1"
         ],
         "recommended_duration_seconds": [
@@ -27586,7 +27522,6 @@
         "recommended_occupancy": 0.6048,
         "recommended_ratios": [
           "16:9",
-          "9:16",
           "1:1"
         ],
         "recommended_duration_seconds": [
@@ -27770,7 +27705,6 @@
         "recommended_occupancy": 0.6048,
         "recommended_ratios": [
           "16:9",
-          "9:16",
           "1:1"
         ],
         "recommended_duration_seconds": [
@@ -27967,7 +27901,6 @@
         "recommended_occupancy": 0.6048,
         "recommended_ratios": [
           "16:9",
-          "9:16",
           "1:1"
         ],
         "recommended_duration_seconds": [
@@ -28155,7 +28088,6 @@
         "recommended_occupancy": 0.6048,
         "recommended_ratios": [
           "16:9",
-          "9:16",
           "1:1"
         ],
         "recommended_duration_seconds": [
@@ -28336,7 +28268,6 @@
         "recommended_occupancy": 0.6048,
         "recommended_ratios": [
           "16:9",
-          "9:16",
           "1:1"
         ],
         "recommended_duration_seconds": [
@@ -28516,7 +28447,6 @@
         "recommended_occupancy": 0.6048,
         "recommended_ratios": [
           "16:9",
-          "9:16",
           "1:1"
         ],
         "recommended_duration_seconds": [
@@ -29062,7 +28992,6 @@
         "recommended_occupancy": 0.6048,
         "recommended_ratios": [
           "16:9",
-          "9:16",
           "1:1"
         ],
         "recommended_duration_seconds": [
@@ -29250,7 +29179,6 @@
         "recommended_occupancy": 0.6048,
         "recommended_ratios": [
           "16:9",
-          "9:16",
           "1:1"
         ],
         "recommended_duration_seconds": [
@@ -29444,7 +29372,6 @@
         "recommended_occupancy": 0.6048,
         "recommended_ratios": [
           "16:9",
-          "9:16",
           "1:1"
         ],
         "recommended_duration_seconds": [
@@ -30569,7 +30496,6 @@
         "recommended_occupancy": 0.6048,
         "recommended_ratios": [
           "16:9",
-          "9:16",
           "1:1"
         ],
         "recommended_duration_seconds": [
@@ -30939,7 +30865,6 @@
         "recommended_occupancy": 0.6048,
         "recommended_ratios": [
           "16:9",
-          "9:16",
           "1:1"
         ],
         "recommended_duration_seconds": [
@@ -31120,7 +31045,6 @@
         "recommended_occupancy": 0.6048,
         "recommended_ratios": [
           "16:9",
-          "9:16",
           "1:1"
         ],
         "recommended_duration_seconds": [
@@ -31306,7 +31230,6 @@
         "recommended_occupancy": 0.6048,
         "recommended_ratios": [
           "16:9",
-          "9:16",
           "1:1"
         ],
         "recommended_duration_seconds": [
@@ -31494,7 +31417,6 @@
         "recommended_occupancy": 0.6048,
         "recommended_ratios": [
           "16:9",
-          "9:16",
           "1:1"
         ],
         "recommended_duration_seconds": [
@@ -31863,7 +31785,6 @@
         "recommended_occupancy": 0.6048,
         "recommended_ratios": [
           "16:9",
-          "9:16",
           "1:1"
         ],
         "recommended_duration_seconds": [
@@ -32059,7 +31980,6 @@
         "recommended_occupancy": 0.6048,
         "recommended_ratios": [
           "16:9",
-          "9:16",
           "1:1"
         ],
         "recommended_duration_seconds": [
@@ -32447,7 +32367,6 @@
         "recommended_occupancy": 0.6048,
         "recommended_ratios": [
           "16:9",
-          "9:16",
           "1:1"
         ],
         "recommended_duration_seconds": [
@@ -33233,7 +33152,6 @@
         "recommended_occupancy": 0.6048,
         "recommended_ratios": [
           "16:9",
-          "9:16",
           "1:1"
         ],
         "recommended_duration_seconds": [
@@ -33633,7 +33551,6 @@
         "recommended_occupancy": 0.6048,
         "recommended_ratios": [
           "16:9",
-          "9:16",
           "1:1"
         ],
         "recommended_duration_seconds": [
@@ -33828,7 +33745,6 @@
         "recommended_occupancy": 0.6048,
         "recommended_ratios": [
           "16:9",
-          "9:16",
           "1:1"
         ],
         "recommended_duration_seconds": [
@@ -34193,7 +34109,6 @@
         "recommended_occupancy": 0.6048,
         "recommended_ratios": [
           "16:9",
-          "9:16",
           "1:1"
         ],
         "recommended_duration_seconds": [
@@ -34594,7 +34509,6 @@
         "recommended_occupancy": 0.6048,
         "recommended_ratios": [
           "16:9",
-          "9:16",
           "1:1"
         ],
         "recommended_duration_seconds": [
@@ -34777,7 +34691,6 @@
         "recommended_occupancy": 0.6048,
         "recommended_ratios": [
           "16:9",
-          "9:16",
           "1:1"
         ],
         "recommended_duration_seconds": [
@@ -35153,7 +35066,6 @@
         "recommended_occupancy": 0.6048,
         "recommended_ratios": [
           "16:9",
-          "9:16",
           "1:1"
         ],
         "recommended_duration_seconds": [
@@ -35338,7 +35250,6 @@
         "recommended_occupancy": 0.6048,
         "recommended_ratios": [
           "16:9",
-          "9:16",
           "1:1"
         ],
         "recommended_duration_seconds": [
@@ -35714,8 +35625,7 @@
         "recommended_occupancy": 0.6048,
         "recommended_ratios": [
           "1:1",
-          "16:9",
-          "9:16"
+          "16:9"
         ],
         "recommended_duration_seconds": [
           6,
@@ -36502,7 +36412,6 @@
         "recommended_occupancy": 0.6048,
         "recommended_ratios": [
           "16:9",
-          "9:16",
           "1:1"
         ],
         "recommended_duration_seconds": [
@@ -36680,8 +36589,7 @@
         "recommended_occupancy": 0.6048,
         "recommended_ratios": [
           "1:1",
-          "16:9",
-          "9:16"
+          "16:9"
         ],
         "recommended_duration_seconds": [
           6,
@@ -37456,7 +37364,6 @@
         "recommended_occupancy": 0.6048,
         "recommended_ratios": [
           "16:9",
-          "9:16",
           "1:1"
         ],
         "recommended_duration_seconds": [
@@ -37634,7 +37541,6 @@
         "recommended_occupancy": 0.6048,
         "recommended_ratios": [
           "16:9",
-          "9:16",
           "1:1"
         ],
         "recommended_duration_seconds": [
@@ -39692,7 +39598,6 @@
         "recommended_occupancy": 0.6048,
         "recommended_ratios": [
           "16:9",
-          "9:16",
           "1:1"
         ],
         "recommended_duration_seconds": [
@@ -39881,7 +39786,6 @@
         "recommended_occupancy": 0.6048,
         "recommended_ratios": [
           "16:9",
-          "9:16",
           "1:1"
         ],
         "recommended_duration_seconds": [
@@ -40654,7 +40558,6 @@
         "recommended_occupancy": 0.6048,
         "recommended_ratios": [
           "16:9",
-          "9:16",
           "1:1"
         ],
         "recommended_duration_seconds": [
@@ -40851,7 +40754,6 @@
         "recommended_occupancy": 0.6048,
         "recommended_ratios": [
           "16:9",
-          "9:16",
           "1:1"
         ],
         "recommended_duration_seconds": [
@@ -41043,7 +40945,6 @@
         "recommended_occupancy": 0.6048,
         "recommended_ratios": [
           "16:9",
-          "9:16",
           "1:1"
         ],
         "recommended_duration_seconds": [
@@ -41232,7 +41133,6 @@
         "recommended_occupancy": 0.6048,
         "recommended_ratios": [
           "16:9",
-          "9:16",
           "1:1"
         ],
         "recommended_duration_seconds": [
@@ -41413,7 +41313,6 @@
         "recommended_occupancy": 0.6048,
         "recommended_ratios": [
           "16:9",
-          "9:16",
           "1:1"
         ],
         "recommended_duration_seconds": [
@@ -42327,7 +42226,6 @@
         "recommended_occupancy": 0.6048,
         "recommended_ratios": [
           "16:9",
-          "9:16",
           "1:1"
         ],
         "recommended_duration_seconds": [
@@ -42685,7 +42583,6 @@
         "recommended_occupancy": 0.6048,
         "recommended_ratios": [
           "16:9",
-          "9:16",
           "1:1"
         ],
         "recommended_duration_seconds": [
@@ -42867,7 +42764,6 @@
         "recommended_occupancy": 0.6048,
         "recommended_ratios": [
           "16:9",
-          "9:16",
           "1:1"
         ],
         "recommended_duration_seconds": [
@@ -44540,7 +44436,6 @@
         "recommended_occupancy": 0.6048,
         "recommended_ratios": [
           "16:9",
-          "9:16",
           "1:1"
         ],
         "recommended_duration_seconds": [
@@ -45036,7 +44931,6 @@
         "primary_recommended_ratio": "16:9",
         "recommended_ratios": [
           "16:9",
-          "9:16",
           "1:1"
         ],
         "ratio_fit": {
@@ -45170,7 +45064,6 @@
         "primary_recommended_ratio": "16:9",
         "recommended_ratios": [
           "16:9",
-          "9:16",
           "1:1"
         ],
         "ratio_fit": {
