@@ -42,6 +42,7 @@ Prompt dựng trong mỗi entry do Sol viết mới bằng tiếng Việt, dựa
 - DOM/SVG phù hợp chữ, thẻ, mask, đường vector, diagram và phần lớn hiệu ứng giao diện. Canvas/WebGL chỉ khi chất liệu, số lượng điểm hoặc không gian 3D thực sự cần; redraw trực tiếp theo thời gian seek, không dựa tích lũy frame trước. Chỉ có 3D giả bằng CSS thì không tự nâng lên Three.js.
 - Đặt trạng thái đầu bằng `fromTo`. Không tween visibility/autoAlpha trên `.clip`; tween phần tử con. Không đặt CSS transform lên cùng phần tử bị GSAP tween x/y/scale.
 - Tham số hoá màu, text, dữ liệu và kích thước. Tải font/media cục bộ hợp lệ trước render. Không nhúng CDN hoặc tài sản nguồn chưa có quyền vào bản phân phối.
+- Khung dọc: xếp lại quan hệ, giảm panel, tăng cỡ chữ và chừa vùng phụ đề theo dự án; không crop screenshot có chữ. Khung vuông: gom một tiêu điểm, đưa nhãn phụ ra vành. Vùng đề xuất là hộp chuẩn hoá cần chỉnh theo canvas và nội dung thật, không phải bố cục đã QA mọi tỉ lệ.
 - Giữ trạng thái cuối đủ đọc; thường tối thiểu 0,8 giây sau chuyển động cuối theo skill motion-graphics. Thời lượng và nhịp cụ thể phải chốt theo nội dung thật.
 - Với overlay, nền trong suốt và kênh alpha cần đường xuất hỗ trợ alpha. Video MP4 thường không giữ alpha. Đừng gọi một motion là overlay chỉ vì nó nhỏ trong preview.
 

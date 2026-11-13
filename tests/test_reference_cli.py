@@ -285,12 +285,53 @@ def test_frames_and_tiles_cli_pass_absolute_out(monkeypatch, tmp_path, capsys):
 
 
 def test_init_race_on_existing_project_is_2(tmp_path, monkeypatch, capsys):
+    (tmp_path / "ref").mkdir()
+    real = os.mkdir
+
     def racing(path, *a, **k):
-        raise FileExistsError(path)
+        if os.path.basename(str(path)) == "demo":      # chỉ đúng lệnh `os.mkdir(project)`
+            raise FileExistsError(path)
+        return real(path, *a, **k)
 
     monkeypatch.setattr(os, "mkdir", racing)
     rc, payload, _ = init(tmp_path, capsys)
     assert rc == 2 and payload["code"] == 2
+    assert "đã có" in payload["error"]
+
+
+def test_init_race_after_mkdir_is_2_and_cleans_up(tmp_path, monkeypatch, capsys):
+    """Tiến trình khác tạo mục con giữa `mkdir(project)` và `makedirs`: mã 2, không traceback, không để dở."""
+    real = os.makedirs
+
+    def racing(path, *a, **k):
+        if str(path).endswith("transcripts"):
+            raise FileExistsError(17, "đã có", str(path))
+        return real(path, *a, **k)
+
+    monkeypatch.setattr(os, "makedirs", racing)
+    rc, payload, _ = init(tmp_path, capsys)
+    assert rc == 2 and payload["code"] == 2
+    assert "không tạo được project" in payload["error"]
+    assert not (tmp_path / "ref" / "demo").exists()
+
+
+@pytest.mark.parametrize("bad", ["demo.", "demo ", "demo. "])
+def test_init_name_windows_would_rewrite_is_2(tmp_path, capsys, bad):
+    rc, payload, _ = init(tmp_path, capsys, name=bad)
+    assert rc == 2 and payload["code"] == 2
+    assert not (tmp_path / "ref").exists() or not any((tmp_path / "ref").iterdir())
+
+
+def test_init_not_a_directory_message_names_the_right_thing(tmp_path, monkeypatch, capsys):
+    (tmp_path / "ref").write_text("tệp", encoding="utf-8")
+    rc, payload, _ = init(tmp_path, capsys)
+    assert rc == 2 and "--dir không phải thư mục" in payload["error"]
+    # không truyền --dir: gốc là <trạm>/reference, thông điệp không được đổ lỗi cho cờ không có
+    (tmp_path / "st").mkdir()
+    (tmp_path / "st" / "reference").write_text("tệp", encoding="utf-8")
+    monkeypatch.setattr(_env, "station_dir", lambda: str(tmp_path / "st"))
+    rc, payload, _ = run(["init", "--name", "demo", "--json"], capsys)
+    assert rc == 2 and "--dir" not in payload["error"] and "thư mục gốc project" in payload["error"]
 
 
 def test_init_leaves_nothing_when_a_template_is_missing(tmp_path, monkeypatch, capsys):

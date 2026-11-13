@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="vi" data-resolution="portrait">
+<head><meta charset="UTF-8"/>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+<style>
+  :root{--ac1:#00f0ff;--ac2:#bd00ff;--ac3:#39ff7a;--pan:#0e1730;
+        --bd:rgba(255,255,255,.14);--tx:#eaf2ff;--mut:#9db2d4}
+  html,body{margin:0;width:1080px;height:1920px;overflow:hidden;font-family:__FONT__}
+  #master-root{width:1080px;height:1920px;position:relative;color:#eef3fb;
+    background:radial-gradient(900px 1200px at 50% 8%,#101a33 0%,#070d1c 55%,#04060a 100%)}
+  .brand{position:absolute;top:64px;left:64px;display:flex;align-items:center;gap:14px;z-index:5}
+  .brand .mark{width:54px;height:54px;border-radius:50%;display:grid;place-items:center;
+    border:2px solid rgba(0,240,255,.5);
+    background:radial-gradient(circle,rgba(0,240,255,.22),rgba(189,0,255,.08) 55%,rgba(4,6,10,.95) 78%);
+    box-shadow:0 0 20px rgba(0,240,255,.4)}
+  .brand .n{font-size:34px;font-weight:800}.brand .n span{color:#00f0ff}
+  .epi{position:absolute;top:74px;right:64px;color:#8aa0c0;font-size:26px;z-index:5}
+  .site{position:absolute;bottom:54px;left:0;right:0;text-align:center;color:#67809f;font-size:28px;z-index:5}
+  .seg{position:absolute;inset:0;opacity:0}
+  .cover{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:0 70px}
+  .cover .big{font-size:108px;font-weight:800;letter-spacing:-2px;line-height:1.05}
+  .cover .big span{color:#00f0ff}
+  .cover .sub{font-size:44px;color:#9db2d4;margin-top:30px}
+  .cover .sub2{font-size:34px;color:#67809f;margin-top:16px}
+  .story .rank{position:absolute;top:220px;left:64px;font-size:34px;font-weight:800;color:#04060a;
+    background:linear-gradient(90deg,#00f0ff,#39ff7a);border-radius:12px;padding:8px 26px;z-index:4}
+  .story .hl{position:absolute;top:308px;left:64px;right:64px;font-size:60px;font-weight:800;line-height:1.16;z-index:4}
+  /* SHORT v3: SmartArt fill-bullet (TRÊN) + ẢNH lấp khung (DƯỚI) + caption to */
+  .story .content{position:absolute;left:64px;right:64px;top:466px;bottom:416px;display:flex;flex-direction:column;gap:34px;z-index:4}
+  .story .salist{display:flex;flex-direction:column;gap:18px;flex:0 0 auto}
+  .story .sacard{display:flex;align-items:center;gap:18px;background:#0e1730;border:1px solid rgba(255,255,255,.14);
+    border-left:6px solid #00f0ff;border-radius:20px;padding:20px 24px;opacity:0;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+  .story .sacard:nth-child(2n){border-left-color:#bd00ff}
+  .story .sacard:nth-child(3n){border-left-color:#39ff7a}
+  .story .san{flex:0 0 auto;width:56px;height:56px;border-radius:15px;display:flex;align-items:center;justify-content:center;
+    font-size:30px;font-weight:900;color:#04060a;background:linear-gradient(135deg,#00f0ff,#bd00ff)}
+  .story .sat{font-size:31px;font-weight:700;color:#eef3fb;line-height:1.24}
+  .story .statc{display:flex;flex-direction:column;align-items:flex-start;background:#0e1730;border:1px solid rgba(255,255,255,.14);
+    border-left:6px solid #39ff7a;border-radius:20px;padding:22px 28px;opacity:0;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+  .story .statc b{font-size:62px;font-weight:900;color:#00f0ff;line-height:1;font-variant-numeric:tabular-nums}
+  .story .statc span{font-size:27px;color:#9db2d4;margin-top:8px;line-height:1.25}
+  .cap .c .kw{color:#76859c}
+  .story .heroimg{position:relative;flex:1 1 0;min-height:0;border-radius:26px;overflow:hidden;
+    border:1px solid rgba(255,255,255,.14);box-shadow:0 24px 70px rgba(0,0,0,.55);background:#0a1122}
+  .story .heroimg img,.story .heroimg video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0}
+  .story .content.tpl-b .heroimg{order:1}.story .content.tpl-b .salist{order:2}
+  .story .content.tpl-c .heroimg{order:1;flex:1.7 1 0}.story .content.tpl-c .salist{order:2}
+  .story.noimg .content{justify-content:center;gap:30px}
+  .story.noimg .sacard{padding:30px 28px}.story.noimg .sat{font-size:37px}
+  .cap{position:absolute;left:0;right:0;bottom:150px;text-align:center;z-index:8}
+  .cap .c{position:absolute;left:50%;transform:translateX(-50%);bottom:0;opacity:0;max-width:960px;
+    background:rgba(7,9,15,.78);border:1px solid rgba(255,255,255,.14);border-radius:15px;color:#eaf2ff;
+    padding:18px 30px;font-size:40px;line-height:1.3;font-weight:600}
+  #prog{position:absolute;top:0;left:0;height:12px;width:0%;background:linear-gradient(90deg,#00f0ff,#bd00ff);z-index:9}
+
+  .sec .salist.tagp,.story .salist.tagp{flex-direction:row;flex-wrap:wrap;gap:16px;align-content:flex-start}
+  .sec .tag,.story .tag{font-size:30px;font-weight:700;color:var(--ac1);background:rgba(0,229,255,.08);
+    border:1px solid rgba(0,229,255,.4);border-radius:999px;padding:14px 28px;opacity:0}
+  .sec .tag:nth-child(3n),.story .tag:nth-child(3n){color:var(--ac2);border-color:rgba(167,139,250,.5);background:rgba(167,139,250,.10)}
+  .sec .tag:nth-child(3n+2),.story .tag:nth-child(3n+2){color:var(--ac3);border-color:rgba(57,255,122,.45);background:rgba(57,255,122,.08)}
+  .sec .salist.procp,.story .salist.procp{flex-direction:row;flex-wrap:wrap;align-items:center;gap:14px}
+  .sec .proc,.story .proc{display:flex;align-items:center;gap:12px;font-size:27px;font-weight:700;color:var(--tx);
+    background:var(--pan);border:1px solid var(--bd);border-radius:16px;padding:13px 22px;opacity:0}
+  .sec .proc i,.story .proc i{width:40px;height:40px;border-radius:11px;display:flex;align-items:center;justify-content:center;
+    font-style:normal;font-weight:900;color:#08121f;background:linear-gradient(135deg,var(--ac1),var(--ac2))}
+  .sec .proc:not(:last-child)::after,.story .proc:not(:last-child)::after{content:"→";color:var(--ac1);font-size:30px;margin-left:4px}
+  .sec .salist.barlist,.story .salist.barlist{gap:24px}
+  .sec .barr,.story .barr{display:flex;align-items:center;gap:18px;opacity:0}
+  .sec .barl,.story .barl{flex:0 0 36%;font-size:27px;font-weight:700;color:var(--tx);line-height:1.2}
+  .sec .bart,.story .bart{flex:1 1 0;height:28px;border-radius:999px;background:var(--pan);border:1px solid var(--bd);overflow:hidden}
+  .sec .bart i,.story .bart i{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,var(--ac1),var(--ac2))}
+  .sec .barv,.story .barv{flex:0 0 auto;font-size:27px;font-weight:800;color:var(--ac1);font-variant-numeric:tabular-nums}
+  .sec .quotec,.story .quotec{font-size:46px;font-weight:800;line-height:1.32;color:var(--tx);border-left:8px solid var(--ac1);
+    padding:8px 0 8px 34px;opacity:0}
+  .sec .quotec span,.story .quotec span{display:block;font-size:28px;font-weight:600;color:var(--mut);margin-top:18px}
+  .sec .bignum,.story .bignum{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;flex:1 1 0;opacity:0}
+  .sec .bignum b,.story .bignum b{font-size:188px;font-weight:900;color:var(--ac1);line-height:.9;font-variant-numeric:tabular-nums}
+  .sec .bignum span,.story .bignum span{font-size:38px;color:var(--mut);margin-top:24px;max-width:80%}
+  /* escbase warning-chips: chip hổ phách cho lưu ý/cạm bẫy */
+  .sec .salist.warnp,.story .salist.warnp{flex-direction:row;flex-wrap:wrap;gap:16px;align-content:flex-start}
+  .sec .warnc,.story .warnc{font-size:29px;font-weight:700;color:#FFC857;background:rgba(255,200,87,.10);
+    border:1px solid rgba(255,200,87,.45);border-radius:999px;padding:14px 26px;opacity:0}
+  /* escbase verdict-stamp: card chốt glow xanh (match cả outro .cover) */
+  .sec .verdictc,.story .verdictc,.cover .verdictc{align-self:center;text-align:center;padding:34px 54px;border-radius:24px;opacity:0;
+    background:rgba(0,230,118,.08);border:1.5px solid rgba(0,230,118,.55);box-shadow:0 0 46px rgba(0,230,118,.22)}
+  .cover .verdictc{display:inline-block;margin-left:auto;margin-right:auto}
+  .sec .verdictc b,.story .verdictc b,.cover .verdictc b{display:block;font-size:58px;font-weight:900;line-height:1.15;
+    background:linear-gradient(90deg,#7CFFB2,var(--ac1));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .sec .verdictc span,.story .verdictc span,.cover .verdictc span{display:block;font-size:27px;color:var(--mut);margin-top:14px}
+  .cap .c .kw.hl{font-weight:800}
+  /* escbase hook-orb-badge: avatar repo trong orb glow + badge vàng nổi (cover) */
+  .cover .hookwrap{position:relative;width:300px;height:300px;margin:0 auto 44px;opacity:0}
+  .cover .hookring{position:absolute;inset:-26px;border-radius:50%;border:1.5px solid rgba(0,229,255,.35);
+    box-shadow:0 0 60px rgba(0,229,255,.25), inset 0 0 40px rgba(0,229,255,.08)}
+  .cover .hookorb{position:absolute;inset:0;border-radius:50%;overflow:hidden;background:#0d1420;
+    border:2px solid rgba(255,255,255,.14);box-shadow:0 18px 60px rgba(0,0,0,.6)}
+  .cover .hookorb img{width:100%;height:100%;object-fit:cover}
+  .cover .hookbadge{position:absolute;top:-30px;right:-56px;width:150px;height:150px;border-radius:50%;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;transform:rotate(8deg);opacity:0;
+    background:linear-gradient(135deg,#FFC857,#E8A200);color:#1a1204;box-shadow:0 12px 40px rgba(255,200,87,.35)}
+  .cover .hookbadge b{font-size:46px;font-weight:900;line-height:1}
+  .cover .hookbadge span{font-size:20px;font-weight:800;letter-spacing:.06em;margin-top:6px}
+
+</style></head>
+<body>
+<div id="master-root" data-composition-id="master" data-width="1080" data-height="1920" data-start="0" data-duration="4.8">
+  <div class="brand"><span class="mark"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#00f0ff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h12v14H6a2 2 0 0 1-2-2z"/><path d="M16 8h2.5a1.5 1.5 0 0 1 1.5 1.5V17a2 2 0 0 1-2 2"/><path d="M7 9h6M7 12.5h6M7 16h4"/></svg></span><div class="n">Tin <span>Ngay</span></div></div>
+  <div class="epi">Tuần 1</div>
+  <div class="site">vi-du.example</div>
+  <section class="seg" id="seg-intro"><div class="cover"><div class="big">Tin <span>Ngay</span><br>Tuần 1</div><div class="sub">Tin Ngay</div><div class="sub2">r</div></div></section>
+  <section class="seg story" id="seg-1"><span class="rank">TOP 1</span><div class="hl">Tin A</div><div class="content tpl-a"><div class="salist"><div class="sacard" id="seg-1-b0"><span class="san">1</span><span class="sat">Câu một</span></div><div class="sacard" id="seg-1-b1"><span class="san">2</span><span class="sat">Câu hai</span></div></div><div class="heroimg"><img id="seg-1-im" src="img/s1_0.png"></div></div></section>
+  <section class="seg" id="seg-outro"><div class="cover"><div class="big">Đọc bản tin<br>đầy đủ</div><div class="sub">kèm audio + video chi tiết</div><div class="sub2">vi-du.example</div></div></section>
+  <div class="cap"><div class="c" id="seg-1capc0">Số 1.</div>
+  <div class="c" id="seg-1capc1">Tin A.</div>
+  <div class="c" id="seg-1capc2">Câu một.</div></div>
+  <div id="prog"></div>
+  <script>
+    window.__timelines=window.__timelines||{};
+    var m=gsap.timeline({paused:true});
+    m.fromTo("#prog",{width:"0%"},{width:"100%",duration:4.8,ease:"none"},0);
+    m.to("#seg-intro",{opacity:1,duration:0.4},0.00);
+    m.to("#seg-intro",{opacity:0,duration:0.4},1.20);
+    m.fromTo("#seg-1-b0",{opacity:0,y:26},{opacity:1,y:0,duration:0.4,ease:"power2.out"},2.05);
+    m.fromTo("#seg-1-b1",{opacity:0,y:26},{opacity:1,y:0,duration:0.4,ease:"power2.out"},2.33);
+    m.to("#seg-1-im",{opacity:1,duration:0.45},1.85);
+    m.fromTo("#seg-1-im",{scale:1.0},{scale:1.06,duration:1.60,ease:"none"},2.05);
+    m.to("#seg-1capc0",{opacity:1,duration:0.18},1.85);
+    m.to("#seg-1capc0",{opacity:0,duration:0.18},2.15);
+    m.to("#seg-1capc1",{opacity:1,duration:0.18},2.14);
+    m.to("#seg-1capc1",{opacity:0,duration:0.18},2.44);
+    m.to("#seg-1capc2",{opacity:1,duration:0.18},2.49);
+    m.to("#seg-1capc2",{opacity:0,duration:0.18},2.85);
+    m.to("#seg-1",{opacity:1,duration:0.4},1.60);
+    m.to("#seg-1",{opacity:0,duration:0.4},2.80);
+    m.to("#seg-outro",{opacity:1,duration:0.4},3.20);
+    window.__timelines["master"]=m;
+  </script>
+</div>
+</body></html>

@@ -285,13 +285,19 @@ def _require_live_source_matches(source, expected_hash, stage):
 def _transcript_dir(work_dir):
     work_path = os.path.abspath(work_dir)
     output_dir = os.path.join(work_path, "transcripts")
-    effective_work = os.path.normcase(os.path.realpath(work_path))
-    effective_output = os.path.normcase(os.path.realpath(output_dir))
-    try:
-        common = os.path.normcase(os.path.realpath(os.path.commonpath(
-            [effective_work, effective_output])))
-    except ValueError as exc:
-        raise ContractError("thư mục transcript nằm ngoài nơi làm việc đã chọn") from exc
+    # Hai luồng cùng tạo `transcripts` lần đầu: realpath trên đường đang được tạo dở có thể trả dạng
+    # khác (Windows) và làm commonpath lỗi ValueError. Trạng thái đó chỉ thoáng qua: thử lại có hạn.
+    for attempt in range(3):
+        effective_work = os.path.normcase(os.path.realpath(work_path))
+        effective_output = os.path.normcase(os.path.realpath(output_dir))
+        try:
+            common = os.path.normcase(os.path.realpath(os.path.commonpath(
+                [effective_work, effective_output])))
+            break
+        except ValueError as exc:
+            if attempt == 2:
+                raise ContractError("thư mục transcript nằm ngoài nơi làm việc đã chọn") from exc
+            time.sleep(0.01)
     if common != effective_work:
         raise ContractError("thư mục transcripts trỏ ra ngoài nơi làm việc đã chọn "
                             "qua symlink/junction; không ghi file")

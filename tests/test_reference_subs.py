@@ -518,3 +518,55 @@ def test_embedded_ffmpeg_exit_0_without_file_is_error_not_asr(env, monkeypatch):
         subs.transcribe(video, project)
     with pytest.raises(EngineError, match="luồng phụ đề nhúng #1"):
         subs.extract_embedded(video, str(tmp))
+
+
+# ------------------------------------------------- RQ-022: nhãn ngôn ngữ của luồng nhúng
+
+def test_embedded_language_mismatch_warns_and_records_real_language(env, monkeypatch, capsys):
+    video, project, tmp = env
+    _fake_ff(monkeypatch, _probe(("video", "h264", ""), ("subtitle", "subrip", "eng")))
+    subs.transcribe(video, project, language="ja")
+    err = capsys.readouterr().err
+    assert "cảnh báo" in err and "ja" in err and "eng" in err
+    t = _transcript(project)
+    assert t["_source_language"] == "eng"
+    assert t["language_code"] == "ja"          # giữ nguyên hợp đồng cũ: ngôn ngữ đã xin
+
+
+def test_embedded_language_match_is_silent_but_still_labelled(env, monkeypatch, capsys):
+    video, project, tmp = env
+    _fake_ff(monkeypatch, _probe(("video", "h264", ""), ("subtitle", "subrip", "vie")))
+    subs.transcribe(video, project, language="vi")
+    assert "cảnh báo" not in capsys.readouterr().err
+    assert _transcript(project)["_source_language"] == "vie"
+
+
+def test_embedded_auto_language_has_no_warning(env, monkeypatch, capsys):
+    video, project, tmp = env
+    _fake_ff(monkeypatch, _probe(("subtitle", "subrip", "eng")))
+    subs.transcribe(video, project, language="auto")
+    assert "cảnh báo" not in capsys.readouterr().err
+    assert _transcript(project)["_source_language"] == "eng"
+
+
+def test_embedded_stream_without_language_tag_warns_unknown(env, monkeypatch, capsys):
+    video, project, tmp = env
+    _fake_ff(monkeypatch, _probe(("subtitle", "subrip", "")))
+    subs.transcribe(video, project, language="vi")
+    assert "không ghi ngôn ngữ" in capsys.readouterr().err
+    assert _transcript(project)["_source_language"] is None
+
+
+def test_subs_file_and_sidecar_have_no_source_language(env):
+    video, project, tmp = env
+    _write(os.path.join(project, "source", "clip.srt"), SRT)
+    subs.transcribe(video, project)
+    assert "_source_language" not in _transcript(project)
+
+
+def test_unknown_video_input_reaches_the_subtitle_branch(env):
+    video, project, tmp = env
+    p = tmp / "reference.unknown_video"
+    p.write_bytes(b"x")
+    _write(os.path.join(project, "source", "reference.srt"), SRT)
+    assert subs.transcribe(str(p), project)["source"] == "subtitles:sidecar"

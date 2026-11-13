@@ -38,6 +38,7 @@ video-studio cleanup inspect --input input.mp4 --json
 video-studio doctor --json          # node ≥ 22, ffmpeg, Chromium, font, trạm
 video-studio init --station <trạm>  # dựng trạm (xem docs/WORKSPACE.md cho hai chế độ)
 video-studio render …               # spec JSON → video theo template
+video-studio render --project-dir <thư mục> --out <thư mục ra>   # project HyperFrames tự dựng: check --strict + render engine ghim
 video-studio narrate …              # video câm + lời dẫn → video có giọng
 video-studio preview --project …    # soi trên trình duyệt (chạy tới khi Ctrl+C)
 video-studio edit …                 # cắt footage quay thật
@@ -57,6 +58,10 @@ video-studio render --project topstory --input spec.json --out <thư mục> --js
 **`brand` là bắt buộc.** Thiếu nó là mã 2 chứ không phải một mặc định âm thầm: engine không mang
 sẵn tên hay tên miền của ai, nên "quên khai brand" không bao giờ ra một video mang danh tính của
 người khác.
+
+**Project tự dựng:** `render --project-dir DIR --out OUT` kiểm `check --strict` rồi render bằng engine
+ghim. Project chỉ gồm `index.html`, tệp tĩnh ở gốc và `assets/`; được chép sang thư mục tạm, không đi
+theo symlink/junction, và bị từ chối (mã 2) nếu có `.npmrc`, `package.json` hay `node_modules/`.
 
 Ảnh và clip khai bằng đường **tương đối so với file spec**. `--brand brand.json` để tách phần
 thương hiệu ra dùng lại cho nhiều số báo.
@@ -116,6 +121,32 @@ video-studio edit --footage … --out … --edl edl.json --build-subtitles   # d
 
 Không có `edl.json` thì lệnh **dừng ở bước gom cụm** và in bước tiếp theo: đọc `takes_packed.md`,
 chọn đoạn, viết EDL. Quy trình đầy đủ + luật cứng: skill `video-edit`.
+
+## G2. Đọc video mẫu: `reference`
+
+```
+video-studio reference init --name demo [--url U | --file F]    # dựng project + provenance.json
+video-studio reference frames --input V --at 1,5.5 --out DIR    # khung có PTS thật
+video-studio reference tiles --input V --every 2 --out DIR      # lưới khung (số ô khớp số khung ghi ra)
+video-studio reference transcribe --input V --project P         # phụ đề gốc, rồi ASR tại máy
+video-studio reference fetch --url U --allow-url U --project P  # mặc định chỉ in kế hoạch; thêm --go để tải
+video-studio reference audit --project P                        # tài sản với hồ sơ quyền
+video-studio reference audit --spec FILE                        # spec/EDL chỉ được trỏ tệp trong assets/
+```
+
+- `--name` là tên trần: không dấu ngăn, không ổ đĩa, không kết thúc bằng dấu chấm hoặc khoảng trắng
+  (Windows cắt chúng đi nên tên ghi ra lệch tên đã khai) — sai là mã 2.
+- `transcribe` ưu tiên phụ đề đưa tay, rồi phụ đề cạnh video, rồi luồng chữ nhúng. Khi lấy luồng nhúng,
+  transcript ghi `_source_language` (thẻ thật của luồng; `language_code` vẫn là điều đã xin). Không luồng nào
+  khớp `--language` thì lệnh vẫn dùng luồng chữ đầu tiên và **cảnh báo trên stderr**: đưa `--subs` nếu cần
+  đúng ngôn ngữ.
+- `audit --spec` đọc mọi chuỗi trong spec của `render` hay EDL của `edit`; chuỗi nào là tệp có thật mà nằm
+  ngoài `assets/` của project (hoặc template của repo) là một phát hiện, mã 2. Lệnh chỉ đọc, không mở tệp
+  đích; `..`, đường tuyệt đối và liên kết mềm đều bị bắt. Không có `--project` thì project là thư mục chứa spec.
+- Đuôi `.unknown_video` (yt-dlp đặt khi không biết đuôi) được `frames`, `tiles`, `transcribe` nhận như `fetch`;
+  ffprobe vẫn kiểm nội dung container.
+- Video mẫu có cổng quyền: chưa có phép tải thì giữ `rights_pending` và chỉ phân tích tệp của người dùng.
+  Chi tiết: `docs/reference-to-remix.md`.
 
 ## H. Biến môi trường
 

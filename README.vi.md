@@ -46,6 +46,12 @@ Trên Windows, CLI còn tìm từng tên tham khảo FFmpeg và kỹ thuật l�
 liệu gốc; không suy các công cụ đó đã cài. Hệ khác cảnh báo hai nguồn này bị bỏ khỏi kết quả cho
 đến khi đường đọc an toàn được kiểm chứng.
 
+Thư viện theme còn kèm thư viện tham chiếu **Prompt Motion**: 240 mẫu chuyển động có vai trò cảnh,
+độ hợp theo tỉ lệ khung và brief chuyển thể HyperFrames nguyên gốc. Bắt đầu từ
+[chỉ mục gọn](skills/video-theme-library/assets/prompt-motion/INDEX.md) (trục ẩn dụ hình) hoặc lọc theo
+vai trò và tỉ lệ bằng `python scripts/motion_find.py --role explain --ratio 16:9`.
+Các mẫu là tham chiếu để chuyển thể, không phải template đã kiểm bằng render.
+
 | Lệnh | Làm gì |
 |---|---|
 | `video-studio doctor` | Kiểm Node ≥ 22, npx, bản HyperFrames đang ghim, Chromium headless của nó, ffmpeg/ffprobe, font Inter, trạm và `station.json`. `--check-updates` chỉ *báo* bản HyperFrames mới. |
@@ -56,7 +62,7 @@ liệu gốc; không suy các công cụ đó đã cài. Hệ khác cảnh báo 
 | `video-studio preview` | Mở studio xem trước của HyperFrames cho một project — bằng **đúng bản đã ghim**, nên thứ bạn soi chính là thứ sẽ render. |
 | `video-studio edit` | Cắt footage quay thật: bóc lời tại máy, gom cụm thành markdown đọc được, rồi dựng theo EDL kèm chỉnh màu, overlay, phụ đề và chuẩn âm lượng. Cache kiểm tra snapshot tạm của bytes nguồn và cài đặt ASR; mỗi lượt đều chép source vào ổ tạm, kể cả cache hit, nên vẫn tốn I/O. Nếu source lớn hơn một nửa dung lượng trống của ổ tạm, lệnh dừng với lỗi rõ ràng. Model/đường dẫn weights tùy biến được xem là chưa rõ và không dùng cache; batch có tên transcript bị trùng sẽ bị từ chối trước khi đổi output. Transcript cũ chưa có metadata cache sẽ được bóc lại. Helper chưng cất từ `video-use` (MIT); cũng gọi được bản upstream đã cài ở trạm. |
 | `video-studio cleanup` | Đọc metadata video local, xem trước và áp dụng chỉnh sửa ROI theo thời gian (`delogo`, blur, che màu đặc hoặc crop cả khung); sau đó kiểm hash, timing, audio và geometry qua manifest. Dùng FFmpeg độc lập, không cần HyperFrames hay trạm. |
-| `video-studio reference` | video mẫu → khung có PTS thật, lưới khung, transcript từ phụ đề gốc hoặc bóc lời tại máy, hồ sơ quyền `provenance.json`, kiểm tài sản; tải có cổng (mặc định chỉ in kế hoạch). |
+| `video-studio reference` | video mẫu → khung có PTS thật, lưới khung, transcript từ phụ đề gốc hoặc bóc lời tại máy, hồ sơ quyền `provenance.json`, kiểm tài sản; tải có cổng (mặc định chỉ in kế hoạch). Cổng là thủ tục chứ không chỉ một cờ: chỉ tải khi đã nêu đích danh URL, có hồ sơ nguồn hợp lệ với quyền đã duyệt kèm căn cứ ghi rõ, và file đích chưa tồn tại. |
 | `video-studio export` / `import` | Đóng gói trạm thành zip và bung vào máy khác. `--personal` chỉ lấy tài sản của project (`projects/*/assets`) cộng đúng những thư mục bạn kể tên bằng `--include`; nháp, cache, venv và cây git không bao giờ vào gói. `import` mặc định **không đè**, có `--dry-run` và `--overwrite`. |
 | `video-studio backup` / `migrate` / `update` | Zip cả trạm; chuyển trạm `embedded` ra ngoài repo; cập nhật bản clone (không bao giờ xoá gì). |
 | `video-studio uninstall` | Chỉ gỡ thứ bộ cài đã đặt — liên kết repo → trạm, skill bản cũ đã chép (nếu chưa sửa), `.env` chưa điền, hook pre-commit của chính nó — và dời chúng vào nhật ký của trạm thay vì xoá. Trạm và mọi project giữ nguyên. `--dry-run` in kế hoạch. |

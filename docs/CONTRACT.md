@@ -246,19 +246,26 @@ Hai cờ đè lên spec, dùng khi một spec chạy cho nhiều kênh:
 Cờ `--images <images.json>` ghép ảnh của người dùng vào đúng cảnh của bốn project:
 `{"schema_version": 1, "scenes": {"1": "anh/a.png", "2": ["https://x/y.png"]}}` — khoá là số thứ tự **1-based**
 trong danh sách cảnh của project (`repo-today`: `scenes`; `news`/`news-weekly`: `segments`; `topstory`:
-`top_story.sections`); giá trị là **một ảnh** mỗi cảnh, viết dạng chuỗi hoặc danh sách một phần tử: ảnh cục bộ
+`top_story.sections`); giá trị là **một ảnh** (chuỗi, hoặc danh sách một phần tử — vẫn hợp lệ và dựng y như trước) hoặc **danh sách 2 đến 6
+ảnh** (không cho `repo-today`; hiện lần lượt theo thứ tự khai trong cảnh): ảnh cục bộ
 `.png`/`.jpg`/`.jpeg`/`.webp` (đường tương đối neo vào thư mục chứa `images.json`; đường tuyệt đối và `..` được
 chấp nhận) hoặc URL `http(s)://` (không cho `repo-today`). `schema_version` phải là 1 và không có khoá lạ cấp trên
 cùng. Ảnh người dùng **thay** ảnh mà spec khai cho cảnh đó (ở `topstory` thay cả clip của phần — clip chỉ có ở
-`topstory`) — template chỉ hiện một ảnh mỗi cảnh; cảnh
-không có trong `images.json` giữ nguyên spec. `repo-today` chép ảnh vào `img/s<số cảnh>_<tên>` và gán `hero_image`;
-`news`/`news-weekly` chép vào `img/s<đoạn>_0<đuôi>` (bản short dựng riêng cũng dùng ảnh này); `topstory` đưa ảnh vào
+`topstory`) — danh sách nhiều ảnh được hiện đủ, chia đều thời lượng cảnh (`news`/`news-weekly`: panel ảnh của bản
+long và ảnh lấp khung của bản short; `topstory`: panel của long và ảnh hero của short); cảnh khai một ảnh dựng đúng
+như trước, và cảnh KHÔNG đến từ `images.json` vẫn chỉ hiện ảnh đầu của spec; cảnh không có trong `images.json` giữ nguyên spec. `repo-today` chép ảnh vào `img/s<số cảnh>_<tên>` và gán `hero_image`;
+`news`/`news-weekly` chép vào `img/s<đoạn>_<thứ tự><đuôi>` (bản short dựng riêng cũng dùng các ảnh này); `topstory` đưa ảnh vào
 `media` của phần. URL được tải **từ máy dựng** lúc dựng theo cơ chế sẵn có của template: tải hỏng hoặc phản hồi không
 phải ảnh thì chỉ in một dòng cảnh báo `[warn]` và cảnh đó dựng không có ảnh (riêng bản short của `news` dùng ảnh lấp
 khung), không đổi mã thoát. File `images.json` thiếu hoặc hỏng, khoá không phải số
-nguyên ≥ 1, số cảnh vượt danh sách, ảnh cục bộ không tồn tại hoặc sai đuôi, danh sách rỗng, hơn một ảnh, phần tử
-không phải chuỗi, URL cho `repo-today`, hoặc spec thiếu/sai kiểu danh sách cảnh của project ⇒ mã 2, chưa tạo `--out`.
-Nhiều ảnh mỗi cảnh chưa hỗ trợ.
+nguyên ≥ 1, số cảnh vượt danh sách, ảnh cục bộ không tồn tại hoặc sai đuôi, danh sách rỗng, hơn 6 ảnh (hoặc hơn một
+ảnh với `repo-today`), phần tử không phải chuỗi, URL cho `repo-today`, hoặc spec thiếu/sai kiểu danh sách cảnh của
+project ⇒ mã 2, chưa tạo `--out`. Ảnh cục bộ của `news`/`news-weekly` (đường tuyệt đối) nằm trong thư mục ảnh tạm
+`img/` của project, và media của `topstory` nằm trong `media/` của project ⇒ mã 2 (bước dựng xoá thư mục đó trước khi
+chép; file nguồn không bị đụng tới). Ảnh cục bộ lớn hơn 12 MB chỉ bị cảnh báo `[warn]` (ảnh URL vẫn bị cắt ở
+12.000.000 byte); symlink bị bỏ kèm cảnh báo. Ở `topstory`, mục `media` cục bộ phải có đuôi ảnh
+(`.png/.jpg/.jpeg/.webp/.gif`) hoặc đuôi clip (`.mp4/.mov/.webm/.m4v/.mkv/.gif`), đường tương đối phải nằm trong
+thư mục chứa spec (đường tuyệt đối do người gọi chỉ định thì được nhận), nếu không chỉ bị bỏ kèm cảnh báo.
 
 Đường dẫn tương đối trong spec (ảnh, clip) neo vào **thư mục chứa spec**, không vào thư mục
 hiện hành — để `cd` ở đâu thì kết quả vẫn như nhau.

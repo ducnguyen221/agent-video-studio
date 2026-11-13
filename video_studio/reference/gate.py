@@ -49,6 +49,7 @@ PLAIN_FORMATS = frozenset(("mov", "mp4", "m4a", "3gp", "3g2", "mj2", "matroska",
                            "mpeg", "ogg", "asf", "mp3", "aac", "wav", "w64", "flac", "aiff"))
 _QUOTE_END = r"""(?=$|\s|[.,;:!?)\]}>»"'”’…—–])"""
 
+UNKNOWN_EXT = "unknown_video"   # yt-dlp tự đặt khi không biết đuôi
 PROVENANCE_FILE = "provenance.json"
 MAX_URL_LEN = 2048
 _LAST_LABEL_NUMERIC = re.compile(r"0x[0-9a-f]*|[0-9]+")
@@ -267,8 +268,13 @@ def save_provenance(project_dir, prov):
 # ----------------------------------------------------------- fetch gate
 
 def is_media_name(path):
-    """True nếu đuôi (không phân biệt hoa thường) là container video/âm thanh trong `MEDIA_EXTS`."""
-    return os.path.splitext(str(path))[1][1:].lower() in MEDIA_EXTS
+    """True nếu đuôi (không phân biệt hoa thường) là container video/âm thanh trong `MEDIA_EXTS`.
+
+    `unknown_video` là đuôi yt-dlp tự đặt cho `reference.*` khi không biết đuôi; `fetch` nhận nó nên các lệnh
+    đọc sau cũng phải nhận. Cổng nội dung (`require_plain_format`) vẫn chạy sau đó.
+    """
+    ext = os.path.splitext(str(path))[1][1:].lower()
+    return ext in MEDIA_EXTS or ext == UNKNOWN_EXT
 
 
 def require_media_file(path):

@@ -50,6 +50,8 @@ def _why_not_a_name(s):
         return "là đường tuyệt đối"
     if s.strip() in (".", ".."):
         return "là một thư mục, không phải tên file"
+    if s.endswith((".", " ")):
+        return "kết thúc bằng dấu chấm hoặc khoảng trắng (Windows cắt chúng đi nên tên ghi ra lệch tên đã khai)"
     return None
 
 

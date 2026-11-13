@@ -728,8 +728,8 @@ def test_interleaved_writers_with_mixed_generation_force_a_cache_miss(tmp_path, 
     b.start()
     b.join(timeout=5)
     a.join(timeout=5)
-    assert not a.is_alive() and not b.is_alive()
-    assert errors == []
+    alive = [t.name for t in (a, b) if t.is_alive()]
+    assert alive == [] and errors == [], (alive, errors)
 
     monkeypatch.setattr(model, "transcribe",
                         lambda wav, **kwargs: _Model.transcribe(model, wav, **kwargs))
@@ -737,3 +737,4 @@ def test_interleaved_writers_with_mixed_generation_force_a_cache_miss(tmp_path, 
     tr.transcribe_one(str(source), str(work), language="en")
     # The forced A-payload/B-payload/B-meta/A-meta schedule leaves a torn pair.
     assert model.calls == before + 1
+

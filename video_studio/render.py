@@ -24,7 +24,10 @@ RAM/handle lúc long chưa giải phóng hết — hỏng THOÁNG QUA, chạy l�
 import argparse
 import hashlib
 import os
+import shutil
+import stat
 import subprocess
+import tempfile
 import time
 
 from . import API_VERSION, __version__, _env, contract, spec as spec_mod, voice
@@ -54,7 +57,7 @@ TEMPLATES = {
 }
 
 __all__ = ["FONT_TOKEN", "QUALITY", "STUCK_PREFIX", "TEMPLATES", "render_env", "hyperframes_argv",
-           "write_index", "render_project", "main"]
+           "write_index", "render_project", "do_render_project_dir", "main"]
 
 
 # ── vỏ bọc HyperFrames ──────────────────────────────────────────────────────────────────
@@ -106,7 +109,7 @@ def write_index(proj_dir, html):
 
 
 def render_project(proj_dir, out_file, timeout=DEFAULT_TIMEOUT, retries=RETRIES, label="",
-                   version=None, sleep=time.sleep, offline=False):
+                   version=None, sleep=time.sleep, offline=False, env_extra=None):
     """Render `index.html` của project thành video câm `out_file`. -> out_file.
 
     `out_file` tương đối được hiểu là tương đối với thư mục project (HyperFrames chạy `cwd`
@@ -122,6 +125,8 @@ def render_project(proj_dir, out_file, timeout=DEFAULT_TIMEOUT, retries=RETRIES,
     env = render_env()
     if offline:
         env["npm_config_offline"] = "true"
+    if env_extra:
+        env.update(env_extra)
     tag = f"[{label}] " if label else ""
     last = None
     nav = 0                     # số lần thử hỏng vì `Navigation timeout` (không mở được trang)
@@ -312,6 +317,116 @@ def do_render(args):
     return res
 
 
+# ── `render --project-dir`: project HyperFrames tự dựng ─────────────────────────────────
+
+# `npx` đọc `.npmrc`/`package.json`/`node_modules` ở cwd: một project lạ mang theo `.npmrc` đổi
+# được registry, `node_modules/.bin` chiếm được tên lệnh. Nên project KHÔNG chạy tại chỗ: nó
+# được chép (chỉ phần tĩnh) sang thư mục tạm do engine sở hữu, và những thứ trên bị TỪ CHỐI.
+FORBIDDEN_NAMES = frozenset({".npmrc", "package.json", "node_modules"})
+STATIC_EXTS = frozenset({
+    ".html", ".css", ".js", ".mjs", ".json", ".svg", ".txt", ".png", ".jpg", ".jpeg", ".webp",
+    ".gif", ".avif", ".mp4", ".webm", ".mov", ".mp3", ".wav", ".m4a", ".ogg", ".woff",
+    ".woff2", ".ttf", ".otf"})
+ASSET_DIR = "assets"
+PROJECT_MAX_BYTES = 1 << 30
+_REPARSE = getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0x400)
+
+
+def _is_link(st):
+    """Symlink hoặc junction/reparse point (Windows) — chỉ nhìn `lstat`, không đi theo."""
+    return stat.S_ISLNK(st.st_mode) or bool(getattr(st, "st_file_attributes", 0) & _REPARSE)
+
+
+def _scan_project(root):
+    """-> [(đường tuyệt đối, đường tương đối)] cần chép; ContractError nếu project không an toàn."""
+    if not os.path.isdir(root) or _is_link(os.lstat(root)):
+        raise ContractError(f"--project-dir phải là một thư mục thật (không phải liên kết): {root}")
+    files, total = [], 0
+    stack = [("", root)]
+    while stack:
+        rel_dir, cur = stack.pop()
+        with os.scandir(cur) as it:
+            entries = sorted(it, key=lambda e: e.name)
+        for e in entries:
+            rel = f"{rel_dir}{e.name}"
+            if e.name.lower() in FORBIDDEN_NAMES:
+                raise ContractError(
+                    f"project có `{rel}` — bị từ chối vì npx đọc tệp này ở thư mục chạy và có thể đổi "
+                    "registry hoặc chiếm lệnh. Bỏ `.npmrc`, `package.json`, `node_modules/` khỏi project "
+                    "(thư viện đặt tĩnh trong assets/).")
+            st = e.stat(follow_symlinks=False)
+            if _is_link(st):
+                raise ContractError(f"project có liên kết `{rel}` (symlink/junction) — không đi theo; "
+                                    "chép tệp thật vào project")
+            if stat.S_ISDIR(st.st_mode):
+                if rel_dir == "" and e.name != ASSET_DIR:
+                    raise ContractError(f"thư mục `{rel}/` không được nhận — chỉ `{ASSET_DIR}/` "
+                                        "(và `index.html`, tệp tĩnh ở gốc)")
+                stack.append((rel + "/", e.path))
+            elif stat.S_ISREG(st.st_mode):
+                if os.path.splitext(e.name)[1].lower() not in STATIC_EXTS:
+                    raise ContractError(f"tệp `{rel}` không phải tài nguyên tĩnh được nhận")
+                total += st.st_size
+                if total > PROJECT_MAX_BYTES:
+                    raise ContractError("project quá lớn (> 1 GiB)")
+                files.append((e.path, rel))
+            else:
+                raise ContractError(f"`{rel}` không phải tệp thường")
+    if INDEX not in [r for _a, r in files]:
+        raise ContractError(f"project thiếu `{INDEX}` ở gốc: {root}")
+    return files
+
+
+def _stage_project(files, dest):
+    for src, rel in files:
+        dst = os.path.join(dest, *rel.split("/"))
+        os.makedirs(os.path.dirname(dst), exist_ok=True)
+        shutil.copyfile(src, dst, follow_symlinks=False)
+
+
+def do_render_project_dir(args):
+    """check --strict rồi render project tự dựng bằng engine ghim. Mã 2 nếu project không an toàn/không qua check."""
+    src_dir = os.path.abspath(args.project_dir)
+    out_dir = os.path.abspath(args.out)
+    files = _scan_project(src_dir)                      # kiểm TRƯỚC khi tạo --out
+    name = os.path.basename(src_dir.rstrip("\\/")) or "project"
+    t0 = time.time()
+    with tempfile.TemporaryDirectory(prefix="video-studio-proj-") as work:
+        proj = os.path.join(work, "project")
+        os.makedirs(proj)
+        _stage_project(files, proj)
+        # Hai file rỗng RIÊNG: npm báo "double-loading config" và thoát nếu user và global trỏ cùng một file.
+        user_rc = os.path.join(work, "empty-user.npmrc")
+        global_rc = os.path.join(work, "empty-global.npmrc")
+        for rc in (user_rc, global_rc):
+            open(rc, "w").close()
+        env_extra = {"npm_config_userconfig": user_rc, "npm_config_globalconfig": global_rc}
+        env = render_env()
+        for k in [k for k in env if k.lower() in ("npm_config_userconfig", "npm_config_globalconfig")]:
+            del env[k]
+        env.update(env_extra)
+        try:
+            chk = subprocess.run(hyperframes_argv("check", "--strict"), cwd=proj, env=env,
+                                 capture_output=True, timeout=DEFAULT_TIMEOUT)
+        except subprocess.TimeoutExpired as e:
+            raise EngineError(f"HyperFrames check quá {DEFAULT_TIMEOUT}s chưa xong") from e
+        if chk.returncode:
+            raw = chk.stderr or chk.stdout or b""
+            raw = raw.decode("utf-8", "replace") if isinstance(raw, bytes) else str(raw)
+            tail = "\n".join(raw.strip().splitlines()[-15:])
+            raise ContractError(f"project không qua `check --strict` (mã {chk.returncode}):\n{tail}")
+        tmp_out = os.path.join(work, "render.mp4")
+        render_project(proj, tmp_out, label=name, env_extra=env_extra)
+        if not os.path.isfile(tmp_out):
+            raise EngineError("HyperFrames báo xong nhưng không thấy file ra")
+        os.makedirs(out_dir, exist_ok=True)
+        final = os.path.join(out_dir, f"{name}.mp4")
+        shutil.copyfile(tmp_out, final)
+    return {"project_dir": src_dir, "out": out_dir,
+            "outputs": [{"kind": "video", "path": final, "duration": None}],
+            "timings": {"total": round(time.time() - t0, 2)}, "engine": engine_versions()}
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(
         prog="video-studio render",
@@ -319,24 +434,35 @@ def main(argv=None):
                     "nhạc nền và danh sách file ra đều nằm trong spec — engine không có mặc "
                     "định nào mang danh tính.",
         epilog="project: " + " · ".join(f"{k} ({v[2]})" for k, v in sorted(TEMPLATES.items())))
-    ap.add_argument("--project", required=True, choices=sorted(TEMPLATES),
-                    help="template dùng để dựng")
-    ap.add_argument("--input", required=True, help="file spec JSON")
+    ap.add_argument("--project", default="", choices=[""] + sorted(TEMPLATES),
+                    help="template dùng để dựng (bắt buộc nếu không có --project-dir)")
+    ap.add_argument("--project-dir", default="",
+                    help="thư mục project HyperFrames tự dựng (index.html + assets/): check --strict "
+                         "rồi render bằng engine ghim; chép sang thư mục tạm, từ chối .npmrc, "
+                         "package.json, node_modules, liên kết")
+    ap.add_argument("--input", default="", help="file spec JSON")
     ap.add_argument("--out", required=True, help="thư mục nhận file ra")
     ap.add_argument("--brand", default="", help="file brand.json đè khối brand của spec")
     ap.add_argument("--voice-profile", default="", help="đè voice.profile của spec")
     ap.add_argument("--gsap-file", default="", help="file GSAP cục bộ cho effect-preview")
     ap.add_argument("--images", default="",
                     help="images.json: ghép ảnh của người dùng vào đúng cảnh/đoạn/phần "
-                         "(repo-today, news, news-weekly, topstory), một ảnh mỗi cảnh (cục bộ hoặc URL), "
-                         "thay ảnh/clip của cảnh đó; xem docs/CONTRACT.md")
+                         "(repo-today, news, news-weekly, topstory), một ảnh hoặc danh sách ảnh mỗi cảnh (cục bộ hoặc URL; "
+                         "nhiều ảnh trừ repo-today), thay ảnh/clip của cảnh đó; xem docs/CONTRACT.md")
     ap.add_argument("--json", action="store_true", help="in một dòng JSON kết quả ra stdout")
     args, code = contract.parse(ap, argv)
     if args is None:
         return code
 
     def fn(a):
-        res = do_render(a)
+        if a.project_dir:
+            if a.project or a.input:
+                raise ContractError("--project-dir không đi cùng --project/--input")
+            res = do_render_project_dir(a)
+        else:
+            if not a.project or not a.input:
+                raise ContractError("cần --project và --input (hoặc --project-dir)")
+            res = do_render(a)
         for o in res["outputs"]:
             contract.log(f"[render] {o['kind']} -> {o['path']}"
                          + (f" ({o['duration']:.1f}s)" if o.get("duration") else ""))
