@@ -674,6 +674,11 @@ def test_interleaved_writers_with_mixed_generation_force_a_cache_miss(tmp_path, 
     source = tmp_path / "clip.mp4"
     source.write_bytes(b"source")
     work = tmp_path / "work"
+    # RQ-008: _transcript_dir() resolves realpath of work/transcripts; when both writers race to
+    # create that directory one can see it half-made and raise ContractError("ngoài nơi làm việc")
+    # before the barrier, leaving the other writer waiting out its 5 s timeout. The race is not
+    # what this test is about, so create the directory up front.
+    (work / "transcripts").mkdir(parents=True)
     entered = threading.Barrier(2)
     a_payload_done = threading.Event()
     b_payload_done = threading.Event()
@@ -728,8 +733,8 @@ def test_interleaved_writers_with_mixed_generation_force_a_cache_miss(tmp_path, 
     b.start()
     b.join(timeout=5)
     a.join(timeout=5)
-    assert not a.is_alive() and not b.is_alive()
-    assert errors == []
+    alive = [t.name for t in (a, b) if t.is_alive()]
+    assert alive == [] and errors == [], (alive, errors)
 
     monkeypatch.setattr(model, "transcribe",
                         lambda wav, **kwargs: _Model.transcribe(model, wav, **kwargs))
