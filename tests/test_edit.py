@@ -4,6 +4,7 @@ Không có ffmpeg thật, không có model ASR, không có mạng: `_ff.run` và
 giả, và cái được kiểm là **lệnh ffmpeg ĐƯỢC DỰNG RA** — vì mọi bài học của bộ này nằm ở đúng
 thứ tự các cờ (phụ đề sau cùng, nối bằng -c copy, giữ fps nguồn, chọn đúng track tiếng).
 """
+import io
 import json
 import os
 import subprocess
@@ -148,6 +149,21 @@ def test_auto_grade_never_moves_more_than_eight_percent():
                 for part in flt.replace("eq=", "").split(":"):
                     if "=" in part:
                         assert 0.92 <= float(part.split("=")[1]) <= 1.10, flt
+
+
+def test_analyze_escapes_metadata_path_in_filtergraph(monkeypatch):
+    """RQ-021: đường mkstemp Windows thô trong `metadata=print:file=` làm ffmpeg thoát mã 1."""
+    fd = os.open(os.devnull, os.O_RDONLY)
+    monkeypatch.setattr(grade.tempfile, "mkstemp",
+                        lambda suffix="": (fd, "C:\\Users\\x\\Temp\\t's.txt"))
+    seen = []
+    monkeypatch.setattr(grade._ff, "run", lambda args, **kw: seen.append(args))
+    monkeypatch.setattr(grade.os, "remove", lambda p: None)
+    monkeypatch.setattr(grade, "open", lambda *a, **k: io.StringIO(""), raising=False)
+    grade.analyze("v.mp4", duration=2.0)
+    vf = seen[0][seen[0].index("-vf") + 1]
+    assert "file=C\\:/Users/x/Temp/t\\'s.txt" in vf
+    assert "\\Users" not in vf
 
 
 def test_signalstats_are_normalised_by_bit_depth():

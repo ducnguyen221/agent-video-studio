@@ -95,12 +95,13 @@ def analyze(video, start=0.0, duration=None, samples=10):
     if duration is None:
         duration = getattr(_ff.probe(video), "duration", None) or 10.0
     fps = max(0.5, min(samples / max(float(duration), 0.1), 10.0))
+    from .render import _escape_sub  # lazy: render imports grade
     fd, meta = tempfile.mkstemp(suffix=".txt")
     os.close(fd)
     try:
         _ff.run(["-y", "-ss", f"{float(start):.3f}", "-i", str(video),
                  "-t", f"{float(duration):.3f}",
-                 "-vf", f"fps={fps:.2f},signalstats,metadata=print:file={meta}",
+                 "-vf", f"fps={fps:.2f},signalstats,metadata=print:file={_escape_sub(meta)}",
                  "-f", "null", "-"])
         with open(meta, "r", encoding="utf-8", errors="replace") as f:
             return _parse_stats(f.read())
