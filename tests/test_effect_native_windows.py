@@ -208,6 +208,19 @@ def test_repo_bundle_search_rejects_junction(tmp_path, monkeypatch):
         os.rmdir(link)
 
 
+def _is_junction(path):
+    """`Path.is_junction` exists only from Python 3.12."""
+    check = getattr(os.path, "isjunction", None)
+    if check is not None:
+        return check(path)
+    import stat
+    try:
+        return bool(os.lstat(path).st_file_attributes & stat.FILE_ATTRIBUTE_REPARSE_POINT) and not os.path.islink(path)
+    except (OSError, AttributeError):
+        return False
+
+
+
 def test_single_repo_asset_does_not_follow_junction_after_check(tmp_path, monkeypatch):
     import hashlib
     import importlib
@@ -246,7 +259,7 @@ def test_single_repo_asset_does_not_follow_junction_after_check(tmp_path, monkey
         with pytest.raises(ContractError, match="hash|repo"):
             search(repo_entries=catalog)
     finally:
-        if link.is_junction():
+        if _is_junction(link):
             os.rmdir(link)
 
 
