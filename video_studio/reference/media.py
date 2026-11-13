@@ -200,7 +200,9 @@ def contact_sheets(input_path, out_dir, every, cols=4, rows=4, width=320, label=
     duration = _finite_or_none(info.duration)
     if duration is None:
         raise ContractError("không rõ thời lượng nên không tính được số ô của lưới")
-    cells = max(1, math.ceil(duration / every))
+    # ffmpeg `fps=1/every` ghi round-half-up(thời lượng / every) khung (đo thật: 24.5s/2 -> 12, 10s/3 -> 3);
+    # `ceil` khai thừa một ô không có hình.
+    cells = max(1, math.floor(duration / every + 0.5))
     if cells > MAX_TILE_CELLS:
         raise ContractError(f"{cells} ô vượt trần {MAX_TILE_CELLS}: tăng --every")
     per_sheet = cols * rows

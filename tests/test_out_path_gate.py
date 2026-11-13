@@ -45,6 +45,8 @@ MUST_REJECT = [
     "a\x00b",              # NUL — cắt tên ở tầng C
     "",                    # rỗng
     "   ",                 # chỉ khoảng trắng
+    "x.",                  # Windows cắt dấu chấm cuối: ghi ra "x", lệch tên đã khai
+    "x. ",                 # y hệt, có cả khoảng trắng đuôi
 ]
 
 MUST_PASS = ["2026-09-18", "deep-dive", "2026-W38", "ban-dai.mp4", "a.mp4", "tin-18.09.2026.mp4"]
@@ -123,6 +125,12 @@ def test_plain_name_is_os_independent(any_os, bad):
     from video_studio import _paths
     with pytest.raises(ContractError):
         _paths.plain_name(bad, "outputs.long")
+
+
+def test_plain_name_rejects_trailing_space_windows_would_strip(any_os):
+    from video_studio import _paths
+    with pytest.raises(ContractError, match="khoảng trắng"):
+        _paths.plain_name("ban-dai ", "--name")
 
 
 @pytest.mark.parametrize("good", MUST_PASS)

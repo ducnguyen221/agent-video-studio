@@ -156,7 +156,8 @@ def _pick_text_stream(raw, language):
             if _same_language((s.get("tags") or {}).get("language"), language):
                 chosen = (k, s)
                 break
-    return chosen[0], chosen[1].get("index")
+    tag = (chosen[1].get("tags") or {}).get("language") or None
+    return chosen[0], chosen[1].get("index"), tag
 
 
 def _extract_embedded(video, dest_dir, language=None):
@@ -171,7 +172,14 @@ def _extract_embedded(video, dest_dir, language=None):
     picked = _pick_text_stream(raw, language)
     if picked is None:
         return None
-    k, index = picked
+    k, index, tag = picked
+    if language and language != "auto":
+        if tag is None:
+            log(f"[reference] cảnh báo: luồng phụ đề nhúng #{index} không ghi ngôn ngữ; "
+                f"không thể xác nhận là {language}")
+        elif not _same_language(tag, language):
+            log(f"[reference] cảnh báo: không luồng phụ đề nhúng nào khớp --language {language}; "
+                f"lấy luồng #{index} (ngôn ngữ {tag}). Đưa phụ đề đúng ngôn ngữ bằng --subs nếu cần")
     dest = os.path.join(dest_dir, "embedded.srt")
     if os.path.exists(dest):
         raise ContractError(f"đã có {dest}; không ghi đè")
@@ -183,7 +191,7 @@ def _extract_embedded(video, dest_dir, language=None):
     if not os.path.isfile(dest):
         raise EngineError(f"ffmpeg thoát mã 0 nhưng không ghi ra luồng phụ đề nhúng #{index}; "
                           "đưa phụ đề bằng --subs hoặc sửa nguồn (không tự rơi xuống ASR)")
-    return dest, index
+    return dest, index, tag
 
 
 def extract_embedded(video, dest_dir):
@@ -208,10 +216,11 @@ def _write_json(path, payload):
             os.unlink(tmp)
 
 
-def _from_cues(cues, language, source, out, embedded=False, stream=None):
+def _from_cues(cues, language, source, out, embedded=False, stream=None, stream_language=None):
     transcript = cues_to_transcript(cues, None if language == "auto" else language, source)
     if embedded:
         transcript["_source_stream"] = stream
+        transcript["_source_language"] = stream_language   # thẻ thật của luồng; `language_code` là điều đã xin
     _write_json(out, transcript)
     return {"transcript": out, "source": source, "granularity": "cue", "entries": len(cues)}
 
@@ -250,7 +259,7 @@ def transcribe(input_path, project_dir, subs=None, language="vi", force=False):
         got = _extract_embedded(input_path, tmp, language)
         if got:
             return _from_cues(_read_cues(got[0], f"luồng phụ đề nhúng #{got[1]}"), language, "subtitles:embedded", out,
-                               embedded=True, stream=got[1])
+                               embedded=True, stream=got[1], stream_language=got[2])
 
     from ..edit import transcribe as asr
     if not asr.available():

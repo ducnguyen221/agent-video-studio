@@ -114,7 +114,8 @@ def _init(args):
     if os.path.lexists(project):
         raise ContractError(f"project {project} đã có; chọn tên khác (init không ghi đè)")
     if os.path.exists(root) and not os.path.isdir(root):
-        raise ContractError(f"--dir không phải thư mục: {root}")
+        raise ContractError(f"--dir không phải thư mục: {root}" if args.dir
+                            else f"thư mục gốc project không phải thư mục: {root}")
     local, digest = None, None
     if args.file:
         if not os.path.isfile(args.file):
@@ -138,10 +139,10 @@ def _init(args):
             with open(os.path.join(project, t), "w", encoding="utf-8", newline="\n") as f:
                 f.write(text)
         gate.save_provenance(project, prov)
-    except FileExistsError:
-        if created:
+    except FileExistsError as exc:
+        if created:     # đua: tiến trình khác chen vào giữa `mkdir` và `makedirs`
             shutil.rmtree(project, ignore_errors=True)
-            raise
+            raise ContractError(f"không tạo được project {project}: {exc}") from None
         raise ContractError(f"project {project} đã có; chọn tên khác (init không ghi đè)") from None
     except OSError as exc:       # quyền, đĩa đầy, tên không hợp lệ: gọi sai/môi trường ⇒ mã 2
         if created:

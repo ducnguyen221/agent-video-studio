@@ -429,3 +429,46 @@ def test_probe_raw_errors(tmp_path, monkeypatch):
     _probe_run(monkeypatch, _Done(out="không phải json"))
     with pytest.raises(EngineError, match="JSON"):
         media.probe_raw(p)
+
+
+# ------------------------------------------------- RQ-024: số ô khớp số khung ffmpeg thật ghi ra
+
+@pytest.mark.parametrize("duration, every, cells", [
+    ("40.0", 2, 20),     # chia hết: 20 khung
+    ("24.5", 2, 12),     # ceil cũ khai 13; fps=1/2 chỉ ghi 12 khung (đo bằng ffmpeg thật)
+    ("10.0", 3, 3),      # ceil cũ khai 4; ffmpeg ghi 3
+    ("9.4", 1, 9),
+    ("25.0", 2, 13),     # nửa trở lên làm tròn lên: khung ở 24s có thật
+    ("1.2", 2, 1),       # không bao giờ dưới 1 ô
+])
+def test_tiles_declare_as_many_cells_as_frames_ffmpeg_writes(ff, tmp_path, duration, every, cells):
+    ff["raw"] = _raw(duration=duration)
+    res = media.contact_sheets(ff["video"], str(tmp_path), every)
+    assert sum(len(s["cells"]) for s in res["sheets"]) == cells
+
+
+def test_tiles_last_declared_cell_starts_before_the_end(ff, tmp_path):
+    ff["raw"] = _raw(duration="24.0")
+    res = media.contact_sheets(ff["video"], str(tmp_path), 2)
+    last = res["sheets"][-1]["cells"][-1]
+    assert last["approx_time"] < 24.0
+
+
+# ------------------------------------------------- RQ-024: tệp unknown_video của `fetch` dùng được tiếp
+
+@pytest.mark.parametrize("name", ["reference.unknown_video", "REFERENCE.UNKNOWN_VIDEO"])
+def test_unknown_video_extension_is_accepted_like_fetch_does(ff, tmp_path, name):
+    p = tmp_path / name
+    p.write_bytes(b"x")
+    media.extract_frames(str(p), str(tmp_path / "f"), [12.0])
+    media.contact_sheets(str(p), str(tmp_path / "t"), 2)
+    assert len(ff["calls"]) == 2
+
+
+def test_unknown_video_still_goes_through_the_container_whitelist(ff, tmp_path):
+    p = tmp_path / "reference.unknown_video"
+    p.write_bytes(b"x")
+    ff["raw"] = {"streams": [], "format": {"format_name": "hls,applehttp", "duration": "40"}}
+    with pytest.raises(ContractError, match="không phải video/âm thanh thường"):
+        media.contact_sheets(str(p), str(tmp_path / "t"), 2)
+    assert ff["calls"] == []
