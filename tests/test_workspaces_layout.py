@@ -116,7 +116,7 @@ def test_migrate_moves_the_new_layout(repo, tmp_path):
 #: `$HOME/.x`. Đứng sau một ký tự chữ (vd `args.video`, `module.voice`) thì không tính.
 HIDDEN = re.compile(r"(?<![\w])\.(video|voice|marketing)(?![\w-])")
 SKIP_DIRS = {".git", ".venv", "venv", "node_modules", "__pycache__", ".pytest_cache", ".worktrees",
-             ".tmp"}
+             ".tmp", "build"}
 #: Dữ liệu người dùng/nháp chỉ bị bỏ qua Ở GỐC repo — `templates/workspace/` (cây mẫu chép vào trạm
 #: người dùng) vẫn phải được quét.
 ROOT_SKIP_DIRS = {"workspaces", "workspace", "out", "work", "scratch", "cache"}
