@@ -33,7 +33,7 @@ from voice_studio import av, engine, profiles
 
 from ... import _env, projects, render
 from ...contract import ContractError
-from ...spec import REQUIRED_BRAND, USER_IMAGE_KEY
+from ...spec import MAX_SCENE_IMAGES, REQUIRED_BRAND, USER_IMAGE_KEY
 
 PROJECT = "news"
 
@@ -742,6 +742,42 @@ def _synth_long(model, text, prompt, max_chunk=240):
 #: Đuôi ảnh nhận ở nhánh cục bộ (nhánh URL đã nhận cả gif).
 _LOCAL_EXTS = (".png", ".jpg", ".jpeg", ".webp", ".gif")
 
+#: Trần đọc ảnh URL; ảnh cục bộ lớn hơn chỉ bị cảnh báo (chép nguyên vẹn, không cắt).
+IMAGE_MAX_BYTES = 12_000_000
+
+
+def image_limit(seg):
+    """Số ảnh hiện cho một cảnh: đủ danh sách nếu cảnh do `render --images` ghép, còn lại một ảnh (như cũ)."""
+    return MAX_SCENE_IMAGES if isinstance(seg, dict) and seg.get(USER_IMAGE_KEY) else 1
+
+
+def inside(path, folder):
+    """`path` (sau realpath) nằm trong `folder` (sau realpath)?"""
+    p = os.path.normcase(os.path.realpath(path))
+    f = os.path.normcase(os.path.realpath(folder))
+    try:
+        return os.path.commonpath([p, f]) == f
+    except ValueError:           # khác ổ đĩa
+        return False
+
+
+def is_link(path):
+    """Symlink hoặc junction (không đi theo)."""
+    return os.path.islink(path) or bool(getattr(os.path, "isjunction", lambda _p: False)(path))
+
+
+def guard_user_images(segments, img_dir):
+    """Từ chối (mã 2) ảnh người dùng nằm TRONG `img_dir` — bước dựng xoá/ghi đè thư mục này.
+
+    Phải chạy trước mọi `rmtree`/chép: nguồn bị xoá thì mất ảnh người dùng, còn nguồn = đích thì `SameFileError`."""
+    for i, seg in enumerate(segments or [], 1):
+        imgs = seg.get("images") if isinstance(seg, dict) else None
+        for u in (imgs if isinstance(imgs, list) else []):
+            if isinstance(u, str) and os.path.isabs(u) and inside(u, img_dir):
+                raise ContractError(
+                    f"ảnh của đoạn {i} nằm trong thư mục ảnh tạm của bước dựng (img/ của project): {u}. "
+                    "Bước dựng xoá và ghi lại thư mục này — chép ảnh sang nơi khác rồi trỏ images.json tới đó")
+
 
 def _download_images(urls, dest_dir, seg_idx, max_n=3):
     """Best-effort download of segment images. Returns project-relative paths.
@@ -757,11 +793,18 @@ def _download_images(urls, dest_dir, seg_idx, max_n=3):
                 if ext not in _LOCAL_EXTS:
                     print(f"    [warn] image {seg_idx}/{j} không phải ảnh: {ext or '(không đuôi)'}")
                     continue
+                if is_link(u):
+                    print(f"    [warn] image {seg_idx}/{j} bỏ: symlink không được nhận")
+                    continue
                 if not os.path.isfile(u):
                     print(f"    [warn] image {seg_idx}/{j} missing: {u}")
                     continue
+                size = os.path.getsize(u)
+                if size > IMAGE_MAX_BYTES:
+                    print(f"    [warn] image {seg_idx}/{j} lớn ({size // 1024} KB > "
+                          f"{IMAGE_MAX_BYTES // 1000000} MB), vẫn chép — nên thu nhỏ")
                 fp = os.path.join(dest_dir, f"s{seg_idx}_{j}{ext}")
-                shutil.copy2(u, fp)
+                shutil.copy2(u, fp, follow_symlinks=False)
                 out.append(f"img/{os.path.basename(fp)}")
                 print(f"    image s{seg_idx}_{j} ok (cục bộ)")
                 continue
@@ -770,7 +813,7 @@ def _download_images(urls, dest_dir, seg_idx, max_n=3):
                 "Accept": "image/*,*/*;q=0.8"})
             with urllib.request.urlopen(req, timeout=20) as r:
                 ct = (r.headers.get("Content-Type") or "").lower()
-                data = r.read(12_000_000)
+                data = r.read(IMAGE_MAX_BYTES)
             if len(data) < 4000:
                 print(f"    [warn] image {seg_idx}/{j} bỏ: phản hồi quá nhỏ ({len(data)} byte)")
                 continue
@@ -789,6 +832,33 @@ def _download_images(urls, dest_dir, seg_idx, max_n=3):
             print(f"    image s{seg_idx}_{j} ok ({len(data)//1024} KB)")
         except Exception as exc:
             print(f"    [warn] image {seg_idx}/{j} failed: {type(exc).__name__}")
+    return out
+
+
+def hero_html(sid, srcs):
+    """`<div class="heroimg">` của bản short: một ảnh giữ id `<sid>-im` (như cũ), nhiều ảnh là `<sid>-im0..`."""
+    if not srcs:
+        return ""
+    if len(srcs) == 1:
+        return f'<div class="heroimg"><img id="{sid}-im" src="{_esc(srcs[0])}"></div>'
+    imgs = "".join(f'<img id="{sid}-im{j}" src="{_esc(s)}">' for j, s in enumerate(srcs))
+    return f'<div class="heroimg">{imgs}</div>'
+
+
+def hero_anim(sid, n, t, dur):
+    """Tween ảnh hero của short (n ảnh hiện lần lượt trong `dur` giây; n=1 giữ nguyên như cũ)."""
+    out = []
+    if n == 1:
+        out.append(f'    m.to("#{sid}-im",{{opacity:1,duration:0.45}},{t + 0.25:.2f});')
+        out.append(f'    m.fromTo("#{sid}-im",{{scale:1.0}},{{scale:1.06,duration:{max(1.0, dur):.2f},ease:"none"}},{t + 0.45:.2f});')
+        return out
+    slot = max(1.0, dur) / max(1, n)
+    for j in range(n):
+        st = t + 0.25 + j * slot
+        out.append(f'    m.to("#{sid}-im{j}",{{opacity:1,duration:0.45}},{st:.2f});')
+        out.append(f'    m.fromTo("#{sid}-im{j}",{{scale:1.0}},{{scale:1.06,duration:{slot:.2f},ease:"none"}},{st + 0.2:.2f});')
+        if j < n - 1:
+            out.append(f'    m.to("#{sid}-im{j}",{{opacity:0,duration:0.4}},{st + slot:.2f});')
     return out
 
 
@@ -943,6 +1013,7 @@ def make_weekly(video_obj, out_path, date, week="", range_="", model=None, promp
 
     proj = _proj()
     img_dir = os.path.join(proj, "img")
+    guard_user_images(segments, img_dir)     # TRƯỚC rmtree: nguồn trong img/ sẽ bị xoá
     if os.path.isdir(img_dir):
         shutil.rmtree(img_dir, ignore_errors=True)
 
@@ -985,7 +1056,7 @@ def make_weekly(video_obj, out_path, date, week="", range_="", model=None, promp
     # 2) images per story segment
     seg_imgs = {}
     for i, seg in enumerate(segments, 1):
-        seg_imgs[i] = _download_images(seg.get("images"), img_dir, i)
+        seg_imgs[i] = _download_images(seg.get("images"), img_dir, i, max_n=max(3, image_limit(seg)))
 
     # 3) build the single-composition slide HTML with absolute-time animations
     segs_html, anim = [], []
@@ -1010,7 +1081,7 @@ def make_weekly(video_obj, out_path, date, week="", range_="", model=None, promp
             story_i += 1
             sid = f"seg-{story_i}"
             diag = seg.get("diagram")
-            imgs = (seg_imgs.get(story_i) or [])[:1]  # tối đa 1 ảnh hero (hiện ĐẦY ĐỦ, không crop)
+            imgs = (seg_imgs.get(story_i) or [])[:image_limit(seg)]  # mặc định 1 ảnh hero (ĐẦY ĐỦ); cảnh ghép nhiều ảnh hiện lần lượt
             cls = "seg story" if (diag or imgs) else "seg story noimg"
             pitems = []
             for j, p in enumerate(imgs):
@@ -1031,12 +1102,14 @@ def make_weekly(video_obj, out_path, date, week="", range_="", model=None, promp
             # panel: ảnh hero hiện trước (nếu có), rồi SmartArt chiếm panel phần còn lại
             n_img = len(imgs)
             img_end = (t + 0.3 + (dur - 1.0) * 0.42) if (diag and n_img) else (t + dur - 0.3)
+            slot = (img_end - (t + 0.3)) / max(1, n_img)    # n_img = 1: cả cửa sổ (như cũ)
             for j in range(n_img):
-                st = t + 0.3
+                st = t + 0.3 + j * slot
+                end_j = img_end if j == n_img - 1 else st + slot
                 anim.append(f'    m.to("#{sid}-im{j}",{{opacity:1,duration:0.6}},{st:.2f});')
-                anim.append(f'    m.fromTo("#{sid}-im{j}",{{scale:1.0}},{{scale:1.06,duration:{max(0.5, img_end - st):.2f},ease:"none"}},{st:.2f});')
-                if diag:
-                    anim.append(f'    m.to("#{sid}-im{j}",{{opacity:0,duration:0.5}},{img_end:.2f});')
+                anim.append(f'    m.fromTo("#{sid}-im{j}",{{scale:1.0}},{{scale:1.06,duration:{max(0.5, end_j - st):.2f},ease:"none"}},{st:.2f});')
+                if diag or j < n_img - 1:
+                    anim.append(f'    m.to("#{sid}-im{j}",{{opacity:0,duration:0.5}},{end_j:.2f});')
             if diag:
                 dstart = (img_end + 0.2) if n_img else (t + 1.0)
                 anim.append(f'    m.to("#{did}",{{opacity:1,duration:0.5}},{dstart:.2f});')
@@ -1175,7 +1248,7 @@ def _short_segment_images(segments, img_dir):
         user = seg.get(USER_IMAGE_KEY) or (
             isinstance(imgs, list) and imgs and isinstance(imgs[0], str) and os.path.isabs(imgs[0]))
         if user:
-            seg_imgs[i] = _download_images(imgs, img_dir, i)
+            seg_imgs[i] = _download_images(imgs, img_dir, i, max_n=max(3, image_limit(seg)))
             continue
         have = sorted(glob.glob(os.path.join(img_dir, f"s{i}_*"))) if os.path.isdir(img_dir) else []
         if have:
@@ -1198,6 +1271,7 @@ def make_weekly_short(video_obj, out_path, date, week="", range_="", model=None,
 
     proj = _proj()
     img_dir = os.path.join(proj, "img")
+    guard_user_images(segments, img_dir)
 
     intro_txt = (video_obj.get("intro") or
                  f"Đây là tóm tắt nhanh các tin AI nóng nhất tuần {week}.")
@@ -1261,7 +1335,7 @@ def make_weekly_short(video_obj, out_path, date, week="", range_="", model=None,
                 items = [(b, "") for b in _seg_bullets(seg, n=3, max_len=58)]
             sa_div, n_it = short_card_block(styp, items, sid)
             # ẢNH lấp khung: ảnh segment -> b-roll fallback nếu thiếu
-            imgs = seg_imgs.get(story_i) or []
+            imgs = (seg_imgs.get(story_i) or [])[:image_limit(seg)]
             img_src = imgs[0] if imgs else None
             if not img_src:
                 local = _local_filler(story_i)   # filler on-brand tự chuẩn bị, ưu tiên hơn b-roll
@@ -1273,7 +1347,8 @@ def make_weekly_short(video_obj, out_path, date, week="", range_="", model=None,
                     bp = os.path.join(img_dir, f"broll_s{story_i}.jpg")
                     if _broll_image(_wkbq[(story_i - 1) % len(_wkbq)], bp):
                         img_src = "img/" + os.path.basename(bp)
-            img_div = f'<div class="heroimg"><img id="{sid}-im" src="{_esc(img_src)}"></div>' if img_src else ""
+            img_srcs = imgs if len(imgs) > 1 else ([img_src] if img_src else [])
+            img_div = hero_html(sid, img_srcs)
             cls = "seg story" if img_div else "seg story noimg"
             # AI chọn layout qua seg.layout ∈ {a,b,c}; thiếu -> xoay vòng.
             tpl = str(seg.get("layout") or "").lower()
@@ -1288,9 +1363,7 @@ def make_weekly_short(video_obj, out_path, date, week="", range_="", model=None,
             for j in range(n_it):
                 rt = t + 0.45 + j / max(1, n_it) * wspan * 0.55
                 anim.append(f'    m.fromTo("#{sid}-b{j}",{{opacity:0,y:26}},{{opacity:1,y:0,duration:0.4,ease:"power2.out"}},{rt:.2f});')
-            if img_src:
-                anim.append(f'    m.to("#{sid}-im",{{opacity:1,duration:0.45}},{t + 0.25:.2f});')
-                anim.append(f'    m.fromTo("#{sid}-im",{{scale:1.0}},{{scale:1.06,duration:{max(1.0, dur):.2f},ease:"none"}},{t + 0.45:.2f});')
+            anim.extend(hero_anim(sid, len(img_srcs), t, dur))
             _karaoke_caps(words, spoken, t, dur, kcaps_html, anim, f"{sid}cap")
         anim.append(f'    m.to("#{sid}",{{opacity:1,duration:0.4}},{t:.2f});')
         if t + dur < total - 0.1:
