@@ -14,7 +14,7 @@ Các trục độc lập giúp chọn theo công việc. Một motion có thể 
 | `techniques` | từ khoá mô tả như `typography`, `mask`, `stagger`, `morph`, `particles`, `3d`, `chart`, `ui`, `camera`, `path`, `glow` | Cơ chế chuyển động theo phân tích; không chứng minh thư viện/runtime nguồn |
 | `intensity` | `low`, `medium`, `high` | Độ tranh giành chú ý; high dùng ngắn ở điểm nhấn, low phù hợp phụ trợ |
 | `rhythm` | mô tả ngắn | Cấu trúc nhịp: hiện dần, bật rồi giữ, tuần tự, tăng tốc, sóng; không đoán BPM |
-| `recommended_ratios` | `16:9`, `9:16`, `1:1` | Khung nên dựng; mỗi entry nói cách tái bố trí, không coi crop tự động là đủ |
+| `recommended_ratios` | `16:9`, `9:16`, `1:1` | Khung nên dựng, **không gồm** tỉ lệ mà `ratio_fit` ghi `requires_redesign`; luôn chứa `primary_recommended_ratio`. Mỗi entry nói cách tái bố trí, không coi crop tự động là đủ |
 | `primary_recommended_ratio` | `16:9`, `9:16`, `1:1` | Điểm xuất phát Sol ưu tiên cho bố cục mới; không xác nhận native aspect của nguồn |
 | `ratio_fit` | `preferred`, `adaptable`, `requires_redesign`; effort `low`, `medium`, `high` | Mức thích hợp và công sức bố trí lại ở từng ratio; là đánh giá thiết kế, chưa benchmark |
 | `content_capacity` | mô tả giới hạn | Số ý, số đối tượng, độ dài chữ **đề xuất** để đọc được; không phải hard limit nguồn |

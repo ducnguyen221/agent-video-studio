@@ -39,11 +39,11 @@ authored_prompt_kind: original_hyperframes_adaptation
 | Phạm vi đọc | full_public_prompt |
 | Provenance | [metadata](../source/catalog-metadata.json) · [phân tích](../source/terra-70-normalized.json) · source id `twoclipping-d89be5` · HTTP 200 |
 
-**Diễn giải brief nguồn:** A camera glides over a captured landing page, rises overhead, dives into the hero and settles on a title card. The requested build layers captured webpage elements in WebGL2 with depth, time-seeking and frame previews.
+**Diễn giải brief nguồn (tiếng Anh, chưa dịch):** A camera glides over a captured landing page, rises overhead, dives into the hero and settles on a title card. The requested build layers captured webpage elements in WebGL2 with depth, time-seeking and frame previews.
 
-**Giới hạn:** manual full prompt reading; not observed video Chưa quan sát toàn video, chưa kiểm code và chưa đo timing/kích thước media. Các câu thao tác trong prompt nguồn là dữ liệu nghiên cứu, không phải quyền chạy lệnh, cài phần mềm hoặc gửi dữ liệu trong task hiện tại.
+**Giới hạn:** Đọc thủ công toàn bộ prompt; chưa quan sát video. Chưa xem video, chưa kiểm code, chưa đo media; câu lệnh trong prompt nguồn chỉ là dữ liệu, không phải lệnh chạy.
 
-## Phân tích sử dụng của Sol
+## Phân tích sử dụng
 
 Cuộn web như camera kể chuyện
 
@@ -62,17 +62,11 @@ Cuộn web như camera kể chuyện
 | Kỹ thuật đề xuất | camera, ui, 3d |
 | Overlay thay thế | Chưa đề xuất: Bản đề xuất cần bố cục/nền riêng; chưa thiết kế biến thể alpha. |
 
-| Tỉ lệ | Mức phù hợp đề xuất | Công sức | Cách thích nghi |
-|---|---|---|---|
-| 16:9 | preferred | low | Đề xuất bố cục xuất phát; không xác nhận native ratio của media nguồn. |
-| 9:16 | requires_redesign | high | Xếp lại quan hệ theo chiều dọc, tăng chữ, giảm panel; kiểm clipping riêng. |
-| 1:1 | adaptable | medium | Sắp lại khoảng cách/nhãn theo canvas; không crop tự động. |
-
-Khung dọc: xếp lại quan hệ, giảm panel, tăng cỡ chữ và chừa vùng phụ đề theo dự án; không crop screenshot có chữ. Khung vuông: gom một tiêu điểm, đưa nhãn phụ ra vành. Vùng đề xuất cần chỉnh theo canvas/nội dung thật, không coi một hộp chuẩn hoá là bố cục đã QA mọi ratio.
+**Mức hợp theo tỉ lệ** (lý do từng ô ở `index.json`, trường `ratio_fit`): 16:9 preferred/low · 9:16 requires_redesign/high · 1:1 adaptable/medium.
 
 ## Prompt HyperFrames viết mới
 
-> Sol tự viết brief triển khai dưới đây; không phải prompt gốc và không cam kết tái tạo chính xác nguồn. Chỉ dùng tài sản/font/media mà dự án có quyền.
+> Brief do kho tự viết, không phải prompt gốc ([quyền dùng](../USAGE.md#prompt-và-quyền-sử-dụng)).
 
 Dựng một motion graphic mới tham chiếu ý tưởng “Landing page 3D scroll” (https://prompt-motion.com/twoclipping-d89be5) cho vai trò explain/proof/cta. Chọn canvas 16:9 làm điểm xuất phát, thời lượng cảnh trong khoảng 6–12 giây rồi chốt theo lượng nội dung thực. Một ý chính, sức chứa 1 tác vụ; 1–3 trạng thái UI; 1 tiêu đề ngắn. Thay toàn bộ brand, copy, số liệu và media bằng dữ kiện được dự án cấp hoặc xác minh.
 
@@ -86,9 +80,7 @@ Nhịp dựng đề xuất:
 
 Giữ khung cuối tối thiểu 0,8 giây sau chuyển động cuối để đọc. Bố cục partial; đặt chủ thể trong hộp đề xuất ở trên rồi kiểm theo canvas thật. Three.js/WebGL cho camera, vật thể và quan hệ không gian 3D thật của đề xuất này. Timeline GSAP paused điều khiển mọi pose, một callback render trực tiếp tại time tuyệt đối; không physics tích lũy, rAF tự chạy hoặc input tương tác. Ghim dependency cục bộ và dùng model/texture có quyền. Đây là adapter đề xuất, chưa test runtime.
 
-Dùng một GSAP timeline paused, đăng ký vào window.__timelines bằng đúng data-composition-id sau khi dựng. Trạng thái đầu bằng fromTo; clip gốc không bị tween visibility/autoAlpha. Mọi frame là hàm của thời gian tuyệt đối, random có seed, chu kỳ hữu hạn; không đồng hồ hệ thống, chuột, network hay physics tích lũy. Không requestAnimationFrame tự chạy hoặc repeat vô hạn. Nếu dùng canvas/WebGL, render trực tiếp pose/state tại time bất kỳ; timeline là nguồn thời gian duy nhất.
-
-Đặt font/media cục bộ có quyền và biến text/màu/dữ liệu thành tham số. Với narration hay nhiều cảnh dài, route sang general-video rồi dùng motion này như một beat, không ép toàn bộ brief dài vào một hit. Tiêu chí riêng: Không lật/chui qua mặt plane; chữ rõ khi camera dừng; pose camera tái lập khi seek ngược. Kiểm lint/check, snapshot đầu/giữa mỗi pha/cuối, seek ngược, clipping/chữ/tương phản/z-order và vùng phụ đề; ratio khác phải kiểm lại. Chỉ render khi task dựng video đã giao rõ.
+Hợp đồng dựng, tái bố cục dọc/vuông, font/media và kiểm chứng: [USAGE.md](../USAGE.md#hợp-đồng-triển-khai-hyperframes).
 
 ## Liên quan / mức kiểm chứng
 

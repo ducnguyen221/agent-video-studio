@@ -64,9 +64,9 @@ def test_frontmatter_matches_index(entries):
 
 
 def test_every_id_is_listed_in_index_md(entries):
-    index_md = (LIB / "INDEX.md").read_text(encoding="utf-8")
+    index_md = (LIB / "INDEX.md").read_text(encoding="utf-8") + (LIB / "CATALOG.md").read_text(encoding="utf-8")
     missing = [e["id"] for e in entries if e["id"] not in index_md]
-    assert not missing, f"INDEX.md thiếu: {missing[:5]}"
+    assert not missing, f"INDEX.md/CATALOG.md thiếu: {missing[:5]}"
 
 
 def test_no_entry_claims_archived_prompt_or_runtime_test(entries):
@@ -134,3 +134,84 @@ def test_cli_prints_utf8_lines_and_exit_codes(tmp_path):
     bad = subprocess.run([sys.executable, str(SCRIPT), "--index", str(tmp_path / "missing.json")],
                          capture_output=True, timeout=60, check=False)
     assert bad.returncode == 2
+
+
+# ---- SPR-09 TK4: nhất quán tỉ lệ, văn phong, chỉ mục, README ------------------------------------
+
+SOL_ANALYSIS_KEYS = {
+    "analysis_basis", "profile", "description", "scene_roles", "coverage", "recommended_region",
+    "recommended_occupancy", "recommended_ratios", "recommended_duration_seconds", "rhythm",
+    "intensity", "content_capacity", "techniques", "keywords", "adapter_guidance",
+    "original_implementation_note", "related_ids", "runtime_tested", "adaptation_detail",
+    "implementation_phases", "acceptance_focus", "enrichment_provenance",
+    "primary_recommended_ratio", "ratio_fit", "overlay_alternative",
+}
+
+
+def test_recommended_ratios_never_contradict_ratio_fit(entries):
+    # RQ-015: tỉ lệ ghi "nên dựng" mà ratio_fit nói phải dựng lại khung là mâu thuẫn.
+    for e in entries:
+        sa = e["sol_analysis"]
+        assert sa["recommended_ratios"], e["id"]
+        for ratio in sa["recommended_ratios"]:
+            assert sa["ratio_fit"][ratio]["fit"] != "requires_redesign", (e["id"], ratio)
+        assert sa["primary_recommended_ratio"] in sa["recommended_ratios"], e["id"]
+
+
+def test_sol_analysis_keys_are_stable(entries):
+    # RQ-017: chuẩn hoá văn phong không được đổi khoá JSON mà motion_find.py và agent đang đọc.
+    for e in entries:
+        keys = set(e["sol_analysis"])
+        assert keys <= SOL_ANALYSIS_KEYS, (e["id"], keys - SOL_ANALYSIS_KEYS)
+        # khoá tuỳ chọn có ở entry riêng nhưng thiếu ở baseline nhóm; phần còn lại bắt buộc
+        optional = {"enrichment_provenance", "acceptance_focus", "implementation_phases",
+                    "original_implementation_note"}
+        assert SOL_ANALYSIS_KEYS - optional <= keys, (e["id"], (SOL_ANALYSIS_KEYS - optional) - keys)
+
+
+def test_motions_have_no_repeated_boilerplate_and_shrank():
+    # RQ-017: hợp đồng HyperFrames dùng chung nằm ở USAGE.md, không lặp trong 240 file.
+    total = 0
+    for md in (LIB / "motions").glob("*.md"):
+        text = md.read_text(encoding="utf-8")
+        total += len(text.encode("utf-8"))
+        assert "window.__timelines" not in text, md.name
+        assert "Phân tích sử dụng của Sol" not in text, md.name
+        assert "requests.Session" not in text, md.name
+        assert "USAGE.md#hợp-đồng-triển-khai-hyperframes" in text, f"{md.name}: thiếu con trỏ hợp đồng chung"
+    assert total < 1_700_000, f"motions/ còn {total} byte; trước chuẩn hoá là 2.058.675"
+    assert "window.__timelines" in (LIB / "USAGE.md").read_text(encoding="utf-8")
+
+
+def test_library_normalizer_is_idempotent(tmp_path):
+    import shutil
+    dst = tmp_path / "pm"
+    shutil.copytree(LIB, dst)
+    before = {p.relative_to(dst): p.read_bytes() for p in dst.rglob("*") if p.is_file()}
+    r = subprocess.run([sys.executable, str(REPO / "scripts" / "normalize_prompt_motion.py"),
+                        "--lib", str(dst)], capture_output=True, timeout=120, check=False)
+    assert r.returncode == 0, r.stderr
+    after = {p.relative_to(dst): p.read_bytes() for p in dst.rglob("*") if p.is_file()}
+    assert before == after
+
+
+def test_index_md_is_compact_and_catalog_has_what_index_lacks(entries):
+    # RQ-014: INDEX gọn (<20 KB) để đọc hết một lượt; CATALOG.md giữ bảng đủ 240 mẫu.
+    index_md = (LIB / "INDEX.md").read_text(encoding="utf-8")
+    assert len(index_md.encode("utf-8")) < 20_000
+    catalog = (LIB / "CATALOG.md").read_text(encoding="utf-8")
+    assert "Ý chính" in catalog and "Trục hình" in catalog
+    missing = [e["id"] for e in entries if e["id"] not in catalog]
+    assert not missing, missing[:5]
+    baseline = [e for e in entries if e["sol_analysis"].get("adaptation_detail") == "shared_category_baseline"]
+    assert catalog.count("⚑") >= len(baseline) > 0, "baseline phải có dấu riêng ở CATALOG"
+    assert "CATALOG.md" in index_md
+
+
+def test_readmes_mention_motion_library_and_finder():
+    en = (REPO / "README.md").read_text(encoding="utf-8")
+    vi = (REPO / "README.vi.md").read_text(encoding="utf-8")
+    for text in (en, vi):
+        assert "Prompt Motion" in text and "scripts/motion_find.py" in text
+        assert "prompt-motion/INDEX.md" in text
+        assert "reference" in text
