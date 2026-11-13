@@ -232,3 +232,18 @@ def test_mixed_slash_unc_and_device_paths_are_findings_and_never_probed(tmp_path
     res = spec_audit.audit_spec(_spec(tmp_path, {"v": values}), str(proj))
     assert res["ok"] is False and len(res["findings"]) == len(values)
     assert not any(str(p).replace(chr(47), b).startswith(b * 2) for p in probed)
+
+
+def test_nt_namespace_prefix_is_a_finding_and_never_probed(tmp_path, monkeypatch):
+    """RF17: tiền tố NT `\\??\\UNC\\host\\share` và `\\??\\GLOBALROOT` cũng là đường mạng/thiết bị."""
+    proj = _project(tmp_path)
+    b = chr(92)
+    values = [b + "??" + b + "UNC" + b + "host" + b + "share" + b + "a",
+              "/??/UNC/host/share/a",
+              b + "??" + b + "GLOBALROOT" + b + "Device" + b + "Mup" + b + "host" + b + "a"]
+    probed = []
+    real = os.path.isfile
+    monkeypatch.setattr(os.path, "isfile", lambda p: probed.append(p) or real(p))
+    res = spec_audit.audit_spec(_spec(tmp_path, {"v": values}), str(proj))
+    assert res["ok"] is False and len(res["findings"]) == len(values)
+    assert not any("??" in str(p) or "host" in str(p) for p in probed)

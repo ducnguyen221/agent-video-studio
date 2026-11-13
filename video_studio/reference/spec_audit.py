@@ -9,6 +9,7 @@ An toàn: chỉ `stat`/`realpath`; KHÔNG mở tệp đích (chỉ mở chính s
 có NUL, quá dài), thư mục, và tệp không tồn tại bị bỏ qua.
 """
 import json
+import ntpath
 import os
 
 from ..contract import ContractError
@@ -44,9 +45,15 @@ def _inside(root, path):
 
 
 def _is_unc_like(value):
-    """Đường bắt đầu bằng hai dấu gạch (bất kể trộn `/` và `\\`) là UNC hoặc đường thiết bị (`\\?\\`, `\\.\\`)."""
+    """Đường mạng hoặc thiết bị Windows: UNC, `\\?\\`, `\\.\\`, tiền tố NT `\\??\\` (bất kể trộn `/` và `\\`).
+
+    Không bao giờ probe các chuỗi này (SMB ra ngoài). Dùng danh sách cho phép phía ổ đĩa: ổ có tên khác một chữ cái
+    (`ntpath.splitdrive`) cũng bị coi là mạng."""
     v = value.replace(chr(47), chr(92))
-    return v.startswith(chr(92) * 2)
+    if v.startswith((chr(92) * 2, chr(92) + "??" + chr(92))):
+        return True
+    drive = ntpath.splitdrive(v)[0]
+    return bool(drive) and not (len(drive) == 2 and drive[0].isalpha() and drive[1] == ":")
 
 
 def _candidates(value, bases):
