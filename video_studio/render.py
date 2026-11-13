@@ -395,9 +395,12 @@ def do_render_project_dir(args):
         proj = os.path.join(work, "project")
         os.makedirs(proj)
         _stage_project(files, proj)
-        rc_file = os.path.join(work, "empty.npmrc")
-        open(rc_file, "w").close()
-        env_extra = {"npm_config_userconfig": rc_file, "npm_config_globalconfig": rc_file}
+        # Hai file rỗng RIÊNG: npm báo "double-loading config" và thoát nếu user và global trỏ cùng một file.
+        user_rc = os.path.join(work, "empty-user.npmrc")
+        global_rc = os.path.join(work, "empty-global.npmrc")
+        for rc in (user_rc, global_rc):
+            open(rc, "w").close()
+        env_extra = {"npm_config_userconfig": user_rc, "npm_config_globalconfig": global_rc}
         env = render_env()
         for k in [k for k in env if k.lower() in ("npm_config_userconfig", "npm_config_globalconfig")]:
             del env[k]

@@ -80,7 +80,11 @@ def test_npm_userconfig_pointed_at_empty_file(rec, proj, tmp_path, capsys, monke
     orig = rec.__call__
 
     def spy(argv, **kw):
-        seen[argv[3]] = (kw["env"]["npm_config_userconfig"], os.path.getsize(kw["env"]["npm_config_userconfig"]))
+        env = kw["env"]
+        # RF21: npm thoát "double-loading config" nếu user và global trỏ cùng một file
+        assert env["npm_config_userconfig"] != env["npm_config_globalconfig"]
+        assert os.path.getsize(env["npm_config_globalconfig"]) == 0
+        seen[argv[3]] = (env["npm_config_userconfig"], os.path.getsize(env["npm_config_userconfig"]))
         return orig(argv, **kw)
     monkeypatch.setattr(render.subprocess, "run", spy)
     rc, _ = run(proj, tmp_path, capsys)
