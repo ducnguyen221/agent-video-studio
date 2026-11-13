@@ -43,6 +43,12 @@ def _inside(root, path):
         return False
 
 
+def _is_unc_like(value):
+    """Đường bắt đầu bằng hai dấu gạch (bất kể trộn `/` và `\\`) là UNC hoặc đường thiết bị (`\\?\\`, `\\.\\`)."""
+    v = value.replace(chr(47), chr(92))
+    return v.startswith(chr(92) * 2)
+
+
 def _candidates(value, bases):
     if os.path.isabs(value):
         return [value]
@@ -71,8 +77,12 @@ def audit_spec(spec_path, project_dir, assets_dir=None):
     for n, (value, ptr) in enumerate(_strings(data)):
         if n >= MAX_STRINGS:
             raise ContractError(f"spec có hơn {MAX_STRINGS} chuỗi")
-        if not value.strip() or len(value) > MAX_STRING or "\x00" in value or "\n" in value or "://" in value or value.startswith((chr(92) * 2, "//")) \
+        if not value.strip() or len(value) > MAX_STRING or "\x00" in value or "\n" in value or "://" in value \
                 or value.lower().startswith("data:"):
+            continue
+        if _is_unc_like(value):
+            # UNC / đường thiết bị: không bao giờ probe (SMB ra ngoài); báo là phát hiện, không bỏ qua.
+            findings.append({"path": value, "problem": f"{ptr}: đường UNC hoặc thiết bị không được phép trong spec"})
             continue
         hit = None
         for cand in _candidates(value, bases):

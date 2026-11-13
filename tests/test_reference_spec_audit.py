@@ -218,3 +218,17 @@ def test_deeply_nested_json_is_a_contract_error_not_a_traceback(tmp_path):
     p.write_text("[" * 100000 + "]" * 100000, encoding="utf-8")
     with pytest.raises(ContractError):
         spec_audit.audit_spec(str(p), str(proj))
+
+
+def test_mixed_slash_unc_and_device_paths_are_findings_and_never_probed(tmp_path, monkeypatch):
+    """RF10: `/\\host`, `\\/host`, `\\\\?\\C:\\x` cũng là UNC/thiết bị: báo phát hiện và không probe."""
+    proj = _project(tmp_path)
+    b = chr(92)
+    values = ["/" + b + "host" + b + "share" + b + "f.png", b + "/host/share/f.png",
+              b * 2 + "?" + b + "C:" + b + "x.png", b * 2 + "." + b + "pipe" + b + "x"]
+    probed = []
+    real = os.path.isfile
+    monkeypatch.setattr(os.path, "isfile", lambda p: probed.append(p) or real(p))
+    res = spec_audit.audit_spec(_spec(tmp_path, {"v": values}), str(proj))
+    assert res["ok"] is False and len(res["findings"]) == len(values)
+    assert not any(str(p).replace(chr(47), b).startswith(b * 2) for p in probed)
