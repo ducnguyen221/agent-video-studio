@@ -117,6 +117,32 @@ video-studio edit --footage … --out … --edl edl.json --build-subtitles   # d
 Không có `edl.json` thì lệnh **dừng ở bước gom cụm** và in bước tiếp theo: đọc `takes_packed.md`,
 chọn đoạn, viết EDL. Quy trình đầy đủ + luật cứng: skill `video-edit`.
 
+## G2. Đọc video mẫu: `reference`
+
+```
+video-studio reference init --name demo [--url U | --file F]    # dựng project + provenance.json
+video-studio reference frames --input V --at 1,5.5 --out DIR    # khung có PTS thật
+video-studio reference tiles --input V --every 2 --out DIR      # lưới khung (số ô khớp số khung ghi ra)
+video-studio reference transcribe --input V --project P         # phụ đề gốc, rồi ASR tại máy
+video-studio reference fetch --url U --allow-url U --project P  # mặc định chỉ in kế hoạch; thêm --go để tải
+video-studio reference audit --project P                        # tài sản với hồ sơ quyền
+video-studio reference audit --spec FILE                        # spec/EDL chỉ được trỏ tệp trong assets/
+```
+
+- `--name` là tên trần: không dấu ngăn, không ổ đĩa, không kết thúc bằng dấu chấm hoặc khoảng trắng
+  (Windows cắt chúng đi nên tên ghi ra lệch tên đã khai) — sai là mã 2.
+- `transcribe` ưu tiên phụ đề đưa tay, rồi phụ đề cạnh video, rồi luồng chữ nhúng. Khi lấy luồng nhúng,
+  transcript ghi `_source_language` (thẻ thật của luồng; `language_code` vẫn là điều đã xin). Không luồng nào
+  khớp `--language` thì lệnh vẫn dùng luồng chữ đầu tiên và **cảnh báo trên stderr**: đưa `--subs` nếu cần
+  đúng ngôn ngữ.
+- `audit --spec` đọc mọi chuỗi trong spec của `render` hay EDL của `edit`; chuỗi nào là tệp có thật mà nằm
+  ngoài `assets/` của project (hoặc template của repo) là một phát hiện, mã 2. Lệnh chỉ đọc, không mở tệp
+  đích; `..`, đường tuyệt đối và liên kết mềm đều bị bắt. Không có `--project` thì project là thư mục chứa spec.
+- Đuôi `.unknown_video` (yt-dlp đặt khi không biết đuôi) được `frames`, `tiles`, `transcribe` nhận như `fetch`;
+  ffprobe vẫn kiểm nội dung container.
+- Video mẫu có cổng quyền: chưa có phép tải thì giữ `rights_pending` và chỉ phân tích tệp của người dùng.
+  Chi tiết: `docs/reference-to-remix.md`.
+
 ## H. Biến môi trường
 
 | Biến | Nghĩa |

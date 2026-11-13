@@ -9,6 +9,7 @@
     video-studio reference transcribe --input V --project P          # phụ đề gốc, rồi ASR tại máy
     video-studio reference fetch --url U --allow-url U --project P   # tải có cổng (mặc định chỉ in kế hoạch)
     video-studio reference audit --project P                         # kiểm tài sản với hồ sơ
+    video-studio reference audit --spec FILE                         # spec/EDL chỉ được trỏ tệp trong assets/
 """
 import argparse
 import datetime
@@ -88,9 +89,12 @@ def build_parser(prog="video-studio reference"):
     p.add_argument("--max-mb", type=int, default=500, help="trần dung lượng (MB)")
     p.add_argument("--sub-langs", default="vi,en", help="ngôn ngữ phụ đề, cách nhau bằng dấu phẩy")
 
-    p = sub.add_parser("audit", parents=[common], help="kiểm thư mục tài sản với hồ sơ")
-    p.add_argument("--project", required=True, help="thư mục project")
+    p = sub.add_parser("audit", parents=[common], help="kiểm thư mục tài sản với hồ sơ và/hoặc spec/EDL")
+    p.add_argument("--project", help="thư mục project (bắt buộc nếu không có --spec)")
     p.add_argument("--assets", help="thư mục tài sản (mặc định <project>/assets)")
+    p.add_argument("--spec", help="spec JSON của `render` hay EDL của `edit`: mọi đường tệp có thật phải nằm "
+                                  "trong assets/ hoặc template của repo (chỉ đọc, không mở tệp đích; "
+                                  "không có --project thì project = thư mục chứa spec)")
 
     p = sub.add_parser("lyric-audit", parents=[common], help="kiểm tài sản lyric khai báo; không kiểm runtime")
     p.add_argument("--project", required=True, help="thư mục project tham chiếu")
@@ -178,7 +182,18 @@ def do_reference(args):
         return subs.transcribe(args.input, args.project, subs=args.subs, language=args.language,
                                force=args.force)
     if action == "audit":
-        return gate.audit_assets(args.project, args.assets)
+        if not args.project and not args.spec:
+            raise ContractError("audit cần --project hoặc --spec")
+        result = {"ok": True, "checked": 0, "findings": []}
+        if args.project:
+            result = gate.audit_assets(args.project, args.assets)
+        if args.spec:
+            from . import spec_audit
+            project = args.project or os.path.dirname(os.path.abspath(args.spec))
+            extra = spec_audit.audit_spec(args.spec, project, args.assets)
+            result = {"ok": result["ok"] and extra["ok"], "checked": result["checked"] + extra["checked"],
+                      "findings": result["findings"] + extra["findings"]}
+        return result
     if action == "lyric-audit":
         from . import lyric_guard
         try:
