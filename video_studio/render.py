@@ -328,8 +328,8 @@ def main(argv=None):
     ap.add_argument("--gsap-file", default="", help="file GSAP cục bộ cho effect-preview")
     ap.add_argument("--images", default="",
                     help="images.json: ghép ảnh của người dùng vào đúng cảnh/đoạn/phần "
-                         "(repo-today, news, news-weekly, topstory), một ảnh mỗi cảnh (cục bộ hoặc URL), "
-                         "thay ảnh/clip của cảnh đó; xem docs/CONTRACT.md")
+                         "(repo-today, news, news-weekly, topstory), một ảnh hoặc danh sách ảnh mỗi cảnh (cục bộ hoặc URL; "
+                         "nhiều ảnh trừ repo-today), thay ảnh/clip của cảnh đó; xem docs/CONTRACT.md")
     ap.add_argument("--json", action="store_true", help="in một dòng JSON kết quả ra stdout")
     args, code = contract.parse(ap, argv)
     if args is None:
