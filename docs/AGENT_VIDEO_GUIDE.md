@@ -38,6 +38,7 @@ video-studio cleanup inspect --input input.mp4 --json
 video-studio doctor --json          # node ≥ 22, ffmpeg, Chromium, font, trạm
 video-studio init --station <trạm>  # dựng trạm (xem docs/WORKSPACE.md cho hai chế độ)
 video-studio render …               # spec JSON → video theo template
+video-studio render --project-dir <thư mục> --out <thư mục ra>   # project HyperFrames tự dựng: check --strict + render engine ghim
 video-studio narrate …              # video câm + lời dẫn → video có giọng
 video-studio preview --project …    # soi trên trình duyệt (chạy tới khi Ctrl+C)
 video-studio edit …                 # cắt footage quay thật
@@ -57,6 +58,10 @@ video-studio render --project topstory --input spec.json --out <thư mục> --js
 **`brand` là bắt buộc.** Thiếu nó là mã 2 chứ không phải một mặc định âm thầm: engine không mang
 sẵn tên hay tên miền của ai, nên "quên khai brand" không bao giờ ra một video mang danh tính của
 người khác.
+
+**Project tự dựng:** `render --project-dir DIR --out OUT` kiểm `check --strict` rồi render bằng engine
+ghim. Project chỉ gồm `index.html`, tệp tĩnh ở gốc và `assets/`; được chép sang thư mục tạm, không đi
+theo symlink/junction, và bị từ chối (mã 2) nếu có `.npmrc`, `package.json` hay `node_modules/`.
 
 Ảnh và clip khai bằng đường **tương đối so với file spec**. `--brand brand.json` để tách phần
 thương hiệu ra dùng lại cho nhiều số báo.

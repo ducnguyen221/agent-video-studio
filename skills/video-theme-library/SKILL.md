@@ -52,6 +52,15 @@ Windows hỗ trợ `capture`, `materialize` và `materialize-repo` một file. M
 kiểm trạm/đích trước khi thử lại. Xem [nguồn và giới hạn](references/effect-sources.md).
 Bundle nhiều file chưa materialize được; metadata không tự chứng minh bản quyền.
 
+## Template tin tức không đi qua thư viện motion
+
+Các template `news`, `news-weekly`, `topstory` và `repo-today` của `video-studio render` tự dựng
+bố cục và chuyển động riêng; chúng **không** đọc catalog layout hay thư viện motion ở trên. Muốn
+áp motion từng cảnh thì dựng một project HyperFrames tuỳ biến (`index.html` + `assets/`) rồi dựng
+bằng `video-studio render --project-dir <thư mục> --out <thư mục ra>`: lệnh kiểm `check --strict`
+và render bằng engine ghim trên bản chép cô lập; project có `.npmrc`, `package.json` hay
+`node_modules/` bị từ chối (mã 2).
+
 ## Quy trình bốn bước
 
 Với lyric video, sau layout hãy tra skill `lyric-video-effects`

@@ -69,6 +69,8 @@ Trên máy có `OPCOS_WORKSPACES`, `--mode embedded --yes` chọn trạm trong r
   skill `photo-ambient-effects`. Hai skill bổ trợ không thay workflow chính.
 - **Dựng video từ DỮ LIỆU** (bản tin, deep-dive, repo hôm nay): `render` + một spec
   `schema_version: 1`. `brand` bắt buộc; thiếu là mã 2. Khuôn spec: `docs/CONTRACT.md`.
+  Video tin cần 1–2 ảnh thật của chủ thể: làm bước «tìm ảnh» sau dossier, trước storyboard —
+  [tìm ảnh cho video tin](references/news-image-search.md). Project HyperFrames tự dựng: `render --project-dir`.
 - **Đã có video câm, cần giọng**: `narrate`. Ghim `--profile`, đừng dùng `--instruct` cho bản
   giao (mỗi câu một giọng khác).
 - **Có footage quay thật**: `edit` → đọc skill `video-edit` trước khi cắt; quy trình là hỏi →
