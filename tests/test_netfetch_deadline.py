@@ -220,6 +220,53 @@ def test_truncated_content_length_body_is_an_error(loopback_ok):
         _fetch(port, total_deadline=5.0)
 
 
+class _HeaderResp(_Resp):
+    def __init__(self, length):
+        super().__init__()
+        self.length = length
+
+    def getheader(self, name, default=None):
+        if name.lower() == "content-length":
+            return self.length
+        return super().getheader(name, default)
+
+
+@pytest.mark.parametrize("length", ["²", "٣", "9" * 5000, "abc", "", "-1", "+5"])
+def test_odd_content_length_never_leaks_a_value_error(length):
+    try:
+        out = nf.fetch_public("https://img.example.com/a", max_bytes=1000, resolver=lambda h, p: [PUBLIC],
+                              connector=lambda *a: type("C", (), {
+                                  "request": lambda self, *x, **k: None,
+                                  "getresponse": lambda self: _HeaderResp(length),
+                                  "close": lambda self: None})())
+    except nf.FetchError:
+        return                                          # từ chối cũng được; ValueError thì không
+    assert out[2] == b"ok"
+
+
+def test_huge_declared_content_length_is_refused_before_reading():
+    with pytest.raises(nf.FetchError):
+        nf.fetch_public("https://img.example.com/a", max_bytes=1000, resolver=lambda h, p: [PUBLIC],
+                        connector=lambda *a: type("C", (), {
+                            "request": lambda self, *x, **k: None,
+                            "getresponse": lambda self: _HeaderResp("9" * 5000),
+                            "close": lambda self: None})())
+
+
+def test_invalid_caller_header_is_a_fetch_error(loopback_ok):
+    port = _serve(lambda conn: None)
+    with pytest.raises(nf.FetchError):
+        _fetch(port, total_deadline=5.0, headers={"X-Test": "a\nb"})
+
+
+def test_chunked_body_with_a_stale_content_length_is_not_called_truncated(loopback_ok):
+    def handler(conn):
+        conn.sendall(b"HTTP/1.1 200 OK\r\nContent-Type: image/png\r\nTransfer-Encoding: chunked\r\n"
+                     b"Content-Length: 3\r\nConnection: close\r\n\r\n5\r\nhello\r\n0\r\n\r\n")
+    port = _serve(handler)
+    assert _fetch(port, total_deadline=5.0)[2] == b"hello"
+
+
 def test_zero_total_deadline_is_refused():
     with pytest.raises(nf.FetchError):
         nf.fetch_public("https://img.example.com/a", max_bytes=10, total_deadline=0,

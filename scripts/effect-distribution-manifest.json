@@ -332,7 +332,7 @@
     "video_studio/__init__.py": "e0d1f4570a21925bccd1e3ee9dd042f80fb42b6786795865836f6da889dc4e8a",
     "video_studio/__main__.py": "13a1a5b340cdcfc1902b62be90e508c7c71886000d5bf087e7854aadf09fb35e",
     "video_studio/_env.py": "84f460ddb9520358490de6df01c9a8aad145f213700d1fde6c0118403bdbe5c2",
-    "video_studio/_netfetch.py": "c37025c6d1d7da0e8498d9cf0297bb8d0fd6b5bd6445515c6216859385bcd1d7",
+    "video_studio/_netfetch.py": "7759eca179cad8463f68bba87858c8c74893877b9469f1b086fba2b609ede3e2",
     "video_studio/_paths.py": "759941d1924ad165c7606ea52c5db5646850aa12af710db865a396869e35bd51",
     "video_studio/cleanup.py": "ba2ea1d8d6089a38247fb7baffb4cbbdb810580c6ac32bad3b09e5395867d61a",
     "video_studio/cli.py": "58c4825b4ab56eb3f39e8891537cee934323432fdcbe6ea2806e9c203af46073",

@@ -207,6 +207,19 @@ def _addresses(host, port, resolver):
     return [str(i) for i in ips]
 
 
+def _declared_length(value, max_bytes):
+    """`Content-Length` đã phân tích (số nguyên) hoặc `None` nếu thiếu/không phải số thập phân ASCII.
+
+    Giá trị do máy chủ điều khiển: chữ số Unicode (`²`) và chuỗi quá dài (giới hạn `int()`) không được làm rò
+    `ValueError`. Khai vượt trần thì từ chối ngay, trước khi đọc thân."""
+    text = (value or "").strip()
+    if not (text.isascii() and text.isdigit()):
+        return None
+    if len(text.lstrip("0")) > 12 or int(text) > max_bytes:
+        raise FetchError(f"phản hồi khai {text[:20]} byte, vượt trần {max_bytes}")
+    return int(text)
+
+
 def _read_body(resp, max_bytes, deadline):
     reader = getattr(resp, "read1", None) or resp.read          # read1: trả ngay khi có dữ liệu, không đợi đủ n byte
     chunks, total = [], 0
@@ -271,6 +284,9 @@ def _fetch(url, max_bytes, timeout, deadline, headers, allowed_hosts, max_redire
                 if watchdog.fired:
                     conn.close()
                     raise FetchError("quá hạn tổng thời gian tải") from None
+                if isinstance(exc, ValueError):          # tiêu đề do nơi gọi đưa vào không hợp lệ
+                    conn.close()
+                    raise FetchError(f"yêu cầu không hợp lệ: {type(exc).__name__}") from None
                 if not isinstance(exc, (OSError, http.client.HTTPException)):
                     raise
                 last = exc
@@ -290,19 +306,12 @@ def _fetch(url, max_bytes, timeout, deadline, headers, allowed_hosts, max_redire
                 continue
             if not 200 <= status < 300:
                 raise FetchError(f"máy trả mã {status}")
-            declared = resp.getheader("Content-Length")
-            if declared is not None:
-                try:
-                    too_big = int(declared) > max_bytes
-                except ValueError:
-                    too_big = False
-                if too_big:
-                    raise FetchError(f"phản hồi khai {declared} byte, vượt trần {max_bytes}")
+            declared_n = _declared_length(resp.getheader("Content-Length"), max_bytes)
             data = _read_body(resp, max_bytes, deadline)
             if _expired(watchdog, deadline):             # kết nối bị ngắt thì `read1` trả rỗng như hết dữ liệu
                 raise FetchError("quá hạn tổng thời gian tải")
-            if declared is not None and declared.strip().isdigit() and len(data) != int(declared):
-                raise FetchError(f"phản hồi cụt: khai {declared} byte, nhận {len(data)}")
+            if declared_n is not None and not resp.getheader("Transfer-Encoding") and len(data) != declared_n:
+                raise FetchError(f"phản hồi cụt: khai {declared_n} byte, nhận {len(data)}")
             return current, (resp.getheader("Content-Type") or "").lower(), data
         except (OSError, http.client.HTTPException) as exc:
             if _expired(watchdog, deadline):
