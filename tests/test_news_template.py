@@ -327,7 +327,7 @@ def _user_png(tmp_path, name="a.png"):
 def test_local_images_are_copied_by_the_news_downloader(news, monkeypatch, tmp_path):
     src = _user_png(tmp_path)
     dest = tmp_path / "proj" / "img"
-    monkeypatch.setattr(news.urllib.request, "urlopen", lambda req, timeout=20: _Resp())
+    monkeypatch.setattr(news._netfetch, "fetch_public", lambda url, **kw: (url, "image/png", _Resp().read()))
     got = news._download_images([str(src), "https://x/y.png"], str(dest), 2)
     assert got == ["img/s2_0.png", "img/s2_1.png"]
     assert (dest / "s2_0.png").read_bytes() == src.read_bytes()
@@ -352,25 +352,31 @@ def test_a_non_image_local_file_is_not_copied(news, tmp_path, capsys):
     assert not (dest / "s1_0.txt").exists()
 
 
-def test_non_public_urls_never_reach_urlopen(news, monkeypatch, tmp_path, capsys):
-    """Bảo mật (SSRF): `file:`, loopback, link-local, mạng riêng bị bỏ trước khi gọi `urlopen`."""
+def test_non_public_urls_never_reach_the_network(news, monkeypatch, tmp_path, capsys):
+    """Bảo mật (SSRF): `file:`, loopback, link-local, mạng riêng bị từ chối trước khi mở MỘT kết nối nào."""
     src = _user_png(tmp_path)
-    seen = []
-    monkeypatch.setattr(news.urllib.request, "urlopen", lambda req, timeout=20: seen.append(req.full_url) or _Resp())
+    opened = []
+
+    def no_connect(*a, **k):
+        opened.append(a)
+        raise AssertionError("không được mở kết nối tới địa chỉ không công khai")
+
+    monkeypatch.setattr(news._netfetch, "_default_connector", no_connect)
+    monkeypatch.setattr(news._netfetch, "_default_resolver", lambda h, p: ["127.0.0.1"] if h == "localhost" else ["93.184.216.34"])
     urls = ["file:///" + str(src).replace(chr(92), "/"), "http://127.0.0.1/a.png", "http://169.254.169.254/a.png",
             "http://10.0.0.5/a.png", "https://localhost/a.png", "ftp://example.com/a.png"]
     got = news._download_images(urls, str(tmp_path / "proj" / "img"), 1, max_n=len(urls))
-    assert got == [] and seen == []
-    assert capsys.readouterr().out.count("chỉ nhận URL http(s)") == len(urls)
+    assert got == [] and opened == []
+    assert capsys.readouterr().out.count("[warn] image 1/") == len(urls)
 
 
 def test_a_failing_url_still_leaves_the_local_image(news, monkeypatch, tmp_path):
     src = _user_png(tmp_path)
 
-    def boom(req, timeout=20):
+    def boom(url, **kw):
         raise OSError("x")
 
-    monkeypatch.setattr(news.urllib.request, "urlopen", boom)
+    monkeypatch.setattr(news._netfetch, "fetch_public", boom)
     got = news._download_images([str(src), "https://x/y.png"], str(tmp_path / "proj" / "img"), 1)
     assert got == ["img/s1_0.png"]
 
@@ -431,7 +437,8 @@ def _resp(content_type, size):
 ])
 def test_a_url_response_that_is_dropped_leaves_a_warning(news, monkeypatch, tmp_path, capsys,
                                                          content_type, size, needle):
-    monkeypatch.setattr(news.urllib.request, "urlopen", lambda req, timeout=20: _resp(content_type, size))
+    monkeypatch.setattr(news._netfetch, "fetch_public",
+                        lambda url, **kw: (url, content_type, b"\x89PNG" + b"0" * (size - 4)))
     got = news._download_images(["https://x/y"], str(tmp_path / "proj" / "img"), 2)
     assert got == []
     out = capsys.readouterr().out
