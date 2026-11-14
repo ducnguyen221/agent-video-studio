@@ -33,6 +33,7 @@ import tempfile
 from urllib.parse import urlsplit
 
 from video_studio.contract import ContractError
+from video_studio._netfetch import _BLOCKED_V4, _BLOCKED_V6, ip_is_internal as _ip_is_internal  # noqa: F401 — một bảng chặn dùng chung với bước tải
 
 RIGHTS = ("approved", "rights_pending", "blocked")
 BASES = ("own_content", "written_permission", "license")
@@ -53,22 +54,6 @@ UNKNOWN_EXT = "unknown_video"   # yt-dlp tự đặt khi không biết đuôi
 PROVENANCE_FILE = "provenance.json"
 MAX_URL_LEN = 2048
 _LAST_LABEL_NUMERIC = re.compile(r"0x[0-9a-f]*|[0-9]+")
-# Danh sách chặn TƯỜNG MINH, không dựa vào `is_global`/`is_private` của `ipaddress` (bảng đó đổi theo bản Python:
-# CPython 3.10.11 coi 192.0.0.8 là global, trước bản vá CVE-2024-4032). Nguồn: IANA IPv4 Special-Purpose Address
-# Registry và IANA IPv6 Special-Purpose Address Registry (iana.org/assignments/iana-ipv4-special-registry,
-# iana-ipv6-special-registry), cộng khối reserved/multicast. Cờ của `ipaddress` vẫn được kiểm thêm, không thay thế.
-_BLOCKED_V4 = tuple(ipaddress.ip_network(n) for n in (
-    "0.0.0.0/8", "10.0.0.0/8", "100.64.0.0/10", "127.0.0.0/8", "169.254.0.0/16", "172.16.0.0/12",
-    "192.0.0.0/24", "192.0.2.0/24", "192.31.196.0/24", "192.52.193.0/24", "192.88.99.0/24", "192.168.0.0/16",
-    "192.175.48.0/24", "198.18.0.0/15", "198.51.100.0/24", "203.0.113.0/24", "224.0.0.0/4", "240.0.0.0/4",
-    "255.255.255.255/32"))
-# `::ffff:0:0/96` (IPv4-mapped) có trong bảng cho đủ, nhưng địa chỉ mapped được gỡ ra và kiểm bằng bảng IPv4
-# TRƯỚC khi tới đây, nên `::ffff:8.8.8.8` vẫn qua còn `::ffff:127.0.0.1` thì bị chặn.
-# `fec0::/10` (site-local cũ) đã bỏ khỏi registry (RFC 3879) nhưng chặn cho chắc.
-_BLOCKED_V6 = tuple(ipaddress.ip_network(n) for n in (
-    "::/128", "::1/128", "::ffff:0:0/96", "::ffff:0:0:0/96", "64:ff9b::/96", "64:ff9b:1::/48", "100::/64",
-    "2001::/23", "2001:db8::/32", "2002::/16", "3fff::/20", "5f00::/16", "fc00::/7", "fe80::/10", "fec0::/10",
-    "ff00::/8"))
 _LDH_HOST = re.compile(r"[a-z0-9-]+(\.[a-z0-9-]+)*\.?")
 _HEX64 = re.compile(r"[0-9a-fA-F]{64}")
 _INTENTS = ("public", "private")
@@ -82,15 +67,6 @@ def _invalid(why):
 
 def _internal(host):
     return ContractError(f"URL bị từ chối: host nội bộ ({host})")
-
-
-def _ip_is_internal(ip):
-    if isinstance(ip, ipaddress.IPv6Address) and ip.ipv4_mapped is not None:
-        ip = ip.ipv4_mapped
-    blocked = _BLOCKED_V4 if isinstance(ip, ipaddress.IPv4Address) else _BLOCKED_V6
-    return (any(ip in net for net in blocked)
-            or ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved
-            or ip.is_multicast or ip.is_unspecified or not ip.is_global)
 
 
 def check_url(url):
