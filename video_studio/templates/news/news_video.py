@@ -32,7 +32,7 @@ import soundfile as sf
 
 from voice_studio import av, engine, profiles
 
-from ... import _env, _netfetch, projects, render
+from ... import _env, _netfetch, _paths, projects, render
 from ...contract import ContractError
 from ...spec import MAX_SCENE_IMAGES, REQUIRED_BRAND, USER_IMAGE_KEY
 
@@ -766,6 +766,11 @@ def inside(path, folder):
         return False
 
 
+def unsafe_local_path(path):
+    """True nếu `path` là đường mạng/thiết bị (UNC, tiền tố NT, ổ lạ) hoặc tên thiết bị Windows: không được chạm hệ tệp."""
+    return isinstance(path, str) and (_paths.is_unc_like(path) or (os.path.isabs(path) and _paths.is_device_name(path)))
+
+
 def is_link(path):
     """Symlink hoặc junction (không đi theo)."""
     return os.path.islink(path) or bool(getattr(os.path, "isjunction", lambda _p: False)(path))
@@ -778,7 +783,7 @@ def guard_user_images(segments, img_dir):
     for i, seg in enumerate(segments or [], 1):
         imgs = seg.get("images") if isinstance(seg, dict) else None
         for u in (imgs if isinstance(imgs, list) else []):
-            if isinstance(u, str) and os.path.isabs(u) and inside(u, img_dir):
+            if isinstance(u, str) and not unsafe_local_path(u) and os.path.isabs(u) and inside(u, img_dir):
                 raise ContractError(
                     f"ảnh của đoạn {i} nằm trong thư mục ảnh tạm của bước dựng (img/ của project): {u}. "
                     "Bước dựng xoá và ghi lại thư mục này — chép ảnh sang nơi khác rồi trỏ images.json tới đó")
@@ -825,6 +830,9 @@ def _download_images(urls, dest_dir, seg_idx, max_n=3):
     out = []
     for j, u in enumerate((urls or [])[:max_n]):
         try:
+            if unsafe_local_path(u):
+                print(f"    [warn] image {seg_idx}/{j} bỏ: đường mạng hoặc thiết bị không được nhận")
+                continue
             if isinstance(u, str) and os.path.isabs(u):
                 ext = os.path.splitext(u)[1].lower()
                 if ext not in _LOCAL_EXTS:

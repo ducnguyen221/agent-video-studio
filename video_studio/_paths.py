@@ -24,10 +24,35 @@ import posixpath
 
 from .contract import ContractError
 
-__all__ = ["plain_name", "join_out"]
+__all__ = ["plain_name", "join_out", "is_unc_like", "is_device_name"]
 
 #: Ký tự điều khiển: `\x00` cắt tên ở tầng C, phần còn lại không bao giờ là tên file thật.
 _CONTROL = frozenset(chr(c) for c in range(0x20)) | {"\x7f"}
+
+
+_DEVICE_NAMES = frozenset({"CON", "PRN", "AUX", "NUL", "CONIN$", "CONOUT$"}
+                          | {f"COM{i}" for i in range(1, 10)} | {f"LPT{i}" for i in range(1, 10)})
+
+
+def is_unc_like(value):
+    r"""Đường mạng hoặc thiết bị Windows: UNC, `\\?\`, `\\.\`, tiền tố NT `\??\` (bất kể trộn `/` và `\`).
+
+    Không bao giờ chạm hệ tệp với các chuỗi này (SMB ra ngoài). Dùng danh sách cho phép phía ổ đĩa: ổ khác đúng một
+    chữ cái ASCII (`ntpath.splitdrive`; `é:` và `1:` không phải ổ) cũng bị coi là mạng. Kiểm trên mặt chữ nên chạy y
+    hệt trên mọi hệ điều hành: `//host/x` trên macOS/Linux là đường hợp lệ nhưng cũng bị từ chối."""
+    v = str(value).replace("/", "\\")
+    if v.startswith(("\\\\", "\\??\\")):
+        return True
+    drive = ntpath.splitdrive(v)[0]
+    return bool(drive) and not (len(drive) == 2 and drive[1] == ":" and drive[0].isascii() and drive[0].isalpha())
+
+
+def is_device_name(value):
+    """Tên cuối của `value` là tên thiết bị Windows (`NUL`, `CON`, `COM1`…, có hay không có đuôi, dấu chấm/space cuối).
+
+    Windows mở thiết bị thay vì tệp, nên không được probe/chép. Không phân biệt hoa/thường."""
+    name = str(value).replace("\\", "/").rsplit("/", 1)[-1].rstrip(" .")
+    return name.split(".", 1)[0].rstrip(" ").upper() in _DEVICE_NAMES
 
 
 def _why_not_a_name(s):
