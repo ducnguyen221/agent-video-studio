@@ -1203,3 +1203,33 @@ def test_capture_preserves_distinct_reference_url_parts(tmp_path, first_source, 
     capture(tmp_path, station, dict(base, id="VE-parts-one", name="Parts one", source=first_source))
     capture(tmp_path, station, dict(base, id="VE-parts-two", name="Parts two", source=second_source))
     assert {item["source"] for item in search("synthetic distinct", station=station)} == {first_source, second_source}
+
+
+@pytest.mark.parametrize("name", [
+    "a:b", "stream.txt:ads", "trailing.", "trailing ", "NUL", "con.txt", "COM1", "lpt9.log",
+    "bad<name", "bad|name", "bad?name", "with\x01ctl", "x" * 300, "", ".", "..", "a/b", "a\\b",
+])
+def test_component_rejects_dangerous_windows_names(name):
+    from video_studio.effect_library import _native_windows as native
+    with pytest.raises(ValueError):
+        native._component(name)
+
+
+@pytest.mark.parametrize("name", ["effect.js", "glow-1.css", "Ünicode.txt", "com10.txt", "nullable"])
+def test_component_accepts_ordinary_names(name):
+    from video_studio.effect_library import _native_windows as native
+    native._component(name)
+
+
+@pytest.mark.parametrize("path", ["\\\\server\\share\\x", "relative\\dir", "C:relative", "/rooted"])
+def test_open_root_rejects_unc_and_non_absolute_paths(path):
+    from video_studio.effect_library import _native_windows as native
+    with pytest.raises(ValueError):
+        native.open_root(path)
+
+
+@pytest.mark.parametrize("value", ["a.", "a ", "dir/b.", "dir/b ", "dir/x:y"])
+def test_repo_relative_path_rejects_trailing_dot_space_and_colon(value):
+    from video_studio.effect_library.catalog import ContractError, _relative
+    with pytest.raises(ContractError):
+        _relative(value)
