@@ -151,3 +151,76 @@ def test_https_to_http_redirect_is_refused():
     with pytest.raises(nf.FetchError):
         nf.fetch_public("https://img.example.com/a.png", max_bytes=10, resolver=lambda h, p: [PUBLIC], connector=Conn)
     assert log == ["https"]                                         # không kết nối tới http
+
+
+def test_http_to_https_to_http_is_refused_at_the_second_downgrade():
+    class Redirect(_Resp):
+        status = 302
+
+        def __init__(self, to):
+            super().__init__()
+            self.to = to
+
+        def getheader(self, name, default=None):
+            return self.to if name.lower() == "location" else default
+
+    queue = [Redirect("https://img.example.com/b"), Redirect("http://img.example.com/c")]
+    log = []
+
+    class Conn:
+        def __init__(self, scheme, host, ip, port, timeout):
+            log.append(scheme)
+
+        def request(self, *a, **k):
+            pass
+
+        def getresponse(self):
+            return queue.pop(0)
+
+        def close(self):
+            pass
+    with pytest.raises(nf.FetchError):
+        nf.fetch_public("http://img.example.com/a", max_bytes=10, resolver=lambda h, p: [PUBLIC], connector=Conn)
+    assert log == ["http", "https"]
+
+
+# ── vòng 2 của security review: thân chunked + Connection: close, thân cụt ───────────────
+
+def test_chunked_close_body_with_slow_chunk_size_line_is_cut_at_the_deadline(loopback_ok):
+    def handler(conn):
+        conn.sendall(b"HTTP/1.1 200 OK\r\nContent-Type: image/png\r\nTransfer-Encoding: chunked\r\n"
+                     b"Connection: close\r\n\r\n")
+        for _ in range(60):
+            conn.sendall(b"1")                                      # dòng kích thước chunk nhỏ giọt, không bao giờ xong
+            time.sleep(0.3)
+    port = _serve(handler)
+    t0 = time.monotonic()
+    with pytest.raises(nf.FetchError):
+        _fetch(port, total_deadline=1.0)
+    assert time.monotonic() - t0 < 4.0
+
+
+def test_connection_cut_by_the_deadline_is_never_reported_as_success(loopback_ok):
+    def handler(conn):
+        conn.sendall(b"HTTP/1.1 200 OK\r\nContent-Type: image/png\r\nTransfer-Encoding: chunked\r\n"
+                     b"Connection: close\r\n\r\n5\r\nhello\r\n")
+        time.sleep(6)                                               # rồi im lặng
+    port = _serve(handler)
+    t0 = time.monotonic()
+    with pytest.raises(nf.FetchError):
+        _fetch(port, total_deadline=1.0)
+    assert time.monotonic() - t0 < 4.0
+
+
+def test_truncated_content_length_body_is_an_error(loopback_ok):
+    def handler(conn):
+        conn.sendall(b"HTTP/1.1 200 OK\r\nContent-Type: image/png\r\nContent-Length: 1000\r\nConnection: close\r\n\r\n0123456789")
+    port = _serve(handler)
+    with pytest.raises(nf.FetchError):
+        _fetch(port, total_deadline=5.0)
+
+
+def test_zero_total_deadline_is_refused():
+    with pytest.raises(nf.FetchError):
+        nf.fetch_public("https://img.example.com/a", max_bytes=10, total_deadline=0,
+                        resolver=lambda h, p: [PUBLIC], connector=_conn_factory([]))

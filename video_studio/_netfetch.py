@@ -148,6 +148,7 @@ class _PinnedConnection(http.client.HTTPConnection):
                 sock.close()
                 raise
         self.sock = sock
+        self.raw_sock = sock          # `getresponse` với `Connection: close` đặt `self.sock = None`; bản này vẫn còn để ngắt
 
 
 def _default_connector(scheme, host, ip, port, timeout):
@@ -172,7 +173,7 @@ class _Watchdog:
     def _fire(self):
         self.fired = True
         conn = self.conn
-        sock = getattr(conn, "sock", None)
+        sock = getattr(conn, "raw_sock", None) or getattr(conn, "sock", None)
         try:
             if sock is not None:
                 sock.shutdown(socket.SHUT_RDWR)
@@ -210,7 +211,7 @@ def _read_body(resp, max_bytes, deadline):
     reader = getattr(resp, "read1", None) or resp.read          # read1: trả ngay khi có dữ liệu, không đợi đủ n byte
     chunks, total = [], 0
     while True:
-        if _now() > deadline:
+        if _now() >= deadline:
             raise FetchError("quá hạn tổng thời gian tải")
         chunk = reader(min(65536, max_bytes + 1 - total))
         if not chunk:
@@ -241,16 +242,16 @@ def fetch_public(url, *, max_bytes, timeout=20, total_deadline=60, headers=None,
 
 
 def _expired(watchdog, deadline):
-    return watchdog.fired or _now() > deadline
+    return watchdog.fired or _now() >= deadline
 
 
 def _fetch(url, max_bytes, timeout, deadline, headers, allowed_hosts, max_redirects, resolver, connector, watchdog):
-    current, first_scheme = url, None
+    current, prev_scheme = url, None
     for _hop in range(max_redirects + 1):
         scheme, host, port, host_header, path = _parse(current, allowed_hosts)
-        if first_scheme == "https" and scheme != "https":
+        if prev_scheme == "https" and scheme != "https":
             raise FetchError("chuyển hướng hạ https xuống http bị từ chối")
-        first_scheme = first_scheme or scheme
+        prev_scheme = scheme
         ips = _addresses(host, port, resolver)
         req_headers = {"Host": host_header, "Connection": "close", **(headers or {})}
         resp, conn, last = None, None, None
@@ -259,11 +260,19 @@ def _fetch(url, max_bytes, timeout, deadline, headers, allowed_hosts, max_redire
                 raise FetchError("quá hạn tổng thời gian tải")
             conn = connector(scheme, host, ip, port, max(0.1, min(timeout, deadline - _now())))
             watchdog.conn = conn
+            if watchdog.fired:                           # đồng hồ bắn đúng khe giữa kiểm hạn và gán `conn`
+                conn.close()
+                raise FetchError("quá hạn tổng thời gian tải")
             try:
                 conn.request("GET", path, headers=req_headers)
                 resp = conn.getresponse()
                 break
-            except (OSError, http.client.HTTPException) as exc:
+            except Exception as exc:                     # noqa: BLE001 — socket bị ngắt giữa chừng có thể ra lỗi lạ
+                if watchdog.fired:
+                    conn.close()
+                    raise FetchError("quá hạn tổng thời gian tải") from None
+                if not isinstance(exc, (OSError, http.client.HTTPException)):
+                    raise
                 last = exc
                 conn.close()
                 conn = None
@@ -290,6 +299,10 @@ def _fetch(url, max_bytes, timeout, deadline, headers, allowed_hosts, max_redire
                 if too_big:
                     raise FetchError(f"phản hồi khai {declared} byte, vượt trần {max_bytes}")
             data = _read_body(resp, max_bytes, deadline)
+            if _expired(watchdog, deadline):             # kết nối bị ngắt thì `read1` trả rỗng như hết dữ liệu
+                raise FetchError("quá hạn tổng thời gian tải")
+            if declared is not None and declared.strip().isdigit() and len(data) != int(declared):
+                raise FetchError(f"phản hồi cụt: khai {declared} byte, nhận {len(data)}")
             return current, (resp.getheader("Content-Type") or "").lower(), data
         except (OSError, http.client.HTTPException) as exc:
             if _expired(watchdog, deadline):

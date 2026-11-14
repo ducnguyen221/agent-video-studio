@@ -14,6 +14,11 @@ def test_is_device_name_colon_and_superscript_forms(value):
     assert _paths.is_device_name(value) is True
 
 
+@pytest.mark.parametrize("value", ["C:NUL", "C:CON", "D:COM1", "c:nul.txt", "C:NUL:"])
+def test_is_device_name_drive_relative_forms(value):
+    assert _paths.is_device_name(value) is True
+
+
 @pytest.mark.parametrize("value", ["C:", "D:" + chr(92), "a:b.png"])
 def test_is_device_name_does_not_flag_drive_letters(value):
     assert _paths.is_device_name(value) is False

@@ -52,7 +52,10 @@ def is_device_name(value):
     """Tên cuối của `value` là tên thiết bị Windows (`NUL`, `CON`, `COM1`…, có hay không có đuôi, dấu chấm/space cuối).
 
     Windows mở thiết bị thay vì tệp, nên không được probe/chép. Không phân biệt hoa/thường."""
-    name = str(value).replace("\\", "/").rsplit("/", 1)[-1].split(":", 1)[0].rstrip(" .")   # `NUL:` cũng là thiết bị
+    name = str(value).replace("\\", "/").rsplit("/", 1)[-1]
+    if len(name) >= 2 and name[1] == ":" and name[0].isascii() and name[0].isalpha():
+        name = name[2:]                                       # `C:NUL` (ổ tương đối) vẫn là thiết bị NUL
+    name = name.split(":", 1)[0].rstrip(" .")                 # `NUL:` cũng là thiết bị
     return name.split(".", 1)[0].rstrip(" ").upper() in _DEVICE_NAMES
 
 
