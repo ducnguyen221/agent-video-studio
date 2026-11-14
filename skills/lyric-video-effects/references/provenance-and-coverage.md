@@ -18,3 +18,6 @@ không đưa vào plugin public. Hai mươi họ là code trích trung tính t�
 Kiểm static, unit và reviewer độc lập được ghi trong hồ sơ phát triển; model baseline và
 model A/B của hai skill chưa chạy (`not_run`). Gói cục bộ phục vụ tái dùng có kiểm,
 không tuyên bố đã kiểm đa nền tảng/đa font hoặc đã phát hành plugin.
+
+`assets/audio-visualizer.js` (bản 0.10.0) là code gốc của repo này, không chuyển thể từ nguồn ngoài;
+giấy phép MIT như các asset lyric khác.

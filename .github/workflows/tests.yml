@@ -43,6 +43,10 @@ jobs:
       - name: Chạy bộ test
         # Cây làm việc là một bản checkout git thật, nên các cổng `git check-ignore`
         # (bị skip khi chạy trên cây chưa git init) chạy thật ở đây.
+        # EFFECT_DIST_TEST=1 bật vòng gói wheel + sdist tách riêng (chỉ Windows); trước đây
+        # test này tắt mặc định nên manifest phân phối lệch băm mà CI vẫn xanh (RQ-036).
+        env:
+          EFFECT_DIST_TEST: '1'
         run: python -m pytest -q
 
   upstream:

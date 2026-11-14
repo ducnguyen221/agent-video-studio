@@ -5,6 +5,12 @@ chính nhưng chưa có tag; khi phát hành, mục đó đổi tên thành số
 `pyproject.toml`, `video_studio/__init__.py` cùng ba manifest plugin (`tests/test_version_sync.py`
 kiểm).
 
+## Chưa phát hành
+
+- Sửa bộ dựng gói thư viện hiệu ứng: manifest phân phối cập nhật băm và thêm các file còn thiếu (audio visualizer, news-image-search, CATALOG), thêm mục quyền cho `audio-visualizer.js`; CI Windows bật vòng gói wheel + sdist (`EFFECT_DIST_TEST=1`) để lệch băm lần sau làm CI đỏ (RQ-036).
+- Thêm 32 test tên Windows nguy hiểm cho `effect_library` native; sửa docstring `_native_windows.py`.
+- Số skill ghi đúng 29 (8 của repo + 21 HyperFrames) ở README, README.vi và AGENTS.md (RQ-037).
+
 ## 0.10.0 — 2026-11-13
 
 - Mở rộng quy trình lyric video: lập số ảnh và lượt cảnh theo thời lượng, nội dung lời; đề xuất hiệu ứng theo cảnh và demo có hình, nhạc, chữ.

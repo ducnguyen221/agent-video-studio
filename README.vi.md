@@ -130,9 +130,9 @@ Hướng dẫn từng bước cho người dùng: [GUIDE.vi.md](GUIDE.vi.md).
 
 ## Skill cho agent
 
-`skills/` có **27 skill**: sáu skill của chính repo này (`video-routing`, `video-edit`,
+`skills/` có **29 skill**: tám skill của chính repo này (`video-routing`, `video-edit`,
 `video-cleanup`, `video-theme-library`, `video-reference-analysis`,
-`video-remix-brief`) và **21 skill chưng cất từ bộ skill hiện hành của HyperFrames**
+`video-remix-brief`, `lyric-video-effects`, `photo-ambient-effects`) và **21 skill chưng cất từ bộ skill hiện hành của HyperFrames**
 (`skills/hyperframes/`). Bộ 21 này là bản **đã dịch sang tiếng Việt, rút gọn và biên tập lại** từ
 `skills/<tên>/SKILL.md` của upstream tại một tag cụ thể — frontmatter giữ tiếng Anh vì đó là thứ
 harness đọc để định tuyến. Không file nhị phân nào của upstream (font, nhạc, ảnh) được chép vào
@@ -141,7 +141,7 @@ harness đọc để định tuyến. Không file nhị phân nào của upstrea
 
 Skill **không** được chép vào trạm. Gốc repo có một adapter nhỏ cho mỗi skill ở `.claude/skills/`
 (Claude Code) và `.agents/skills/` (Codex, Antigravity): adapter chỉ mang `name` + `description`
-của skill và trỏ agent về bản gốc trong `skills/`. Mở thư mục repo trong host là thấy đủ 27 skill;
+của skill và trỏ agent về bản gốc trong `skills/`. Mở thư mục repo trong host là thấy đủ 29 skill;
 `git pull` là có nội dung skill mới. Thêm, xoá hay đổi mô tả skill thì chạy
 `python scripts/build_host_adapters.py`; `tests/test_host_adapters.py` đỏ khi adapter lệch nguồn.
 Trạm dựng bằng bản cũ còn bản chép cùng `skills-lock.json`: `init --station DIR --migrate` **gỡ**

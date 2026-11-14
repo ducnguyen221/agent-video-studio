@@ -1,4 +1,4 @@
-"""Experimental Windows handle-relative primitives. Not wired to capture."""
+"""Windows handle-relative primitives for capture, load and materialize (called from catalog.py)."""
 import ctypes
 import os
 import re

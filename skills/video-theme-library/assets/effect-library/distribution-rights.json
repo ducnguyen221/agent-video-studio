@@ -1,6 +1,7 @@
 {
   "schema": "effect-distribution-rights/1",
   "files": {
+    "skills/lyric-video-effects/assets/audio-visualizer.js": {"license": "MIT", "provenance": "skills/lyric-video-effects/references/provenance-and-coverage.md", "notices": ["LICENSE"]},
     "skills/lyric-video-effects/assets/line-icons.mjs": {"license": "MIT", "provenance": "skills/lyric-video-effects/references/provenance-and-coverage.md", "notices": ["LICENSE"]},
     "skills/lyric-video-effects/assets/motion-families.mjs": {"license": "MIT", "provenance": "skills/lyric-video-effects/references/provenance-and-coverage.md", "notices": ["LICENSE"]},
     "skills/lyric-video-effects/assets/script-ink.css": {"license": "MIT", "provenance": "skills/lyric-video-effects/references/provenance-and-coverage.md", "notices": ["LICENSE"]},
