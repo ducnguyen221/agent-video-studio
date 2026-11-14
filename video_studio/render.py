@@ -30,7 +30,7 @@ import subprocess
 import tempfile
 import time
 
-from . import API_VERSION, __version__, _env, contract, spec as spec_mod, voice
+from . import API_VERSION, __version__, _env, _paths, contract, spec as spec_mod, voice
 from .contract import ContractError, EngineError, StationMissing
 
 FONT_TOKEN = "__FONT__"
@@ -108,6 +108,14 @@ def write_index(proj_dir, html):
     return path
 
 
+def _apply_env_extra(env, extra):
+    """Đặt `extra` vào `env`, xoá trước mọi khoá trùng KHÁC hoa/thường (Windows: giá trị engine thắng; POSIX: cả hai tồn tại)."""
+    wanted = {k.lower() for k in extra}
+    for k in [k for k in env if k.lower() in wanted]:
+        del env[k]
+    env.update(extra)
+
+
 def render_project(proj_dir, out_file, timeout=DEFAULT_TIMEOUT, retries=RETRIES, label="",
                    version=None, sleep=time.sleep, offline=False, env_extra=None):
     """Render `index.html` của project thành video câm `out_file`. -> out_file.
@@ -124,9 +132,9 @@ def render_project(proj_dir, out_file, timeout=DEFAULT_TIMEOUT, retries=RETRIES,
     argv = hyperframes_argv("render", "-o", out_file, "-q", QUALITY, version=version)
     env = render_env()
     if offline:
-        env["npm_config_offline"] = "true"
+        _apply_env_extra(env, {"npm_config_offline": "true"})
     if env_extra:
-        env.update(env_extra)
+        _apply_env_extra(env, env_extra)
     tag = f"[{label}] " if label else ""
     last = None
     nav = 0                     # số lần thử hỏng vì `Navigation timeout` (không mở được trang)
@@ -337,11 +345,17 @@ def _is_link(st):
     return stat.S_ISLNK(st.st_mode) or bool(getattr(st, "st_file_attributes", 0) & _REPARSE)
 
 
+class _Scanned(list):
+    """Danh sách `[(đường tuyệt đối, đường tương đối)]` kèm `.stats[rel] = (kích thước, mtime_ns)` đo LÚC QUÉT."""
+    stats = None
+
+
 def _scan_project(root):
-    """-> [(đường tuyệt đối, đường tương đối)] cần chép; ContractError nếu project không an toàn."""
+    """-> [(đường tuyệt đối, đường tương đối)] cần chép (kèm `.stats`); ContractError nếu project không an toàn."""
     if not os.path.isdir(root) or _is_link(os.lstat(root)):
         raise ContractError(f"--project-dir phải là một thư mục thật (không phải liên kết): {root}")
-    files, total = [], 0
+    files, total, stats = _Scanned(), 0, {}
+    files.stats = stats
     stack = [("", root)]
     while stack:
         rel_dir, cur = stack.pop()
@@ -370,6 +384,7 @@ def _scan_project(root):
                 if total > PROJECT_MAX_BYTES:
                     raise ContractError("project quá lớn (> 1 GiB)")
                 files.append((e.path, rel))
+                stats[rel] = (st.st_size, st.st_mtime_ns)
             else:
                 raise ContractError(f"`{rel}` không phải tệp thường")
     if INDEX not in [r for _a, r in files]:
@@ -377,11 +392,60 @@ def _scan_project(root):
     return files
 
 
+def _regular(st):
+    return stat.S_ISREG(st.st_mode) and not _is_link(st)
+
+
 def _stage_project(files, dest):
+    """Chép project sang `dest`. Mã 2 nếu một tệp đổi (liên kết, kích thước, giờ sửa) so với lúc quét, hoặc tổng vượt trần.
+
+    TOCTOU chỉ được THU HẸP, không loại hẳn: so `lstat` trước và sau mỗi lần chép với số đo lúc quét."""
+    stats = getattr(files, "stats", None) or {}
+    total = 0
     for src, rel in files:
         dst = os.path.join(dest, *rel.split("/"))
         os.makedirs(os.path.dirname(dst), exist_ok=True)
+        before = os.lstat(src)
+        want = stats.get(rel, (before.st_size, before.st_mtime_ns))
+        if not _regular(before) or (before.st_size, before.st_mtime_ns) != want:
+            raise ContractError(f"`{rel}` đã đổi sau khi quét (liên kết, kích thước hoặc giờ sửa) — chạy lại")
         shutil.copyfile(src, dst, follow_symlinks=False)
+        after = os.lstat(src)
+        copied = os.lstat(dst)
+        if not _regular(after) or (after.st_size, after.st_mtime_ns) != want:
+            raise ContractError(f"`{rel}` đổi trong lúc chép — chạy lại")
+        if not _regular(copied) or copied.st_size != want[0]:
+            raise ContractError(f"bản chép của `{rel}` không phải tệp thường đúng kích thước")
+        total += copied.st_size
+        if total > PROJECT_MAX_BYTES:
+            raise ContractError("project quá lớn (> 1 GiB)")
+
+
+def _project_name(src_dir):
+    """Tên file ra từ tên thư mục project: phải là MỘT tên tệp trần (`plain_name`); gốc ổ đĩa -> `project`."""
+    base = os.path.basename(src_dir.rstrip(os.sep + (os.altsep or ""))) or "project"
+    return _paths.plain_name(base, "--project-dir")
+
+
+def _check_final(final):
+    """Đích `OUT/<tên>.mp4`: liên kết/junction/thư mục -> mã 2; tệp thường đã có -> cảnh báo ghi đè."""
+    try:
+        st = os.lstat(final)
+    except FileNotFoundError:
+        return
+    if _is_link(st) or stat.S_ISDIR(st.st_mode):
+        raise ContractError(f"đích {final} là liên kết hoặc thư mục — từ chối ghi, chọn --out khác")
+    if not stat.S_ISREG(st.st_mode):
+        raise ContractError(f"đích {final} không phải tệp thường — từ chối ghi")
+    contract.log(f"  [warn] ghi đè {final}")
+
+
+def _check_tail(raw, limit=60):
+    """`limit` dòng cuối của `raw`; có cắt thì thêm dòng nói đã cắt bao nhiêu dòng đầu."""
+    lines = raw.strip().splitlines()
+    if len(lines) <= limit:
+        return "\n".join(lines)
+    return f"(cắt {len(lines) - limit} dòng đầu)\n" + "\n".join(lines[-limit:])
 
 
 def do_render_project_dir(args):
@@ -389,7 +453,9 @@ def do_render_project_dir(args):
     src_dir = os.path.abspath(args.project_dir)
     out_dir = os.path.abspath(args.out)
     files = _scan_project(src_dir)                      # kiểm TRƯỚC khi tạo --out
-    name = os.path.basename(src_dir.rstrip("\\/")) or "project"
+    name = _project_name(src_dir)                       # tên tệp trần, kiểm TRƯỚC khi tạo gì
+    final = _paths.join_out(out_dir, name + ".mp4", "--project-dir")
+    _check_final(final)
     t0 = time.time()
     with tempfile.TemporaryDirectory(prefix="video-studio-proj-") as work:
         proj = os.path.join(work, "project")
@@ -402,9 +468,7 @@ def do_render_project_dir(args):
             open(rc, "w").close()
         env_extra = {"npm_config_userconfig": user_rc, "npm_config_globalconfig": global_rc}
         env = render_env()
-        for k in [k for k in env if k.lower() in ("npm_config_userconfig", "npm_config_globalconfig")]:
-            del env[k]
-        env.update(env_extra)
+        _apply_env_extra(env, env_extra)
         try:
             chk = subprocess.run(hyperframes_argv("check", "--strict"), cwd=proj, env=env,
                                  capture_output=True, timeout=DEFAULT_TIMEOUT)
@@ -413,15 +477,23 @@ def do_render_project_dir(args):
         if chk.returncode:
             raw = chk.stderr or chk.stdout or b""
             raw = raw.decode("utf-8", "replace") if isinstance(raw, bytes) else str(raw)
-            tail = "\n".join(raw.strip().splitlines()[-15:])
+            tail = _check_tail(raw)
             raise ContractError(f"project không qua `check --strict` (mã {chk.returncode}):\n{tail}")
         tmp_out = os.path.join(work, "render.mp4")
         render_project(proj, tmp_out, label=name, env_extra=env_extra)
         if not os.path.isfile(tmp_out):
             raise EngineError("HyperFrames báo xong nhưng không thấy file ra")
         os.makedirs(out_dir, exist_ok=True)
-        final = os.path.join(out_dir, f"{name}.mp4")
-        shutil.copyfile(tmp_out, final)
+        fd, part = tempfile.mkstemp(dir=out_dir, prefix=".render-", suffix=".mp4.part")   # tên không đoán được
+        try:
+            with os.fdopen(fd, "wb") as dst, open(tmp_out, "rb") as srcf:                # ghi qua fd, không mở lại theo tên
+                shutil.copyfileobj(srcf, dst)
+            _check_final(final)                         # kiểm lại ngay trước khi thay thế
+            os.replace(part, final)
+        except BaseException:
+            if os.path.lexists(part):
+                os.remove(part)
+            raise
     return {"project_dir": src_dir, "out": out_dir,
             "outputs": [{"kind": "video", "path": final, "duration": None}],
             "timings": {"total": round(time.time() - t0, 2)}, "engine": engine_versions()}

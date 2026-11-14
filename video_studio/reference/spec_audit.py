@@ -9,9 +9,9 @@ An toàn: chỉ `stat`/`realpath`; KHÔNG mở tệp đích (chỉ mở chính s
 có NUL, quá dài), thư mục, và tệp không tồn tại bị bỏ qua.
 """
 import json
-import ntpath
 import os
 
+from .._paths import is_device_name, is_unc_like as _is_unc_like
 from ..contract import ContractError
 
 MAX_SPEC_BYTES = 5 * 1024 * 1024
@@ -42,18 +42,6 @@ def _inside(root, path):
         return os.path.commonpath([os.path.normcase(root), os.path.normcase(path)]) == os.path.normcase(root)
     except ValueError:      # khác ổ đĩa trên Windows
         return False
-
-
-def _is_unc_like(value):
-    """Đường mạng hoặc thiết bị Windows: UNC, `\\?\\`, `\\.\\`, tiền tố NT `\\??\\` (bất kể trộn `/` và `\\`).
-
-    Không bao giờ probe các chuỗi này (SMB ra ngoài). Dùng danh sách cho phép phía ổ đĩa: ổ có tên khác một chữ cái
-    (`ntpath.splitdrive`) cũng bị coi là mạng."""
-    v = value.replace(chr(47), chr(92))
-    if v.startswith((chr(92) * 2, chr(92) + "??" + chr(92))):
-        return True
-    drive = ntpath.splitdrive(v)[0]
-    return bool(drive) and not (len(drive) == 2 and drive[0].isalpha() and drive[1] == ":")
 
 
 def _candidates(value, bases):
@@ -90,6 +78,10 @@ def audit_spec(spec_path, project_dir, assets_dir=None):
         if _is_unc_like(value):
             # UNC / đường thiết bị: không bao giờ probe (SMB ra ngoài); báo là phát hiện, không bỏ qua.
             findings.append({"path": value, "problem": f"{ptr}: đường UNC hoặc thiết bị không được phép trong spec"})
+            continue
+        if ("." in value or "/" in value or chr(92) in value) and is_device_name(value):
+            # Tên thiết bị Windows (NUL, CON…) có đuôi hoặc nằm trong đường: không probe. Chữ trần như "con" (từ tiếng Việt) bỏ qua.
+            findings.append({"path": value, "problem": f"{ptr}: tên thiết bị Windows không được phép trong spec"})
             continue
         hit = None
         for cand in _candidates(value, bases):

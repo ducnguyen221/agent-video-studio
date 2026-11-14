@@ -56,7 +56,7 @@ import soundfile as sf
 
 from voice_studio import av, engine, profiles
 
-from ... import _env, projects, render
+from ... import _env, _paths, projects, render
 from ...contract import ContractError, StationMissing
 from . import news_video as nv
 
@@ -504,6 +504,9 @@ def _local_media(src, json_dir, exts, label):
 
     Đuôi phải thuộc `exts`; không symlink/junction; đường TƯƠNG ĐỐI phải nằm trong thư mục spec (sau realpath,
     chặn `../` và thành phần là symlink). Đường TUYỆT ĐỐI là lựa chọn rõ ràng của bên gọi nên được nhận."""
+    if nv.unsafe_local_path(src) or _paths.is_device_name(src):
+        print(f"    [warn] {label} bỏ: đường mạng hoặc thiết bị không được nhận")
+        return None
     ext = os.path.splitext(src)[1].lower()
     if ext not in exts:
         print(f"    [warn] {label} bỏ: đuôi {ext or '(không đuôi)'} không nằm trong {'/'.join(exts)}")
@@ -526,7 +529,7 @@ def guard_media_sources(sections, json_dir, media_dir):
             continue
         for it in _media_items(sec):
             src = _item_src(it)
-            if not src or src.lower().startswith("http"):
+            if not src or src.lower().startswith("http") or nv.unsafe_local_path(src) or _paths.is_device_name(src):
                 continue
             p = src if os.path.isabs(src) else os.path.join(json_dir, src)
             if nv.inside(p, media_dir):

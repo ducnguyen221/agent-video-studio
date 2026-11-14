@@ -12,9 +12,8 @@ import json
 import os
 import re
 import sys
-import urllib.request
 
-from ... import projects
+from ... import _netfetch, projects
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 SCENES_SAMPLE = os.path.join(HERE, "repo_today_scenes.json")
@@ -24,10 +23,16 @@ INPUT = os.environ.get("REPO_TODAY_INPUT") or ""
 UA = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
 
 
+GITHUB_HOSTS = ("github.com", "api.github.com", "raw.githubusercontent.com")
+GET_MAX_BYTES = 8 << 20
+
+
 def _get(url, timeout=30):
-    req = urllib.request.Request(url, headers=UA)
-    with urllib.request.urlopen(req, timeout=timeout) as r:
-        return r.read().decode("utf-8", "replace")
+    """Tải trang GitHub: chỉ https tới đúng ba máy GitHub (cả sau chuyển hướng), trần 8 MiB, địa chỉ ghim.
+    Ném `_netfetch.FetchError` nếu URL không được phép hoặc không tải được an toàn."""
+    _final, _ct, data = _netfetch.fetch_public(url, max_bytes=GET_MAX_BYTES, timeout=timeout,
+                                               allowed_hosts=GITHUB_HOSTS, headers=UA)
+    return data.decode("utf-8", "replace")
 
 
 def input_path():

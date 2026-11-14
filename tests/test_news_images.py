@@ -152,19 +152,10 @@ def test_real_symlink_is_refused_when_the_os_allows_it(news, tmp_path, capsys):
 def test_url_branch_keeps_the_12_megabyte_read_cap(news, tmp_path, monkeypatch):
     seen = {}
 
-    class R:
-        headers = {"Content-Type": "image/png"}
+    def fake(url, **kw):
+        seen["n"] = kw["max_bytes"]
+        return url, "image/png", h.PNG
 
-        def read(self, n):
-            seen["n"] = n
-            return h.PNG
-
-        def __enter__(self):
-            return self
-
-        def __exit__(self, *a):
-            return False
-
-    monkeypatch.setattr(news.urllib.request, "urlopen", lambda req, timeout=0: R())
+    monkeypatch.setattr(news._netfetch, "fetch_public", fake)
     assert news._download_images(["https://img.example.invalid/x.png"], str(tmp_path / "d"), 1) == ["img/s1_0.png"]
     assert seen["n"] == 12_000_000

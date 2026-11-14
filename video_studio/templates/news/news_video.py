@@ -26,14 +26,13 @@ import ipaddress
 import shutil
 import socket
 import urllib.parse
-import urllib.request
 
 import numpy as np
 import soundfile as sf
 
 from voice_studio import av, engine, profiles
 
-from ... import _env, projects, render
+from ... import _env, _netfetch, _paths, projects, render
 from ...contract import ContractError
 from ...spec import MAX_SCENE_IMAGES, REQUIRED_BRAND, USER_IMAGE_KEY
 
@@ -535,13 +534,19 @@ def _broll_image(query, out_path, min_bytes=9000):
     try:
         url = _OPENVERSE + "?" + urllib.parse.urlencode(
             {"q": query, "page_size": 8, "license_type": "commercial", "mature": "false"})
-        req = urllib.request.Request(url, headers={"User-Agent": _UA})
-        with urllib.request.urlopen(req, timeout=25) as r:
-            data = json.load(r)
+        _u, _ct, raw = _netfetch.fetch_public(url, max_bytes=2 << 20, timeout=25,
+                                              allowed_hosts=("api.openverse.org",),
+                                              headers={"User-Agent": _UA})
+        data = json.loads(raw.decode("utf-8", "replace"))
+        if not isinstance(data, dict):
+            raise ValueError("phản hồi không phải đối tượng JSON")
     except Exception as exc:
         print(f"  [broll] Openverse lỗi '{query}': {type(exc).__name__}")
         return None
-    for item in data.get("results", []):
+    results = data.get("results")
+    for item in results if isinstance(results, list) else []:
+        if not isinstance(item, dict):
+            continue
         src = item.get("url") or ""
         if not src.lower().split("?")[0].endswith((".jpg", ".jpeg", ".png", ".webp")):
             continue
@@ -551,9 +556,10 @@ def _broll_image(query, out_path, min_bytes=9000):
         except (TypeError, ValueError):
             pass
         try:
-            req = urllib.request.Request(src, headers={"User-Agent": _UA})
-            with urllib.request.urlopen(req, timeout=35) as r:
-                blob = r.read()
+            _u, ctype, blob = _netfetch.fetch_public(src, max_bytes=IMAGE_MAX_BYTES, timeout=35,
+                                                     headers={"User-Agent": _UA})
+            if "image" not in ctype:
+                continue
             if len(blob) < min_bytes:
                 continue
             with open(out_path, "wb") as f:
@@ -763,6 +769,11 @@ def inside(path, folder):
         return False
 
 
+def unsafe_local_path(path):
+    """True nếu `path` là đường mạng/thiết bị (UNC, tiền tố NT, ổ lạ) hoặc tên thiết bị Windows: không được chạm hệ tệp."""
+    return isinstance(path, str) and (_paths.is_unc_like(path) or (os.path.isabs(path) and _paths.is_device_name(path)))
+
+
 def is_link(path):
     """Symlink hoặc junction (không đi theo)."""
     return os.path.islink(path) or bool(getattr(os.path, "isjunction", lambda _p: False)(path))
@@ -775,7 +786,7 @@ def guard_user_images(segments, img_dir):
     for i, seg in enumerate(segments or [], 1):
         imgs = seg.get("images") if isinstance(seg, dict) else None
         for u in (imgs if isinstance(imgs, list) else []):
-            if isinstance(u, str) and os.path.isabs(u) and inside(u, img_dir):
+            if isinstance(u, str) and not unsafe_local_path(u) and os.path.isabs(u) and inside(u, img_dir):
                 raise ContractError(
                     f"ảnh của đoạn {i} nằm trong thư mục ảnh tạm của bước dựng (img/ của project): {u}. "
                     "Bước dựng xoá và ghi lại thư mục này — chép ảnh sang nơi khác rồi trỏ images.json tới đó")
@@ -784,7 +795,8 @@ def guard_user_images(segments, img_dir):
 def _public_http_url(u):
     """True nếu `u` là URL http(s) tới máy công khai. Chặn `file:`, loopback, mạng riêng, link-local (SSRF).
 
-    Tên máy không phân giải được thì cho qua (để `urlopen` tự báo lỗi); chưa chống DNS rebinding."""
+    Tên máy không phân giải được thì từ chối (đóng). Đây chỉ là kiểm nhanh; đường tải thật là `_netfetch.fetch_public`,
+    nơi địa chỉ được ghim để chống DNS rebinding."""
     try:
         parts = urllib.parse.urlsplit(u)
         host = (parts.hostname or "").strip().lower()
@@ -800,19 +812,30 @@ def _public_http_url(u):
         try:
             addrs = [ipaddress.ip_address(i[4][0]) for i in socket.getaddrinfo(host, None)]
         except (OSError, ValueError):
-            return True
-    return all(a.is_global for a in addrs)
+            return False
+    return not any(_netfetch.ip_is_internal(a) for a in addrs)
+
+
+def _proxy_hint(exc):
+    """Đường tải ghim địa chỉ không dùng proxy: nói rõ khi lỗi kết nối mà máy có đặt biến proxy."""
+    if str(exc).startswith("không kết nối được") and any(
+            os.environ.get(k) for k in ("HTTP_PROXY", "HTTPS_PROXY", "http_proxy", "https_proxy")):
+        return " (đường tải này không dùng proxy)"
+    return ""
 
 
 def _download_images(urls, dest_dir, seg_idx, max_n=3):
     """Best-effort download of segment images. Returns project-relative paths.
 
     Phần tử là đường **tuyệt đối** (từ `render --images`) được chép thẳng, không ngưỡng kích thước;
-    mọi chuỗi khác đi `urlopen` như trước."""
+    mọi chuỗi khác đi `_netfetch.fetch_public` (địa chỉ công khai, có trần)."""
     os.makedirs(dest_dir, exist_ok=True)
     out = []
     for j, u in enumerate((urls or [])[:max_n]):
         try:
+            if unsafe_local_path(u):
+                print(f"    [warn] image {seg_idx}/{j} bỏ: đường mạng hoặc thiết bị không được nhận")
+                continue
             if isinstance(u, str) and os.path.isabs(u):
                 ext = os.path.splitext(u)[1].lower()
                 if ext not in _LOCAL_EXTS:
@@ -833,19 +856,17 @@ def _download_images(urls, dest_dir, seg_idx, max_n=3):
                 out.append(f"img/{os.path.basename(fp)}")
                 print(f"    image s{seg_idx}_{j} ok (cục bộ)")
                 continue
-            if not (isinstance(u, str) and _public_http_url(u)):
-                print(f"    [warn] image {seg_idx}/{j} bỏ: chỉ nhận URL http(s) tới máy công khai")
+            if not isinstance(u, str):
+                print(f"    [warn] image {seg_idx}/{j} bỏ: không phải chuỗi")
                 continue
-            req = urllib.request.Request(u, headers={
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
-                "Accept": "image/*,*/*;q=0.8"})
-            with urllib.request.urlopen(req, timeout=20) as r:
-                final = getattr(r, "geturl", lambda: u)()
-                if isinstance(final, str) and not _public_http_url(final):
-                    print(f"    [warn] image {seg_idx}/{j} bỏ: chuyển hướng tới máy không công khai")
-                    continue
-                ct = (r.headers.get("Content-Type") or "").lower()
-                data = r.read(IMAGE_MAX_BYTES)
+            try:
+                _final, ct, data = _netfetch.fetch_public(
+                    u, max_bytes=IMAGE_MAX_BYTES, timeout=20,
+                    headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+                             "Accept": "image/*,*/*;q=0.8"})
+            except _netfetch.FetchError as exc:
+                print(f"    [warn] image {seg_idx}/{j} bỏ: {exc}{_proxy_hint(exc)}")
+                continue
             if len(data) < 4000:
                 print(f"    [warn] image {seg_idx}/{j} bỏ: phản hồi quá nhỏ ({len(data)} byte)")
                 continue

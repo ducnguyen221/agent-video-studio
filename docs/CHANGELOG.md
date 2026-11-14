@@ -5,6 +5,11 @@ chính nhưng chưa có tag; khi phát hành, mục đó đổi tên thành số
 `pyproject.toml`, `video_studio/__init__.py` cùng ba manifest plugin (`tests/test_version_sync.py`
 kiểm).
 
+## Chưa phát hành
+
+- Gia cố đường nhận đầu vào ngoài: tải ảnh URL, ảnh B-ROLL Openverse và trang GitHub đi qua một hàm tải công khai (ghim địa chỉ chống DNS rebinding, kiểm lại từng chuyển hướng, trần byte, từ chối máy không phân giải được); URL ảnh vượt trần bị từ chối thay vì cắt cụt; đường tải này không dùng biến proxy.
+- Đường UNC/thiết bị Windows không bị chạm hệ tệp, tên ổ chỉ nhận chữ cái ASCII; `render --project-dir` so tệp trước và sau khi chép, ghi file ra qua tệp tạm không đoán được, từ chối liên kết/thư mục ở đích, cảnh báo khi ghi đè, hiện tối đa 60 dòng lỗi `check --strict`.
+
 ## 0.10.0 — 2026-11-14
 
 - Mở rộng quy trình lyric video: lập số ảnh và lượt cảnh theo thời lượng, nội dung lời; đề xuất hiệu ứng theo cảnh và demo có hình, nhạc, chữ.
