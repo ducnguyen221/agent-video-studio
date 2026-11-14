@@ -31,7 +31,8 @@ _CONTROL = frozenset(chr(c) for c in range(0x20)) | {"\x7f"}
 
 
 _DEVICE_NAMES = frozenset({"CON", "PRN", "AUX", "NUL", "CONIN$", "CONOUT$"}
-                          | {f"COM{i}" for i in range(1, 10)} | {f"LPT{i}" for i in range(1, 10)})
+                          | {f"COM{i}" for i in range(1, 10)} | {f"LPT{i}" for i in range(1, 10)}
+                          | {"COM¹", "COM²", "COM³", "LPT¹", "LPT²", "LPT³"})
 
 
 def is_unc_like(value):
@@ -51,7 +52,7 @@ def is_device_name(value):
     """Tên cuối của `value` là tên thiết bị Windows (`NUL`, `CON`, `COM1`…, có hay không có đuôi, dấu chấm/space cuối).
 
     Windows mở thiết bị thay vì tệp, nên không được probe/chép. Không phân biệt hoa/thường."""
-    name = str(value).replace("\\", "/").rsplit("/", 1)[-1].rstrip(" .")
+    name = str(value).replace("\\", "/").rsplit("/", 1)[-1].split(":", 1)[0].rstrip(" .")   # `NUL:` cũng là thiết bị
     return name.split(".", 1)[0].rstrip(" ").upper() in _DEVICE_NAMES
 
 

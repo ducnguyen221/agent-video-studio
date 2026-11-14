@@ -4,8 +4,10 @@
 Một trách nhiệm: lấy về tối đa `max_bytes` từ một URL mà KHÔNG gọi vào mạng nội bộ.
   - phân giải tên máy MỘT lần, kiểm MỌI địa chỉ bằng bảng chặn tường minh, rồi kết nối tới đúng IP đã kiểm
     (không để `urlopen` phân giải lại → chống DNS rebinding); HTTPS bọc TLS với tên máy gốc (SNI + kiểm chứng chỉ);
-  - chuyển hướng tự theo, MỖI bước kiểm lại đủ các luật TRƯỚC khi kết nối (SSRF mù qua `Location`);
-  - trần byte và hạn tổng thời gian; vượt thì từ chối, không cắt cụt im lặng;
+  - chuyển hướng tự theo, MỖI bước kiểm lại đủ các luật TRƯỚC khi kết nối (SSRF mù qua `Location`); không hạ https
+    xuống http;
+  - trần byte và hạn tổng thời gian (đồng hồ canh giữ ngắt socket, nên máy chủ nhỏ giọt cũng không kéo dài quá hạn);
+    vượt thì từ chối, không cắt cụt im lặng;
   - host không phân giải được thì từ chối (đóng).
 Không dùng biến proxy: ghim IP và proxy loại trừ nhau.
 Bộ phân giải (`resolver`) và bộ kết nối (`connector`) tiêm được để test không ra mạng ngoài.
@@ -14,11 +16,14 @@ import http.client
 import ipaddress
 import socket
 import ssl
+import threading
 import time
 import urllib.parse
 
 MAX_URL_LEN = 2048
 REDIRECT_STATUS = (301, 302, 303, 307, 308)
+_PATH_SAFE = "/%:@!$&'()*+,;=-._~"
+_QUERY_SAFE = "/%:@!$&'()*+,;=-._~?"
 
 # Danh sách chặn TƯỜNG MINH, không dựa vào `is_global`/`is_private` của `ipaddress` (bảng đó đổi theo bản Python:
 # CPython 3.10.11 coi 192.0.0.8 là global, trước bản vá CVE-2024-4032). Nguồn: IANA IPv4 Special-Purpose Address
@@ -58,6 +63,21 @@ def _now():
     return time.monotonic()
 
 
+def _ascii_host(host):
+    """Tên máy dạng ASCII (IDNA); địa chỉ IP literal giữ nguyên. `FetchError` nếu không mã hoá được."""
+    if ":" in host:
+        return host
+    try:
+        ipaddress.ip_address(host)
+        return host
+    except ValueError:
+        pass
+    try:
+        return host.encode("idna").decode("ascii")
+    except UnicodeError:
+        raise FetchError(f"tên máy {host!r} không mã hoá được (IDNA)") from None
+
+
 def _parse(url, allowed_hosts):
     """-> (scheme, host, port, host_header, path). `FetchError` nếu URL không được phép."""
     if not isinstance(url, str):
@@ -85,6 +105,7 @@ def _parse(url, allowed_hosts):
     host = (host or "").lower().rstrip(".")
     if not host:
         raise FetchError("URL thiếu tên máy")
+    host = _ascii_host(host)
     if port is not None and not 1 <= port <= 65535:
         raise FetchError(f"cổng {port} không hợp lệ")
     if allowed_hosts is not None:
@@ -96,9 +117,9 @@ def _parse(url, allowed_hosts):
     eff_port = port or default
     shown = f"[{host}]" if ":" in host else host
     host_header = shown if eff_port == default else f"{shown}:{eff_port}"
-    path = parts.path or "/"
+    path = urllib.parse.quote(parts.path or "/", safe=_PATH_SAFE)
     if parts.query:
-        path += "?" + parts.query
+        path += "?" + urllib.parse.quote(parts.query, safe=_QUERY_SAFE)
     return scheme, host, eff_port, host_header, path
 
 
@@ -133,6 +154,37 @@ def _default_connector(scheme, host, ip, port, timeout):
     return _PinnedConnection(scheme, host, ip, port, timeout)
 
 
+class _Watchdog:
+    """Đồng hồ canh giữ: hết hạn tổng thì ngắt socket đang dùng, để lần đọc đang chặn (kể cả nhỏ giọt từng byte,
+    kể cả pha đọc tiêu đề) báo lỗi ngay thay vì kéo dài. Chạy trên thời gian thật."""
+
+    def __init__(self, seconds):
+        self.conn, self.fired = None, False
+        self._timer = threading.Timer(max(0.01, seconds), self._fire)
+        self._timer.daemon = True
+
+    def start(self):
+        self._timer.start()
+
+    def stop(self):
+        self._timer.cancel()
+
+    def _fire(self):
+        self.fired = True
+        conn = self.conn
+        sock = getattr(conn, "sock", None)
+        try:
+            if sock is not None:
+                sock.shutdown(socket.SHUT_RDWR)
+        except OSError:
+            pass
+        try:
+            if conn is not None:
+                conn.close()
+        except Exception:
+            pass
+
+
 def _addresses(host, port, resolver):
     """Mọi địa chỉ của `host`, đã kiểm công khai; phân giải đúng MỘT lần."""
     try:
@@ -155,11 +207,12 @@ def _addresses(host, port, resolver):
 
 
 def _read_body(resp, max_bytes, deadline):
+    reader = getattr(resp, "read1", None) or resp.read          # read1: trả ngay khi có dữ liệu, không đợi đủ n byte
     chunks, total = [], 0
     while True:
         if _now() > deadline:
             raise FetchError("quá hạn tổng thời gian tải")
-        chunk = resp.read(min(65536, max_bytes + 1 - total))
+        chunk = reader(min(65536, max_bytes + 1 - total))
         if not chunk:
             return b"".join(chunks)
         total += len(chunk)
@@ -174,18 +227,38 @@ def fetch_public(url, *, max_bytes, timeout=20, total_deadline=60, headers=None,
 
     `allowed_hosts`: `None` = mọi máy công khai; còn lại = chỉ các tên máy này (khớp nguyên tên, chỉ https),
     kiểm lại ở mỗi chuyển hướng. `resolver(host, port) -> [ip]` và `connector(scheme, host, ip, port, timeout)`
-    được tra lúc gọi."""
+    được tra lúc gọi. Hạn tổng `total_deadline` giây áp cho cả lần tải (kể cả chuyển hướng và pha đọc tiêu đề)."""
     resolver = resolver or _default_resolver
     connector = connector or _default_connector
     deadline = _now() + total_deadline
-    current = url
+    watchdog = _Watchdog(total_deadline)
+    watchdog.start()
+    try:
+        return _fetch(url, max_bytes, timeout, deadline, headers, allowed_hosts, max_redirects,
+                      resolver, connector, watchdog)
+    finally:
+        watchdog.stop()
+
+
+def _expired(watchdog, deadline):
+    return watchdog.fired or _now() > deadline
+
+
+def _fetch(url, max_bytes, timeout, deadline, headers, allowed_hosts, max_redirects, resolver, connector, watchdog):
+    current, first_scheme = url, None
     for _hop in range(max_redirects + 1):
         scheme, host, port, host_header, path = _parse(current, allowed_hosts)
+        if first_scheme == "https" and scheme != "https":
+            raise FetchError("chuyển hướng hạ https xuống http bị từ chối")
+        first_scheme = first_scheme or scheme
         ips = _addresses(host, port, resolver)
         req_headers = {"Host": host_header, "Connection": "close", **(headers or {})}
         resp, conn, last = None, None, None
         for ip in ips:
-            conn = connector(scheme, host, ip, port, max(1, min(timeout, deadline - _now())))
+            if _expired(watchdog, deadline):
+                raise FetchError("quá hạn tổng thời gian tải")
+            conn = connector(scheme, host, ip, port, max(0.1, min(timeout, deadline - _now())))
+            watchdog.conn = conn
             try:
                 conn.request("GET", path, headers=req_headers)
                 resp = conn.getresponse()
@@ -195,6 +268,8 @@ def fetch_public(url, *, max_bytes, timeout=20, total_deadline=60, headers=None,
                 conn.close()
                 conn = None
         if resp is None:
+            if _expired(watchdog, deadline):
+                raise FetchError("quá hạn tổng thời gian tải")
             raise FetchError(f"không kết nối được {host}: {type(last).__name__}")
         try:
             status = resp.status
@@ -217,6 +292,8 @@ def fetch_public(url, *, max_bytes, timeout=20, total_deadline=60, headers=None,
             data = _read_body(resp, max_bytes, deadline)
             return current, (resp.getheader("Content-Type") or "").lower(), data
         except (OSError, http.client.HTTPException) as exc:
+            if _expired(watchdog, deadline):
+                raise FetchError("quá hạn tổng thời gian tải") from None
             raise FetchError(f"đọc phản hồi từ {host} lỗi: {type(exc).__name__}") from None
         finally:
             conn.close()

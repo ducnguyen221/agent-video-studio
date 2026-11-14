@@ -485,9 +485,9 @@ def do_render_project_dir(args):
             raise EngineError("HyperFrames báo xong nhưng không thấy file ra")
         os.makedirs(out_dir, exist_ok=True)
         fd, part = tempfile.mkstemp(dir=out_dir, prefix=".render-", suffix=".mp4.part")   # tên không đoán được
-        os.close(fd)
         try:
-            shutil.copyfile(tmp_out, part)
+            with os.fdopen(fd, "wb") as dst, open(tmp_out, "rb") as srcf:                # ghi qua fd, không mở lại theo tên
+                shutil.copyfileobj(srcf, dst)
             _check_final(final)                         # kiểm lại ngay trước khi thay thế
             os.replace(part, final)
         except BaseException:

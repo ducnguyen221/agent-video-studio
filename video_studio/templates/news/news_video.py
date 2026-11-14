@@ -543,7 +543,10 @@ def _broll_image(query, out_path, min_bytes=9000):
     except Exception as exc:
         print(f"  [broll] Openverse lỗi '{query}': {type(exc).__name__}")
         return None
-    for item in data.get("results", []):
+    results = data.get("results")
+    for item in results if isinstance(results, list) else []:
+        if not isinstance(item, dict):
+            continue
         src = item.get("url") or ""
         if not src.lower().split("?")[0].endswith((".jpg", ".jpeg", ".png", ".webp")):
             continue
@@ -825,7 +828,7 @@ def _download_images(urls, dest_dir, seg_idx, max_n=3):
     """Best-effort download of segment images. Returns project-relative paths.
 
     Phần tử là đường **tuyệt đối** (từ `render --images`) được chép thẳng, không ngưỡng kích thước;
-    mọi chuỗi khác đi `urlopen` như trước."""
+    mọi chuỗi khác đi `_netfetch.fetch_public` (địa chỉ công khai, có trần)."""
     os.makedirs(dest_dir, exist_ok=True)
     out = []
     for j, u in enumerate((urls or [])[:max_n]):
