@@ -38,7 +38,8 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Cài package (lõi + extras test)
-        run: python -m pip install --upgrade pip && python -m pip install -e ".[test]"
+        # setuptools + wheel: vòng gói tách riêng dùng --no-build-isolation nên cần có sẵn trong môi trường.
+        run: python -m pip install --upgrade pip setuptools wheel && python -m pip install -e ".[test]"
 
       - name: Chạy bộ test
         # Cây làm việc là một bản checkout git thật, nên các cổng `git check-ignore`
