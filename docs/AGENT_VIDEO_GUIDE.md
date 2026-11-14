@@ -61,7 +61,10 @@ người khác.
 
 **Project tự dựng:** `render --project-dir DIR --out OUT` kiểm `check --strict` rồi render bằng engine
 ghim. Project chỉ gồm `index.html`, tệp tĩnh ở gốc và `assets/`; được chép sang thư mục tạm, không đi
-theo symlink/junction, và bị từ chối (mã 2) nếu có `.npmrc`, `package.json` hay `node_modules/`.
+theo symlink/junction, và bị từ chối (mã 2) nếu có `.npmrc`, `package.json` hay `node_modules/`. Tệp đổi
+(thành liên kết, kích thước, giờ sửa) giữa lúc quét và lúc chép ⇒ mã 2. File ra là `OUT/<tên thư mục>.mp4` (tên
+thư mục phải là một tên tệp trần): liên kết hoặc thư mục tại đích ⇒ mã 2; tệp thường đã có bị thay kèm cảnh báo
+`[warn] ghi đè`. Lỗi `check --strict` hiện tối đa 60 dòng cuối.
 
 Ảnh và clip khai bằng đường **tương đối so với file spec**. `--brand brand.json` để tách phần
 thương hiệu ra dùng lại cho nhiều số báo.
