@@ -9,14 +9,15 @@ kiểm).
 
 - Gia cố đường nhận đầu vào ngoài: tải ảnh URL, ảnh B-ROLL Openverse và trang GitHub đi qua một hàm tải công khai (ghim địa chỉ chống DNS rebinding, kiểm lại từng chuyển hướng, trần byte, từ chối máy không phân giải được); URL ảnh vượt trần bị từ chối thay vì cắt cụt; đường tải này không dùng biến proxy.
 - Đường UNC/thiết bị Windows không bị chạm hệ tệp, tên ổ chỉ nhận chữ cái ASCII; `render --project-dir` so tệp trước và sau khi chép, ghi file ra qua tệp tạm không đoán được, từ chối liên kết/thư mục ở đích, cảnh báo khi ghi đè, hiện tối đa 60 dòng lỗi `check --strict`.
-- Sửa bộ dựng gói thư viện hiệu ứng: manifest phân phối cập nhật băm và thêm các file còn thiếu (audio visualizer, news-image-search, CATALOG), thêm mục quyền cho `audio-visualizer.js`; CI Windows bật vòng gói wheel + sdist (`EFFECT_DIST_TEST=1`) để lệch băm lần sau làm CI đỏ (RQ-036).
-- Thêm 32 test tên Windows nguy hiểm cho `effect_library` native; sửa docstring `_native_windows.py`.
-- Số skill ghi đúng 29 (8 của repo + 21 HyperFrames) ở README, README.vi và AGENTS.md (RQ-037).
 
-## 0.10.0 — 2026-11-13
+## 0.10.0 — 2026-11-14
 
 - Mở rộng quy trình lyric video: lập số ảnh và lượt cảnh theo thời lượng, nội dung lời; đề xuất hiệu ứng theo cảnh và demo có hình, nhạc, chữ.
 - Thêm thành phần phổ âm thanh hình tròn và nốt bay theo cue từ, dùng dữ liệu đã phân tích và đồng hồ composition; cue nhận dạng tự động vẫn cần đối chiếu trước khi xác nhận.
+- Sửa bộ dựng gói thư viện hiệu ứng: manifest phân phối cập nhật băm và thêm các file còn thiếu (audio visualizer, news-image-search, CATALOG), thêm mục quyền cho `audio-visualizer.js`; CI Windows bật vòng gói wheel + sdist (`EFFECT_DIST_TEST=1`) để lệch băm lần sau làm CI đỏ (RQ-036).
+- Thêm 32 test tên Windows nguy hiểm cho `effect_library` native; sửa docstring `_native_windows.py`.
+- Số skill ghi đúng 29 (8 của repo + 21 HyperFrames) ở README, README.vi và AGENTS.md (RQ-037).
+- Review độc lập cho audio visualizer: Đạt có điều kiện, 0 Chặn, 0 Phải sửa; 3 mục Nên sửa còn lại ghi ở RQ-041 (RQ-040).
 
 ## 0.9.4 — 2026-11-11
 
